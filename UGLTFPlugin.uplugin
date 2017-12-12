@@ -1,0 +1,25 @@
+{
+	"FileVersion" : 3,
+	"Version" : 1,
+	"VersionName" : "1.0",
+	"FriendlyName" : "GLTF Importer Plugin",
+	"Description" : "GLTF 2.0 Importer",
+	"Category" : "Importers",
+	"CreatedBy" : "Sketchfab, Inc.",
+	"CreatedByURL" : "https://sketchfab.com",
+	"DocsURL" : "",
+	"MarketplaceURL" : "",
+	"SupportURL" : "",
+	"EnabledByDefault" : true,
+	"CanContainContent" : false,
+	"IsBetaVersion" : true,
+	"Installed" : false,
+	"Modules" :
+	[
+		{
+			"Name" : "UGLTFPlugin",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default"
+		}
+	]
+}
