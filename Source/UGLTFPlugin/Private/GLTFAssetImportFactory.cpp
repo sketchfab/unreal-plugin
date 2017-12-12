@@ -50,14 +50,14 @@ UObject* UGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* In
 			ImportContext.ImportOptions = ImportOptions;
 			ImportContext.bApplyWorldTransformToGeometry = ImportOptions->bApplyWorldTransformToGeometry;
 
-			if (1) //ImportOptions->bImportMaterials)
+			if (ImportOptions->bImportMaterials)
 			{
 				GLTFImporter->CreateNodeMaterials(ImportContext, ImportContext.Materials);
 			}
 			/*
 			else if (ImportOptions->bImportTextures)
 			{
-				GLTFImporter->ImportTexturesFromNode(ImportContext, Model, ImportContext.RootPrim);
+				GLTFImporter->ImportTexturesFromNode(ImportContext, Model);
 			}
 			*/
 

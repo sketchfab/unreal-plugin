@@ -11,7 +11,7 @@ UGLTFImportOptions::UGLTFImportOptions(const FObjectInitializer& ObjectInitializ
 {
 	MeshImportType = EGltfMeshImportType::StaticMesh;
 	bApplyWorldTransformToGeometry = true;
-
+	bImportMaterials = true;
 }
 
 void UGLTFImportOptions::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
@@ -33,6 +33,7 @@ UGLTFSceneImportOptions::UGLTFSceneImportOptions(const FObjectInitializer& Objec
 	bGenerateUniqueMeshes = true;
 	bGenerateUniquePathPerMesh = true;
 	bApplyWorldTransformToGeometry = false;
+	bImportMaterials = true;
 }
 
 void UGLTFSceneImportOptions::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
@@ -48,7 +49,8 @@ bool UGLTFSceneImportOptions::CanEditChange(const UProperty* InProperty) const
 
 	if (GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, MeshImportType) == PropertyName ||
 		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, bApplyWorldTransformToGeometry) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, bGenerateUniquePathPerMesh) == PropertyName)
+		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, bGenerateUniquePathPerMesh) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, bImportMaterials) == PropertyName)
 	{
 		bCanEdit &= bImportMeshes;
 	}

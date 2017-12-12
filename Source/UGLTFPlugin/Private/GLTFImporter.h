@@ -18,21 +18,8 @@ THIRD_PARTY_INCLUDES_END
 
 class UGLTFPrimResolver;
 class IGltfPrim;
-//class IUsdStage;
-//struct FUsdGeomData;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogGLTFImport, Log, All);
-
-/*
-namespace GLTFKindTypes
-{
-	// Note: std::string for compatiblity with USD
-
-	const std::string Component("component"); 
-	const std::string Group("group");
-	const std::string SubComponent("subcomponent");
-}
-*/
 
 USTRUCT()
 struct FGltfImportContext
@@ -77,6 +64,9 @@ struct FGltfImportContext
 
 	/** If true stop at any USD prim that has an unreal asset reference.  Geometry that is a child such prims will be ignored */
 	bool bFindUnrealAssetReferences;
+
+	/** Whether to automatically create Unreal materials for materials found in the glTF scene */
+	bool bImportMaterials;
 
 	virtual ~FGltfImportContext() { }
 

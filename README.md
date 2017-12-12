@@ -26,13 +26,9 @@ Please note that a more in-depth, beginner friendly, description (with screens s
 
 Please note that this is a work in progress. The files are going to be refactored and possibly also renamed. 
 
-## Current Issues
-
-- Saving a scene will currently not save materials. Material package paths will be fixed soon. For now just load in files for testing, do not use the assets in any real scenes.
-- Meshes, materials and textures are all currently loaded into the same current path location when importing. These may be moved into separate package paths later.
-
 ## What Is Currently Supported
 
+- Only imports the first scene found in the glTF file
 - Loading in a GLTF file as a static mesh
 - Loading in a GLTF file where every mesh becomes its own static mesh
 - PBR materials

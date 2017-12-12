@@ -19,10 +19,6 @@
 UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& ImportContext, const FGltfPrimToImport& PrimToImport, UStaticMesh *singleMesh)
 {
 	const FTransform& ConversionTransform = ImportContext.ConversionTransform;
-
-
-
-	//const FMatrix PrimToWorld = ImportContext.bApplyWorldTransformToGeometry ? GLTFToUnreal::ConvertMatrix(*PrimToImport.Prim) : FMatrix::Identity;
 	const FMatrix PrimToWorld = ImportContext.bApplyWorldTransformToGeometry ? PrimToImport.WorldPrimTransform : FMatrix::Identity;
 
 	FTransform FinalTransform = FTransform(PrimToWorld)*ConversionTransform;
@@ -524,7 +520,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 			//Add another material
 
 			UMaterialInterface* ExistingMaterial = nullptr;
-			if (prim.material >= 0 && prim.material < model->materials.size())
+			if (prim.material >= 0 && prim.material < ImportContext.Materials.Num())
 			{
 				ExistingMaterial = ImportContext.Materials[prim.material];
 			}

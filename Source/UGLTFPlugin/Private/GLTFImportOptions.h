@@ -59,8 +59,14 @@ public:
 	UPROPERTY(config, EditAnywhere, Category=Mesh)
 	bool bApplyWorldTransformToGeometry;
 
-	UPROPERTY(EditAnywhere, config, Category="Mesh|Materials")
-	EMaterialSearchLocation MaterialSearchLocation;
+	UPROPERTY(config, EditAnywhere, Category = Mesh)
+	bool bImportMaterials;
+
+	//UPROPERTY(config, EditAnywhere, Category = Mesh)
+	//bool bImportTextures;
+
+	//UPROPERTY(EditAnywhere, config, Category="Mesh|Materials")
+	//EMaterialSearchLocation MaterialSearchLocation;
 
 public:
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;

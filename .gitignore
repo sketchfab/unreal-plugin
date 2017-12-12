@@ -1,2 +1,7 @@
 
 Resources/Thumbs.db
+Intermediate/*
+Binaries/Win64/UE4Editor-UGLTFPlugin-Win64-DebugGame.dll
+Binaries/Win64/UE4Editor-UGLTFPlugin-Win64-DebugGame.pdb
+Binaries/Win64/UE4Editor-UGLTFPlugin.pdb
+Binaries/Win64/UE4Editor-Win64-DebugGame.modules
