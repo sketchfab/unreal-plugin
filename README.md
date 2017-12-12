@@ -54,7 +54,8 @@ If you wish to give this plugin to someone to use, but not pass on the source co
 
 ## How To Use In Visual Studio
 
-1. First follow the same Installation steps above.
+1. First follow the same Installation steps above, but make sure to create a C++ project.
+1. Open the Visual Studio solution file your project folder.
 1. In your VS Project add a folder under Plugins called "UGLTFPlugin"
 1. Under that new folder add a Private and Public folder.
 1. Add all the files from the unreal-exporter/source/UGLTFPlugin/Private to the private folder in VS.
