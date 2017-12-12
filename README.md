@@ -6,16 +6,16 @@ This is a WIP. There is a lot of source code commented out and still being worke
 
 ## Installation
 
-1. Open the Unreal Editor
-1. Choose New Project
+1. Open the Unreal Editor.
+1. Choose New Project.
 1. Choose one of the example project types, such as "First Person". You can use either BluePrint or C++, it does not matter.
-1. Choose the location and name of your project
+1. Choose the location and name of your project.
 1. Press Create Project.
-1. On your computer go to the location when your project was created
+1. On your computer go to the location where your project was created.
 1. In your project folder create a new folder called "Plugins".
-1. Download this unreal-exporter project form github and extract into this folder
-1. You should now have a folder structure which looks something like "MyProject/Plugins/unreal-exporter/..."
-1. Shut down the Unreal Editor if its still running
+1. Download this unreal-exporter project form github and extract into this folder.
+1. You should now have a folder structure which looks something like "MyProject/Plugins/unreal-exporter/...".
+1. Shut down the Unreal Editor if its still running.
 1. Double click the MyProject.uproject file to run Unreal Editor again. ("MyProject/MyProject.uproject")
 
 ## How To Import A GLTF File
@@ -24,7 +24,7 @@ This is a WIP. There is a lot of source code commented out and still being worke
 1. Select Import.
 1. Choose a GLTF 2.0 file to loading (*.gltf).
 1. Leave "Generate Unique Path Per Mesh" unchecked to load the file in as a single mesh. Uncheck to create a new asset per mesh.
-1. Press Import
+1. Press Import.
 
 - "Apply World Transform To Geometry" is currently not finished. Please ignore for now.
 - "Materials": This currently does nothing.
