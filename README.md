@@ -6,13 +6,20 @@ This is a WIP. There is a lot of source code commented out and still being worke
 
 ## Installation
 
-Please note that a more in-depth, beginner friendly, description (with screens shots and potentially a video) will be coming.
+1. Open the Unreal Editor
+1. Choose New Project
+1. Choose one of the example project types, such as "First Person". You can use either BluePrint or C++, it does not matter.
+1. Choose the location and name of your project
+1. Press Create Project.
+1. On your computer go to the location when your project was created
+1. In your project folder create a new folder called "Plugins".
+1. Download this unreal-exporter project form github and extract into this folder
+1. You should now have a folder structure which looks something like "MyProject/Plugins/unreal-exporter/..."
+1. Shut down the Unreal Editor if its still running
+1. Double click the MyProject.uproject file to run Unreal Editor again. ("MyProject/MyProject.uproject")
 
-1. Create a new Unreal C++ Project.
-1. Go to the location of the VS project file for your project.
-1. Copy the unreal-exporter project to your plugins directory. This readme.md file should now be located in MyProject/Plugins/unreal-exporter/README.md (where MyProject would be the name of your Unreal Project you created in Step 1).
-1. Compile your Project in VS using either the "DebugGame Editor" or "Development Editor" configurations.
-1. Run your project
+## How To Import A GLTF File
+
 1. In the Unreal Editor go to the Content Browser at the bottom.
 1. Select Import.
 1. Choose a GLTF 2.0 file to loading (*.gltf).
@@ -22,9 +29,9 @@ Please note that a more in-depth, beginner friendly, description (with screens s
 - "Apply World Transform To Geometry" is currently not finished. Please ignore for now.
 - "Materials": This currently does nothing.
 
-## WIP
+## Shipping The PreBuilt Plugin
 
-Please note that this is a work in progress. The files are going to be refactored and possibly also renamed. 
+If you wish to give this plugin to someone to use, but not pass on the source code, then just make a copy of this project and remove the "Source" folder. The plugin will still work as normal without this folder.
 
 ## What Is Currently Supported
 
@@ -45,7 +52,7 @@ Please note that this is a work in progress. The files are going to be refactore
 - No joints
 - No morph targets
 
-## How To Debug In Visual Studio
+## How To Use In Visual Studio
 
 1. In your VS Project add a folder under Plugins called "UGLTFPlugin"
 1. Under that new folder add a Private and Public folder.
@@ -55,3 +62,4 @@ Please note that this is a work in progress. The files are going to be refactore
 1. Do a full recompile of your project.
 1. Set a break point in the StaticMeshImporter.cpp -> FGLTFStaticMeshImporter::ImportStaticMesh(...) method.
 1. Run the project and import a GLTF file to hit the break point.
+
