@@ -46,6 +46,10 @@ If you wish to give this plugin to someone to use, but not pass on the source co
 - Only supports external textures (ie does not support textures in binary files). Embedded texture support coming soon.
 - No sampler support yet (ie uv tiling). This will be coming soon.
 
+## Partially Implemented
+
+There is also WIP on importing a scene via 'File->Import Into Level'. This does not import anything at this stage and you should avoid using it to load glTF files.
+
 ## What's Not Supported And Will Not Be In Version 1.0
 
 - No cameras
