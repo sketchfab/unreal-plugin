@@ -29,6 +29,8 @@ This is a WIP. There is a lot of source code commented out and still being worke
 - "Apply World Transform To Geometry" is currently not finished. Please ignore for now.
 - "Materials": This currently does nothing.
 
+* Note: Objects are currently scaled up by a factor of 100. This may be removed in future.
+
 ## Shipping The PreBuilt Plugin
 
 If you wish to give this plugin to someone to use, but not pass on the source code, then just make a copy of this project and remove the "Source" folder. The plugin will still work as normal without this folder.
