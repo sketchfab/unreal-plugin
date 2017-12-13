@@ -365,7 +365,6 @@ bool UGLTFImporter::ShowImportOptions(UObject& ImportOptions)
 tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGltfImportContext& ImportContext, const FString& Filename)
 {
 	FString FilePath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*Filename);
-	//FilePath = FPaths::GetPath(FilePath) + TEXT("/");
 	FString CleanFilename = FPaths::GetCleanFilename(Filename);
 
 	tinygltf::Model* Model = new tinygltf::Model();
