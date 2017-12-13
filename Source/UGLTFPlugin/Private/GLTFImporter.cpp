@@ -368,9 +368,7 @@ tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGltfImportContext& ImportContext, 
 	//FilePath = FPaths::GetPath(FilePath) + TEXT("/");
 	FString CleanFilename = FPaths::GetCleanFilename(Filename);
 
-	//TODO: Clean up
-	//I am  just create a Model here directly, it needs to be deleted when finished.
-	tinygltf::Model* Model = new tinygltf::Model(); // UnrealUSDWrapper::ImportUSDFile(TCHAR_TO_ANSI(*FilePath), TCHAR_TO_ANSI(*CleanFilename));
+	tinygltf::Model* Model = new tinygltf::Model();
 
 	std::string err;
 	std::string filename = TCHAR_TO_ANSI(*FilePath);
