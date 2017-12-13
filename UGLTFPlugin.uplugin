@@ -1,7 +1,7 @@
 {
 	"FileVersion" : 3,
 	"Version" : 1,
-	"VersionName" : "1.0",
+	"VersionName" : "0.1",
 	"FriendlyName" : "GLTF Importer Plugin",
 	"Description" : "GLTF 2.0 Importer",
 	"Category" : "Importers",
