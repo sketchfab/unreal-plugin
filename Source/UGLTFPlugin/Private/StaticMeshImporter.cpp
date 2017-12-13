@@ -29,7 +29,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 
 	if (singleMesh)
 	{
-		//KB: I shouldn't need to do this since below I should be able to Find it already in the object list
 		ImportedMesh = singleMesh;
 	}
 	else
@@ -499,15 +498,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 		FColor WhiteVertex = FColor(255, 255, 255, 255);
 		FVector EmptyVector = FVector(0, 0, 0);
 
-		//KB: TODO: I need to scan the materials in the package path to find the actual material instead of adding it again
+		//Check to see if we have added this material already to the object.
 		int* staticMaterialIndex = ImportContext.MaterialMap.Find(prim.material);
-		if (staticMaterialIndex)
+		if (!staticMaterialIndex)
 		{
-			//No need to do anything.
-		}
-		else
-		{
-			//Add another material
+			//Add material
 
 			UMaterialInterface* ExistingMaterial = nullptr;
 			if (prim.material >= 0 && prim.material < ImportContext.Materials.Num())
@@ -527,15 +522,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 		check(staticMaterialIndex);
 		for (int faceIndex = 0; faceIndex < NumFaces; faceIndex++)
 		{
-
-			// 		RawTriangles.WedgeColors.Add(WhiteVertex);
-			// 		RawTriangles.WedgeColors.Add(WhiteVertex);
-			// 		RawTriangles.WedgeColors.Add(WhiteVertex);
-
 			// Materials
 			RawTriangles.FaceMaterialIndices.Add(*staticMaterialIndex);
 
-			RawTriangles.FaceSmoothingMasks.Add(0xFFFFFFFF); // Phong
+			// Phong Smoothing
+			RawTriangles.FaceSmoothingMasks.Add(0xFFFFFFFF); 
 		}
 
 	}
