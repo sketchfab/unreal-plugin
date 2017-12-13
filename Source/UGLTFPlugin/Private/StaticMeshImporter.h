@@ -8,9 +8,10 @@
 class UStaticMesh;
 struct FGltfImportContext;
 struct FGltfPrimToImport;
+struct FRawMesh;
 
 class FGLTFStaticMeshImporter
 {
 public:
-	static UStaticMesh* ImportStaticMesh(FGltfImportContext& ImportContext, const FGltfPrimToImport& PrimToImport, UStaticMesh *singleMesh = nullptr);
+	static UStaticMesh* ImportStaticMesh(FGltfImportContext& ImportContext, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh = nullptr);
 };

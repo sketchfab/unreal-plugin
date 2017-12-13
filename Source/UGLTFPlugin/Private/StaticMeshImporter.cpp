@@ -6,8 +6,7 @@
 #include "StaticMeshImporter.h"
 #include "GLTFImporter.h"
 #include "GLTFConversionUtils.h"
-//#include "RawMesh.h"
-#include "Developer/RawMesh/Public/RawMesh.h" 
+#include "RawMesh.h" 
 #include "MeshUtilities.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/Material.h"
@@ -16,7 +15,7 @@
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
 
-UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& ImportContext, const FGltfPrimToImport& PrimToImport, UStaticMesh *singleMesh)
+UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& ImportContext, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
 {
 	const FTransform& ConversionTransform = ImportContext.ConversionTransform;
 	const FMatrix PrimToWorld = ImportContext.bApplyWorldTransformToGeometry ? PrimToImport.WorldPrimTransform : FMatrix::Identity;
@@ -44,15 +43,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 
 
 	int32 LODIndex = 0;
-
-	FRawMesh RawTriangles;
-
-	//This is not the best way to work, I should pass in the RawTriangles rather than constantly loading and saving.
-	if (singleMesh)
-	{
-		FStaticMeshSourceModel& SrcModel = ImportedMesh->SourceModels[LODIndex];
-		SrcModel.RawMeshBulkData->LoadRawMesh(RawTriangles);
-	}
 
 	const auto &model = ImportContext.Model;
 	const auto &primitives = model->meshes[PrimToImport.Prim->mesh].primitives;

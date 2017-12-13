@@ -18,6 +18,7 @@ THIRD_PARTY_INCLUDES_END
 
 class UGLTFPrimResolver;
 class IGltfPrim;
+struct FRawMesh;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogGLTFImport, Log, All);
 
@@ -98,7 +99,7 @@ public:
 	tinygltf::Model* ReadGLTFFile(FGltfImportContext& ImportContext, const FString& Filename);
 
 	UObject* ImportMeshes(FGltfImportContext& ImportContext, const TArray<FGltfPrimToImport>& PrimsToImport);
-	UStaticMesh* ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, UStaticMesh *singleMesh = nullptr);
+	UStaticMesh* ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh = nullptr);
 
 	UTexture* ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, bool bSetupAsNormalMap);
 	void ImportTexturesFromNode(FGltfImportContext& ImportContext, tinygltf::Model* Model, tinygltf::Node* Node);

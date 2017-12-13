@@ -44,6 +44,7 @@
 #include "Factories/MaterialImportHelpers.h"
 #include "EditorFramework/AssetImportData.h"
 #include "Materials/MaterialExpressionMultiply.h"
+#include "RawMesh.h" 
 
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
@@ -202,6 +203,7 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 	bool singleMesh = !ImportContext.ImportOptions->bGenerateUniquePathPerMesh;
 	UStaticMesh* singleStaticMesh = nullptr;
 
+	FRawMesh RawTriangles;
 	for (const FGltfPrimToImport& PrimToImport : PrimsToImport)
 	{
 		FString FinalPackagePathName = ContentDirectoryLocation;
@@ -272,7 +274,12 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 
 		if(bShouldImport)
 		{
-			UStaticMesh* NewMesh = ImportSingleMesh(ImportContext, MeshImportType, PrimToImport, singleStaticMesh);
+			if (!singleMesh)
+			{
+				RawTriangles.Empty();
+			}
+
+			UStaticMesh* NewMesh = ImportSingleMesh(ImportContext, MeshImportType, PrimToImport, RawTriangles, singleStaticMesh);
 			if (NewMesh)
 			{
 				if (singleMesh)
@@ -315,13 +322,13 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 	return ImportContext.PathToImportAssetMap.Num() ? ImportContext.PathToImportAssetMap.CreateIterator().Value() : nullptr;
 }
 
-UStaticMesh* UGLTFImporter::ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, UStaticMesh *singleMesh)
+UStaticMesh* UGLTFImporter::ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
 {
 	UStaticMesh* NewMesh = nullptr;
 
  	if (ImportType == EGltfMeshImportType::StaticMesh)
  	{
- 		NewMesh = FGLTFStaticMeshImporter::ImportStaticMesh(ImportContext, PrimToImport, singleMesh);
+ 		NewMesh = FGLTFStaticMeshImporter::ImportStaticMesh(ImportContext, PrimToImport, RawTriangles, singleMesh);
  	}
 
 	return NewMesh;
