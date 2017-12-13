@@ -554,70 +554,18 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 	SrcModel.RawMeshBulkData->SaveRawMesh(RawTriangles);
 
 	// Recompute normals if we didnt import any
-	SrcModel.BuildSettings.bRecomputeNormals = true; // RawTriangles.WedgeTangentZ.Num() == 0;
+	SrcModel.BuildSettings.bRecomputeNormals = RawTriangles.WedgeTangentZ.Num() == 0;
 
-	SrcModel.BuildSettings.bRecomputeTangents = true; // RawTriangles.WedgeTangentX.Num() == 0;
+	SrcModel.BuildSettings.bRecomputeTangents = true; //RawTriangles.WedgeTangentX.Num() == 0;
 
 	// Use mikktSpace if we have normals
-	SrcModel.BuildSettings.bUseMikkTSpace = false; // RawTriangles.WedgeTangentZ.Num() != 0;
+	SrcModel.BuildSettings.bUseMikkTSpace = RawTriangles.WedgeTangentZ.Num() != 0;
 	SrcModel.BuildSettings.bGenerateLightmapUVs = true;
 	SrcModel.BuildSettings.bBuildAdjacencyBuffer = false;
 	SrcModel.BuildSettings.bBuildReversedIndexBuffer = false;
 
 	SrcModel.BuildSettings.bUseFullPrecisionUVs = false;
 	SrcModel.BuildSettings.bUseHighPrecisionTangentBasis = false;
-
-	// There must always be one material
-	int32 NumMaterials = FMath::Max<int32>(1, model->materials.size());
-
-	// Add a material slot for each material
-	/*
-	for (int32 MaterialIdx = 0; MaterialIdx < NumMaterials; ++MaterialIdx)
-	{
-		UMaterialInterface* ExistingMaterial = nullptr;
-
-		if (model->materials.size() > MaterialIdx)
-		{
-			FString MaterialName = GLTFToUnreal::ConvertString(model->materials[MaterialIdx].name);
-
-			FText Error;
-
-			FString BasePackageName = FPackageName::GetLongPackagePath(ImportedMesh->GetOutermost()->GetName());
-
-			if (ImportOptions->MaterialBasePath != NAME_None)
-			{
-				BasePackageName = ImportOptions->MaterialBasePath.ToString();
-			}
-			else
-			{
-				BasePackageName += TEXT("/");
-			}
-
-			BasePackageName += MaterialName;
-
-			BasePackageName = PackageTools::SanitizePackageName(BasePackageName);
-
-			FString MaterialPath = MaterialName;
-
-			//KB TODO: Need to fix up the base package names, and material names, so that I can correctly look up and find the materials that have been added.
-			ExistingMaterial = UMaterialImportHelpers::FindExistingMaterialFromSearchLocation(MaterialPath, BasePackageName, ImportContext.ImportOptions->MaterialSearchLocation, Error);
-
-			if (!Error.IsEmpty())
-			{
-				ImportContext.AddErrorMessage(EMessageSeverity::Error, Error);
-			}
-
-			if (!ExistingMaterial && MaterialIdx >= 0 && MaterialIdx < ImportContext.Materials.Num())
-			{
-				ExistingMaterial = ImportContext.Materials[MaterialIdx];
-			}
-		}
-
-		int32 FinalIndex = ImportedMesh->StaticMaterials.AddUnique(ExistingMaterial ? ExistingMaterial : UMaterial::GetDefaultMaterial(MD_Surface));
-		ImportedMesh->SectionInfoMap.Set(LODIndex, FinalIndex, FMeshSectionInfo(FinalIndex));
-		ImportedMesh->OriginalSectionInfoMap.Set(LODIndex, FinalIndex, ImportedMesh->SectionInfoMap.Get(LODIndex, FinalIndex));
-	}
-	*/
 
 	return ImportedMesh;
 }
