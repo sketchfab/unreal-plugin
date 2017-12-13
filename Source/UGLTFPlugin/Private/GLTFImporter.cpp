@@ -185,7 +185,7 @@ UGLTFImporter::UGLTFImporter(const FObjectInitializer& Initializer)
 
 UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TArray<FGltfPrimToImport>& PrimsToImport)
 {
-	FScopedSlowTask SlowTask(1.0f, LOCTEXT("ImportingGLTFMeshes", "Importing GLTF Meshes"));
+	FScopedSlowTask SlowTask(1.0f, LOCTEXT("ImportingGLTFMeshes", "Importing glTF Meshes"));
 	SlowTask.Visibility = ESlowTaskVisibility::ForceVisible;
 	int32 MeshCount = 0;
 
@@ -571,7 +571,7 @@ void UGLTFImporter::ImportTexturesFromNode(FGltfImportContext& ImportContext, ti
 	}// end for MaterialIndex
 }
 
-void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials)
+void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *Mat, TArray<UMaterialInterface*>& OutMaterials)
 {
 	// Make sure we have a parent
 	//if (!ensure(ImportContext.Parent.IsValid()))
@@ -580,7 +580,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		return;
 	}
 
-	FString MaterialFullName = ObjectTools::SanitizeObjectName(GLTFToUnreal::ConvertString(mat->name));
+	FString MaterialFullName = ObjectTools::SanitizeObjectName(GLTFToUnreal::ConvertString(Mat->name));
 	FString BasePackageName = PackageTools::SanitizePackageName(FPackageName::GetLongPackagePath(ImportContext.Parent->GetOutermost()->GetName()) / MaterialFullName);
 
 	//This ensures that if the object name is the same as the material name, then the package for the material will be different.
@@ -604,8 +604,8 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		FAssetRegistryModule::AssetCreated(UnrealMaterial);
 
 		UnrealMaterial->TwoSided = false;
-		const auto &doubleSidedProp = mat->additionalValues.find("doubleSided");
-		if (doubleSidedProp != mat->additionalValues.end())
+		const auto &doubleSidedProp = Mat->additionalValues.find("doubleSided");
+		if (doubleSidedProp != Mat->additionalValues.end())
 		{
 			tinygltf::Parameter &param = doubleSidedProp->second;
 			UnrealMaterial->TwoSided = param.bool_value;
@@ -623,17 +623,19 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		// Set the dirty flag so this package will get saved later
 		Package->SetDirtyFlag(true);
 
-		if (!CreateAndLinkExpressionForMaterialProperty(ImportContext, mat, UnrealMaterial, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, false, FVector2D(-240, -320)))
+		FScopedSlowTask MaterialProgress(8.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
+
+		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, false, FVector2D(-240, -320)))
 		{
-			CreateAndLinkExpressionForMaterialProperty(ImportContext, mat, UnrealMaterial, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, false, FVector2D(-240, -320));
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, false, FVector2D(-240, -320));
 		}
 
-		CreateAndLinkExpressionForMaterialProperty(ImportContext, mat, UnrealMaterial, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, FVector2D(-240, -64));
-		CreateAndLinkExpressionForMaterialProperty(ImportContext, mat, UnrealMaterial, "specularTexture", TextureType_SPEC, UnrealMaterial->Specular, false, FVector2D(-240, -128));
-		CreateAndLinkExpressionForMaterialProperty(ImportContext, mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, FVector2D(-240, -180), 1);
-		CreateAndLinkExpressionForMaterialProperty(ImportContext, mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, FVector2D(-240, -210), 2);
-		CreateAndLinkExpressionForMaterialProperty(ImportContext, mat, UnrealMaterial, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, FVector2D(-240, 256));
-		CreateAndLinkExpressionForMaterialProperty(ImportContext, mat, UnrealMaterial, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, FVector2D(-240, -310), 0);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, FVector2D(-240, -64));
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "specularTexture", TextureType_SPEC, UnrealMaterial->Specular, false, FVector2D(-240, -128));
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, FVector2D(-240, -180), 1);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, FVector2D(-240, -210), 2);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, FVector2D(-240, 256));
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, FVector2D(-240, -310), 0);
 
 		//KB: Leave this here as a reference, in case I need to add a diffuse channel. Perhaps it causes a bug if the glTF file does not contain a BaseColor for some reason?
 		//FixupMaterial(FbxMaterial, UnrealMaterial); // add random diffuse if none exists
@@ -650,6 +652,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 }
 
 bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
+	FScopedSlowTask &MaterialProgress,
 	FGltfImportContext& ImportContext,
 	tinygltf::Material *mat,
 	UMaterial* UnrealMaterial,
@@ -660,6 +663,8 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	const FVector2D& Location,
 	int32 colorChannel)
 {
+	MaterialProgress.EnterProgressFrame(1.0f, FText::Format(LOCTEXT("ImportingGLTFMaterial", "Creating Material Node {0}"), FText::FromString(GLTFToUnreal::ConvertString(MaterialProperty))));
+
 	bool bCreated = false;
 
 	tinygltf::ParameterMap *map = nullptr;
@@ -1141,9 +1146,16 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 int32 UGLTFImporter::CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials)
 {
+	FScopedSlowTask SlowTask(1.0f, LOCTEXT("ImportingGLTFMaterials", "Importing glTF Materials"));
+	SlowTask.Visibility = ESlowTaskVisibility::ForceVisible;
+
 	int32 MaterialCount = ImportContext.Model->materials.size();
+
+	float step = 1.0f / MaterialCount;
+
 	for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
 	{
+		SlowTask.EnterProgressFrame(step, FText::Format(LOCTEXT("ImportingGLTFMaterial", "Importing Material {0} of {1}"), MaterialIndex + 1, MaterialCount));
 		CreateUnrealMaterial(ImportContext, &ImportContext.Model->materials[MaterialIndex], OutMaterials);
 	}
 	return MaterialCount;
