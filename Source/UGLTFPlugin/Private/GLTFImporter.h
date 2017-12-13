@@ -101,7 +101,7 @@ public:
 	UObject* ImportMeshes(FGltfImportContext& ImportContext, const TArray<FGltfPrimToImport>& PrimsToImport);
 	UStaticMesh* ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh = nullptr);
 
-	UTexture* ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, bool bSetupAsNormalMap);
+	UTexture* ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, bool bSetupAsNormalMap, const char *MaterialProperty = nullptr);
 	void ImportTexturesFromNode(FGltfImportContext& ImportContext, tinygltf::Model* Model, tinygltf::Node* Node);
 
 	void CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);

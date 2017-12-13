@@ -404,7 +404,7 @@ tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGltfImportContext& ImportContext, 
 	return Model;
 }
 
-UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, bool bSetupAsNormalMap)
+UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, bool bSetupAsNormalMap, const char *MaterialProperty)
 {
 	if (!img)
 	{
@@ -415,7 +415,19 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 
 	// create an unreal texture asset
 	UTexture* UnrealTexture = NULL;
-	FString AbsoluteFilename = GLTFToUnreal::ConvertString(img->uri);
+
+	FString AbsoluteFilename;
+	if (img->uri.size() > 0)
+	{
+		AbsoluteFilename = GLTFToUnreal::ConvertString(img->uri);
+	}
+	else if (img->mimeType.size() > 0)
+	{
+		FString mimetype = GLTFToUnreal::ConvertString(img->mimeType);
+		AbsoluteFilename = GLTFToUnreal::ConvertString(MaterialProperty);
+		AbsoluteFilename = ImportContext.ObjectName + TEXT("_") + AbsoluteFilename + TEXT(".") + mimetype.Right(3);
+	}
+
 	FString Extension = FPaths::GetExtension(AbsoluteFilename).ToLower();
 	// name the texture with file name
 	FString TextureName = FPaths::GetBaseFilename(AbsoluteFilename);
@@ -475,6 +487,22 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 	if (!FinalFilePath.IsEmpty())
 	{
 		FFileHelper::LoadFileToArray(DataBinary, *FinalFilePath);
+	}
+	else if (img->image.size() > 0)
+	{
+		if (img->bufferView >= 0 && img->bufferView < ImportContext.Model->bufferViews.size())
+		{
+			const tinygltf::BufferView &bufferView = ImportContext.Model->bufferViews[img->bufferView];
+			if (bufferView.buffer >= 0 && bufferView.buffer < ImportContext.Model->buffers.size())
+			{
+				const tinygltf::Buffer &buffer = ImportContext.Model->buffers[bufferView.buffer];
+				DataBinary.AddUninitialized(bufferView.byteLength);
+				for (int32 a = 0; a < bufferView.byteLength; a++)
+				{
+					DataBinary[a] = buffer.data[bufferView.byteOffset + a];
+				}
+			}
+		}
 	}
 
 	if (DataBinary.Num() > 0)
@@ -961,7 +989,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					{
 						tinygltf::Image &img = ImportContext.Model->images[source];
 
-						UTexture* UnrealTexture = ImportTexture(ImportContext, &img, bSetupAsNormalMap);
+						UTexture* UnrealTexture = ImportTexture(ImportContext, &img, bSetupAsNormalMap, MaterialProperty);
 
 						if (UnrealTexture)
 						{
