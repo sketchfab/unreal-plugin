@@ -13,7 +13,7 @@ This is a WIP. There is a lot of source code commented out and still being worke
 1. Press Create Project.
 1. On your computer go to the location where your project was created.
 1. In your project folder create a new folder called "Plugins".
-1. Download this unreal-exporter project form github and extract into this folder.
+1. Download this unreal-exporter project from github and extract into this folder.
 1. You should now have a folder structure which looks something like "MyProject/Plugins/unreal-exporter/...".
 1. Shut down the Unreal Editor if its still running.
 1. Double click the MyProject.uproject file to run Unreal Editor again. ("MyProject/MyProject.uproject")
@@ -22,14 +22,12 @@ This is a WIP. There is a lot of source code commented out and still being worke
 
 1. In the Unreal Editor go to the Content Browser at the bottom.
 1. Select Import.
-1. Choose a glTF 2.0 file to loading (*.gltf).
-1. Leave "Generate Unique Path Per Mesh" unchecked to load the file in as a single mesh. Uncheck to create a new asset per mesh.
+1. Choose a glTF 2.0 file to load (*.gltf).
+1. Leave "Generate Unique Path Per Mesh" unchecked to load the file in as a single mesh. Check to create a new asset per mesh.
 1. Press Import.
 
 - "Apply World Transform To Geometry" is currently not finished. Please ignore for now.
-- "Materials": This currently does nothing.
-
-* Note: Objects are currently scaled up by a factor of 100. This may be removed in future.
+- Note: Objects are currently scaled up by a factor of 100. This may be removed in future.
 
 ## Shipping The PreBuilt Plugin
 
