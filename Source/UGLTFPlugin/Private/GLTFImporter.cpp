@@ -676,6 +676,21 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 	}
 }
 
+void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& MaterialInput, UMaterialExpression *ExpressionA, UMaterialExpression *ExpressionB)
+{
+	if (!UnrealMaterial || !ExpressionA || !ExpressionB)
+		return;
+
+	UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
+	if (!MultiplyExpression)
+		return;
+
+	UnrealMaterial->Expressions.Add(MultiplyExpression);
+	MultiplyExpression->A.Expression = ExpressionA;
+	MultiplyExpression->B.Expression = ExpressionB;
+	MaterialInput.Expression = MultiplyExpression;
+}
+
 bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	FScopedSlowTask &MaterialProgress,
 	FGltfImportContext& ImportContext,
@@ -1081,59 +1096,18 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					}
 				}
 
-
-				if (pbrType == PBRTYPE_Color && baseColorFactor && UnrealTextureExpression)
+				if (UnrealTextureExpression)
 				{
-					UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
-					UnrealMaterial->Expressions.Add(MultiplyExpression);
-					MultiplyExpression->A.Expression = baseColorFactor;
-					MultiplyExpression->B.Expression = UnrealTextureExpression;
-					MaterialInput.Expression = MultiplyExpression;
-				}
-
-				if (pbrType == PBRTYPE_Roughness && roughnessFactor && UnrealTextureExpression)
-				{
-					UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
-					UnrealMaterial->Expressions.Add(MultiplyExpression);
-					MultiplyExpression->A.Expression = roughnessFactor;
-					MultiplyExpression->B.Expression = UnrealTextureExpression;
-					MaterialInput.Expression = MultiplyExpression;
-				}
-
-				if (pbrType == PBRTYPE_Metallic && metallicFactor && UnrealTextureExpression)
-				{
-					UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
-					UnrealMaterial->Expressions.Add(MultiplyExpression);
-					MultiplyExpression->A.Expression = metallicFactor;
-					MultiplyExpression->B.Expression = UnrealTextureExpression;
-					MaterialInput.Expression = MultiplyExpression;
-				}
-
-				if (pbrType == PBRTYPE_Emissive && emissiveFactor && UnrealTextureExpression)
-				{
-					UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
-					UnrealMaterial->Expressions.Add(MultiplyExpression);
-					MultiplyExpression->A.Expression = emissiveFactor;
-					MultiplyExpression->B.Expression = UnrealTextureExpression;
-					MaterialInput.Expression = MultiplyExpression;
-				}
-
-				if (pbrType == PBRTYPE_Diffuse && diffuseFactor && UnrealTextureExpression)
-				{
-					UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
-					UnrealMaterial->Expressions.Add(MultiplyExpression);
-					MultiplyExpression->A.Expression = diffuseFactor;
-					MultiplyExpression->B.Expression = UnrealTextureExpression;
-					MaterialInput.Expression = MultiplyExpression;
-				}
-
-				if (pbrType == PBRTYPE_Specular && specularFactor && UnrealTextureExpression)
-				{
-					UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
-					UnrealMaterial->Expressions.Add(MultiplyExpression);
-					MultiplyExpression->A.Expression = specularFactor;
-					MultiplyExpression->B.Expression = UnrealTextureExpression;
-					MaterialInput.Expression = MultiplyExpression;
+					switch (pbrType)
+					{
+					case PBRTYPE_Color:		CreateMultiplyExpression(UnrealMaterial, MaterialInput, baseColorFactor, UnrealTextureExpression); break;
+					case PBRTYPE_Roughness:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, roughnessFactor, UnrealTextureExpression); break;
+					case PBRTYPE_Metallic:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, metallicFactor, UnrealTextureExpression); break;
+					case PBRTYPE_Emissive:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, emissiveFactor, UnrealTextureExpression); break;
+					case PBRTYPE_Diffuse:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, diffuseFactor, UnrealTextureExpression); break;
+					case PBRTYPE_Specular:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, specularFactor, UnrealTextureExpression); break;
+					default: break;
+					}
 				}
 
 				if (MaterialInput.Expression)
