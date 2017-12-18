@@ -137,7 +137,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
 								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
 
-								// Flip V for Unreal uv's which match directx
 								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 2 - VertexOffset]);
 								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 2 - VertexOffset]);
 								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 2 - VertexOffset]);
@@ -161,7 +160,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
 								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
 
-								// Flip V for Unreal uv's which match directx
 								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 2 - VertexOffset]);
 								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 2 - VertexOffset]);
 								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 2 - VertexOffset]);
@@ -284,7 +282,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
 								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
 
-								// Flip V for Unreal uv's which match directx
 								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 2 - VertexOffset]);
 								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 2 - VertexOffset]);
 								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 2 - VertexOffset]);
@@ -317,7 +314,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
 								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
 
-								// Flip V for Unreal uv's which match directx
 								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 4 + 2 - VertexOffset]);
 								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 4 + 2 - VertexOffset]);
 								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 4 + 2 - VertexOffset]);
@@ -341,7 +337,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
 								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
 
-								// Flip V for Unreal uv's which match directx
 								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 4 + 2 - VertexOffset]);
 								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 4 + 2 - VertexOffset]);
 								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 4 + 2 - VertexOffset]);
@@ -476,7 +471,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 
 				if (RawTriangles.WedgeTangentY.Num())
 				{
-					Swap(RawTriangles.WedgeTangentX[I0], RawTriangles.WedgeTangentX[I2]);
+					Swap(RawTriangles.WedgeTangentY[I0], RawTriangles.WedgeTangentY[I2]);
 				}
 
 				if (RawTriangles.WedgeTangentZ.Num())
@@ -503,7 +498,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 		if (!staticMaterialIndex)
 		{
 			//Add material
-
 			UMaterialInterface* ExistingMaterial = nullptr;
 			if (prim.material >= 0 && prim.material < ImportContext.Materials.Num())
 			{
@@ -544,13 +538,15 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 
 	SrcModel.RawMeshBulkData->SaveRawMesh(RawTriangles);
 
-	// Recompute normals if we didnt import any
+	// Recompute normals if we did not import any
 	SrcModel.BuildSettings.bRecomputeNormals = RawTriangles.WedgeTangentZ.Num() == 0;
-
-	SrcModel.BuildSettings.bRecomputeTangents = true; //RawTriangles.WedgeTangentX.Num() == 0;
 
 	// Use mikktSpace if we have normals
 	SrcModel.BuildSettings.bUseMikkTSpace = RawTriangles.WedgeTangentZ.Num() != 0;
+
+	// Recompute tangents if we did not import any
+	SrcModel.BuildSettings.bRecomputeTangents = RawTriangles.WedgeTangentX.Num() == 0;
+
 	SrcModel.BuildSettings.bGenerateLightmapUVs = true;
 	SrcModel.BuildSettings.bBuildAdjacencyBuffer = false;
 	SrcModel.BuildSettings.bBuildReversedIndexBuffer = false;
