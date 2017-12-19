@@ -650,7 +650,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 
 		FScopedSlowTask MaterialProgress(8.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
 
-		FVector2D location(-250, -250);
+		FVector2D location(-260, -260);
 
 		SharedTextureMap texMap;
 
