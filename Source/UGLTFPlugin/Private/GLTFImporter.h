@@ -88,6 +88,15 @@ enum TextureType
 	TextureType_DEFAULT,
 };
 
+enum ColorChannel
+{
+	ColorChannel_Red,
+	ColorChannel_Green,
+	ColorChannel_Blue,
+	ColorChannel_Alpha,
+	ColorChannel_All,
+};
+
 UCLASS(transient)
 class UGLTFImporter : public UObject
 {
@@ -107,8 +116,9 @@ public:
 	void CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
 
 	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGltfImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, const char* MaterialProperty, TextureType texType,
-		FExpressionInput& MaterialInput, bool bSetupAsNormalMap, const FVector2D& Location, int32 colorChannel=-1);
+		FExpressionInput& MaterialInput, bool bSetupAsNormalMap, const FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
 
 	int32 CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials);
+	void AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel);
 
 };

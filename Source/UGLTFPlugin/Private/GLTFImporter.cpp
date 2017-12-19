@@ -61,7 +61,7 @@ public:
 
 	SLATE_ARGUMENT(UObject*, ImportOptions)
 		SLATE_ARGUMENT(TSharedPtr<SWindow>, WidgetWindow)
-	SLATE_END_ARGS()
+		SLATE_END_ARGS()
 
 public:
 	void Construct(const FArguments& InArgs)
@@ -72,40 +72,40 @@ public:
 
 		TSharedPtr<SBox> DetailsViewBox;
 		ChildSlot
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(2)
 			[
 				SAssignNew(DetailsViewBox, SBox)
 				.MaxDesiredHeight(450.0f)
-				.MinDesiredWidth(550.0f)
+			.MinDesiredWidth(550.0f)
 			]
-			+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 			.AutoHeight()
 			.HAlign(HAlign_Right)
 			.Padding(2)
 			[
 				SNew(SUniformGridPanel)
 				.SlotPadding(2)
-				+ SUniformGridPanel::Slot(0, 0)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.Text(LOCTEXT("GLTFOptionWindow_Import", "Import"))
-					.OnClicked(this, &SGLTFOptionsWindow::OnImport)
-				]
-				+ SUniformGridPanel::Slot(1, 0)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.Text(LOCTEXT("GLTFOptionWindow_Cancel", "Cancel"))
-					.ToolTipText(LOCTEXT("GLTFOptionWindow_Cancel_ToolTip", "Cancels importing this GLTF file"))
-					.OnClicked(this, &SGLTFOptionsWindow::OnCancel)
-				]
+			+ SUniformGridPanel::Slot(0, 0)
+			[
+				SNew(SButton)
+				.HAlign(HAlign_Center)
+			.Text(LOCTEXT("GLTFOptionWindow_Import", "Import"))
+			.OnClicked(this, &SGLTFOptionsWindow::OnImport)
 			]
-		];
+		+ SUniformGridPanel::Slot(1, 0)
+			[
+				SNew(SButton)
+				.HAlign(HAlign_Center)
+			.Text(LOCTEXT("GLTFOptionWindow_Cancel", "Cancel"))
+			.ToolTipText(LOCTEXT("GLTFOptionWindow_Cancel_ToolTip", "Cancels importing this GLTF file"))
+			.OnClicked(this, &SGLTFOptionsWindow::OnCancel)
+			]
+			]
+			];
 
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 		FDetailsViewArgs DetailsViewArgs;
@@ -252,9 +252,9 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 			MeshName = ObjectTools::SanitizeObjectName(MeshName);
 
 			NewPackageName = PackageTools::SanitizePackageName(FinalPackagePathName / MeshName);
-		
+
 			// Once we've already imported it we dont need to import it again
-			if(!ImportContext.PathToImportAssetMap.Contains(NewPackageName))
+			if (!ImportContext.PathToImportAssetMap.Contains(NewPackageName))
 			{
 				UPackage* Package = CreatePackage(nullptr, *NewPackageName);
 
@@ -272,7 +272,7 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 			bShouldImport = true;
 		}
 
-		if(bShouldImport)
+		if (bShouldImport)
 		{
 			if (!singleMesh)
 			{
@@ -326,10 +326,10 @@ UStaticMesh* UGLTFImporter::ImportSingleMesh(FGltfImportContext& ImportContext, 
 {
 	UStaticMesh* NewMesh = nullptr;
 
- 	if (ImportType == EGltfMeshImportType::StaticMesh)
- 	{
- 		NewMesh = FGLTFStaticMeshImporter::ImportStaticMesh(ImportContext, PrimToImport, RawTriangles, singleMesh);
- 	}
+	if (ImportType == EGltfMeshImportType::StaticMesh)
+	{
+		NewMesh = FGLTFStaticMeshImporter::ImportStaticMesh(ImportContext, PrimToImport, RawTriangles, singleMesh);
+	}
 
 	return NewMesh;
 }
@@ -610,7 +610,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 
 	//This ensures that if the object name is the same as the material name, then the package for the material will be different.
 	BasePackageName = BasePackageName + TEXT(".") + MaterialFullName;
-	
+
 	const FString Suffix(TEXT(""));
 	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	FString FinalPackageName;
@@ -657,10 +657,10 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, FVector2D(-240, -64));
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "specularTexture", TextureType_SPEC, UnrealMaterial->Specular, false, FVector2D(-240, -128));
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, FVector2D(-240, -180), 1);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, FVector2D(-240, -210), 2);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, FVector2D(-240, -180), ColorChannel_Green);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, FVector2D(-240, -210), ColorChannel_Blue);
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, FVector2D(-240, 256));
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, FVector2D(-240, -310), 0);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, FVector2D(-240, -310), ColorChannel_Red);
 
 		//KB: Leave this here as a reference, in case I need to add a diffuse channel. Perhaps it causes a bug if the glTF file does not contain a BaseColor for some reason?
 		//FixupMaterial(FbxMaterial, UnrealMaterial); // add random diffuse if none exists
@@ -691,6 +691,39 @@ void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& Mater
 	MaterialInput.Expression = MultiplyExpression;
 }
 
+void UGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel)
+{
+	if (MaterialInput.Expression)
+	{
+		TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
+		FExpressionOutput* Output = Outputs.GetData();
+		MaterialInput.Mask = Output->Mask;
+
+		switch (colorChannel)
+		{
+		case ColorChannel_Red:
+			MaterialInput.MaskR = Output->MaskR;
+			break;
+		case ColorChannel_Green:
+			MaterialInput.MaskG = Output->MaskG;
+			break;
+		case ColorChannel_Blue:
+			MaterialInput.MaskB = Output->MaskB;
+			break;
+		case ColorChannel_Alpha:
+			MaterialInput.MaskA = Output->MaskA;
+			break;
+		case ColorChannel_All:
+		default:
+			MaterialInput.MaskR = Output->MaskR;
+			MaterialInput.MaskG = Output->MaskG;
+			MaterialInput.MaskB = Output->MaskB;
+			MaterialInput.MaskA = Output->MaskA;
+			break;
+		}
+	}
+}
+
 bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	FScopedSlowTask &MaterialProgress,
 	FGltfImportContext& ImportContext,
@@ -701,26 +734,30 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	FExpressionInput& MaterialInput,
 	bool bSetupAsNormalMap,
 	const FVector2D& Location,
-	int32 colorChannel)
+	ColorChannel colorChannel)
 {
 	MaterialProgress.EnterProgressFrame(1.0f, FText::Format(LOCTEXT("ImportingGLTFMaterial", "Creating Material Node {0}"), FText::FromString(GLTFToUnreal::ConvertString(MaterialProperty))));
 
 	bool bCreated = false;
 
+	// Based on what we are creating get the data from the different location in the tinygltf::Material datastructure.
 	tinygltf::ParameterMap *map = nullptr;
-	if (texType == TextureType_PBR)
+	switch (texType)
 	{
+	case TextureType_PBR:
 		map = &mat->values;
-	}
-	else if (texType == TextureType_DEFAULT)
-	{
+		break;
+	case TextureType_DEFAULT:
 		map = &mat->additionalValues;
-	}
-	else if (texType == TextureType_SPEC)
-	{
+		break;
+	case TextureType_SPEC:
 		map = &mat->extPBRValues;
+		break;
 	}
 
+	// This method is currently used to do all the material attachments 
+	// This enum is just used to identify what channel we are actually dealing with
+	// TODO: For readability refactor each channel out into its own method
 	enum PBRTYPE
 	{
 		PBRTYPE_Color,
@@ -739,235 +776,197 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 	UMaterialExpressionVectorParameter *specularFactor = nullptr;
 	UMaterialExpressionVectorParameter *diffuseFactor = nullptr;
+
+	const auto &metallicRoghnessTextureProp = map->find("metallicRoughnessTexture");
+	const auto &baseColorTextureProp = map->find("baseColorTexture");
+	const auto &emissiveTetxureProp = map->find("emissiveTexture");
+	const auto &diffuseTextureProp = map->find("diffuseTexture");
+	const auto &specularTextureProp = map->find("specularTexture");
+
+	if (FString(MaterialProperty) == "baseColorTexture")
 	{
-		const auto &metallicRoghnessTextureProp = map->find("metallicRoughnessTexture");
-		const auto &baseColorTextureProp = map->find("baseColorTexture");
-		const auto &emissiveTetxureProp = map->find("emissiveTexture");
-		const auto &diffuseTextureProp = map->find("diffuseTexture");
-		const auto &specularTextureProp = map->find("specularTexture");
-		if (FString(MaterialProperty) == "baseColorTexture")
+		pbrType = PBRTYPE_Color;
+
+		const auto &baseColorProp = map->find("baseColorFactor");
+		if (baseColorProp != map->end())
 		{
-			pbrType = PBRTYPE_Color;
-
-			const auto &baseColorProp = map->find("baseColorFactor");
-			if (baseColorProp != map->end())
+			tinygltf::Parameter &param = baseColorProp->second;
+			if (param.number_array.size() == 4)
 			{
-				tinygltf::Parameter &param = baseColorProp->second;
-				if (param.number_array.size() == 4)
+				baseColorFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
+				if (baseColorFactor)
 				{
-					// Create a texture coord node for the texture sample
-					baseColorFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
-					if (baseColorFactor)
+					UnrealMaterial->Expressions.Add(baseColorFactor);
+					baseColorFactor->DefaultValue.R = param.number_array[0];
+					baseColorFactor->DefaultValue.G = param.number_array[1];
+					baseColorFactor->DefaultValue.B = param.number_array[2];
+					baseColorFactor->DefaultValue.A = param.number_array[3];
+
+					//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
+					if (baseColorTextureProp == map->end())
 					{
-						UnrealMaterial->Expressions.Add(baseColorFactor);
-						baseColorFactor->DefaultValue.R = param.number_array[0];
-						baseColorFactor->DefaultValue.G = param.number_array[1];
-						baseColorFactor->DefaultValue.B = param.number_array[2];
-						baseColorFactor->DefaultValue.A = param.number_array[3];
-
-						//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
-						if (baseColorTextureProp == map->end())
-						{
-							MaterialInput.Expression = baseColorFactor;
-							TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
-							FExpressionOutput* Output = Outputs.GetData();
-							MaterialInput.Mask = Output->Mask;
-							MaterialInput.MaskR = Output->MaskR;
-							MaterialInput.MaskG = Output->MaskG;
-							MaterialInput.MaskB = Output->MaskB;
-							MaterialInput.MaskA = Output->MaskA;
-							return true;
-						}
-					}
-				}
-			}
-		}
-
-		if (FString(MaterialProperty) == "specularTexture")
-		{
-			pbrType = PBRTYPE_Specular;
-
-			const auto &specularProp = map->find("specularFactor");
-			if (specularProp != map->end())
-			{
-				tinygltf::Parameter &param = specularProp->second;
-				if (param.number_array.size() == 3)
-				{
-					// Create a texture coord node for the texture sample
-					specularFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
-					if (specularFactor)
-					{
-						UnrealMaterial->Expressions.Add(specularFactor);
-						specularFactor->DefaultValue.R = param.number_array[0];
-						specularFactor->DefaultValue.G = param.number_array[1];
-						specularFactor->DefaultValue.B = param.number_array[2];
-						specularFactor->DefaultValue.A = 1.0;
-
-						//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
-						if (specularTextureProp == map->end())
-						{
-							MaterialInput.Expression = specularFactor;
-							TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
-							FExpressionOutput* Output = Outputs.GetData();
-							MaterialInput.Mask = Output->Mask;
-							MaterialInput.MaskR = Output->MaskR;
-							MaterialInput.MaskG = Output->MaskG;
-							MaterialInput.MaskB = Output->MaskB;
-							MaterialInput.MaskA = Output->MaskA;
-							return true;
-						}
-					}
-				}
-			}
-		}
-
-		if (FString(MaterialProperty) == "diffuseTexture")
-		{
-			pbrType = PBRTYPE_Diffuse;
-
-			const auto &diffuseProp = map->find("diffuseFactor");
-			if (diffuseProp != map->end())
-			{
-				tinygltf::Parameter &param = diffuseProp->second;
-				if (param.number_array.size() == 4)
-				{
-					// Create a texture coord node for the texture sample
-					diffuseFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
-					if (diffuseFactor)
-					{
-						UnrealMaterial->Expressions.Add(diffuseFactor);
-						diffuseFactor->DefaultValue.R = param.number_array[0];
-						diffuseFactor->DefaultValue.G = param.number_array[1];
-						diffuseFactor->DefaultValue.B = param.number_array[2];
-						diffuseFactor->DefaultValue.A = param.number_array[3];
-
-						//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
-						if (diffuseTextureProp == map->end())
-						{
-							MaterialInput.Expression = diffuseFactor;
-							TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
-							FExpressionOutput* Output = Outputs.GetData();
-							MaterialInput.Mask = Output->Mask;
-							MaterialInput.MaskR = Output->MaskR;
-							MaterialInput.MaskG = Output->MaskG;
-							MaterialInput.MaskB = Output->MaskB;
-							MaterialInput.MaskA = Output->MaskA;
-							return true;
-						}
-					}
-				}
-			}
-		}
-
-		if (FString(MaterialProperty) == "metallicRoughnessTexture" && colorChannel == 2 /*This is hack for now, need to refactor*/)
-		{
-			pbrType = PBRTYPE_Metallic;
-
-			const auto &metallicProp = map->find("metallicFactor");
-			if (metallicProp != map->end())
-			{
-				tinygltf::Parameter &param = metallicProp->second;
-				if (param.number_array.size() == 1)
-				{
-					// Create a texture coord node for the texture sample
-					metallicFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-					if (metallicFactor)
-					{
-						UnrealMaterial->Expressions.Add(metallicFactor);
-						metallicFactor->DefaultValue = param.number_array[0];
-
-						//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
-						if (metallicRoghnessTextureProp == map->end())
-						{
-							MaterialInput.Expression = metallicFactor;
-							TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
-							FExpressionOutput* Output = Outputs.GetData();
-							MaterialInput.Mask = Output->Mask;
-							MaterialInput.MaskR = Output->MaskR;
-							MaterialInput.MaskG = Output->MaskG;
-							MaterialInput.MaskB = Output->MaskB;
-							MaterialInput.MaskA = Output->MaskA;
-							return true;
-						}
-					}
-				}
-			}
-		}
-
-		if (FString(MaterialProperty) == "metallicRoughnessTexture" && colorChannel == 1 /*This is hack for now, need to refactor*/)
-		{
-			pbrType = PBRTYPE_Roughness;
-
-			const auto &roughnessProp = map->find("roughnessFactor");
-			if (roughnessProp != map->end())
-			{
-				tinygltf::Parameter &param = roughnessProp->second;
-				if (param.number_array.size() == 1)
-				{
-					// Create a texture coord node for the texture sample
-					roughnessFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-					if (roughnessFactor)
-					{
-						UnrealMaterial->Expressions.Add(roughnessFactor);
-						roughnessFactor->DefaultValue = param.number_array[0];
-
-						//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
-						if (metallicRoghnessTextureProp == map->end())
-						{
-							MaterialInput.Expression = roughnessFactor;
-							TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
-							FExpressionOutput* Output = Outputs.GetData();
-							MaterialInput.Mask = Output->Mask;
-							MaterialInput.MaskR = Output->MaskR;
-							MaterialInput.MaskG = Output->MaskG;
-							MaterialInput.MaskB = Output->MaskB;
-							MaterialInput.MaskA = Output->MaskA;
-							return true;
-						}
-
-					}
-				}
-			}
-		}
-
-		if (FString(MaterialProperty) == "emissiveTexture")
-		{
-			pbrType = PBRTYPE_Emissive;
-
-			const auto &roughnessProp = map->find("emissiveFactor");
-			if (roughnessProp != map->end())
-			{
-				tinygltf::Parameter &param = roughnessProp->second;
-				if (param.number_array.size() == 3)
-				{
-					emissiveFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
-					if (emissiveFactor)
-					{
-						UnrealMaterial->Expressions.Add(emissiveFactor);
-						emissiveFactor->DefaultValue.R = param.number_array[0];
-						emissiveFactor->DefaultValue.G = param.number_array[1];
-						emissiveFactor->DefaultValue.B = param.number_array[2];
-						emissiveFactor->DefaultValue.A = 1.0;
-
-						//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
-						if (emissiveTetxureProp == map->end())
-						{
-							MaterialInput.Expression = emissiveFactor;
-							TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
-							FExpressionOutput* Output = Outputs.GetData();
-							MaterialInput.Mask = Output->Mask;
-							MaterialInput.MaskR = Output->MaskR;
-							MaterialInput.MaskG = Output->MaskG;
-							MaterialInput.MaskB = Output->MaskB;
-							MaterialInput.MaskA = Output->MaskA;
-							return true;
-						}
+						MaterialInput.Expression = baseColorFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
 					}
 				}
 			}
 		}
 	}
 
+	if (FString(MaterialProperty) == "specularTexture")
+	{
+		pbrType = PBRTYPE_Specular;
+
+		const auto &specularProp = map->find("specularFactor");
+		if (specularProp != map->end())
+		{
+			tinygltf::Parameter &param = specularProp->second;
+			if (param.number_array.size() == 3)
+			{
+				specularFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
+				if (specularFactor)
+				{
+					UnrealMaterial->Expressions.Add(specularFactor);
+					specularFactor->DefaultValue.R = param.number_array[0];
+					specularFactor->DefaultValue.G = param.number_array[1];
+					specularFactor->DefaultValue.B = param.number_array[2];
+					specularFactor->DefaultValue.A = 1.0;
+
+					//If there is no specularTexture then we just use this color by itself and hook it up directly to the material
+					if (specularTextureProp == map->end())
+					{
+						MaterialInput.Expression = specularFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	if (FString(MaterialProperty) == "diffuseTexture")
+	{
+		pbrType = PBRTYPE_Diffuse;
+
+		const auto &diffuseProp = map->find("diffuseFactor");
+		if (diffuseProp != map->end())
+		{
+			tinygltf::Parameter &param = diffuseProp->second;
+			if (param.number_array.size() == 4)
+			{
+				diffuseFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
+				if (diffuseFactor)
+				{
+					UnrealMaterial->Expressions.Add(diffuseFactor);
+					diffuseFactor->DefaultValue.R = param.number_array[0];
+					diffuseFactor->DefaultValue.G = param.number_array[1];
+					diffuseFactor->DefaultValue.B = param.number_array[2];
+					diffuseFactor->DefaultValue.A = param.number_array[3];
+
+					//If there is no diffuseTexture then we just use this color by itself and hook it up directly to the material
+					if (diffuseTextureProp == map->end())
+					{
+						MaterialInput.Expression = diffuseFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	//Metallic comes from the blue channel of metallicRoughnessTexture
+	if (FString(MaterialProperty) == "metallicRoughnessTexture" && colorChannel == ColorChannel_Blue)
+	{
+		pbrType = PBRTYPE_Metallic;
+
+		const auto &metallicProp = map->find("metallicFactor");
+		if (metallicProp != map->end())
+		{
+			tinygltf::Parameter &param = metallicProp->second;
+			if (param.number_array.size() == 1)
+			{
+				metallicFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (metallicFactor)
+				{
+					UnrealMaterial->Expressions.Add(metallicFactor);
+					metallicFactor->DefaultValue = param.number_array[0];
+
+					//If there is no metallicRoughnessTexture then we just use this color by itself and hook it up directly to the material
+					if (metallicRoghnessTextureProp == map->end())
+					{
+						MaterialInput.Expression = metallicFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	//roughness comes from the green channel of metallicRoughnessTexture
+	if (FString(MaterialProperty) == "metallicRoughnessTexture" && colorChannel == ColorChannel_Green)
+	{
+		pbrType = PBRTYPE_Roughness;
+
+		const auto &roughnessProp = map->find("roughnessFactor");
+		if (roughnessProp != map->end())
+		{
+			tinygltf::Parameter &param = roughnessProp->second;
+			if (param.number_array.size() == 1)
+			{
+				roughnessFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (roughnessFactor)
+				{
+					UnrealMaterial->Expressions.Add(roughnessFactor);
+					roughnessFactor->DefaultValue = param.number_array[0];
+
+					//If there is no metallicRoughnessTexture then we just use this color by itself and hook it up directly to the material
+					if (metallicRoghnessTextureProp == map->end())
+					{
+						MaterialInput.Expression = roughnessFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+
+				}
+			}
+		}
+	}
+
+	if (FString(MaterialProperty) == "emissiveTexture")
+	{
+		pbrType = PBRTYPE_Emissive;
+
+		const auto &roughnessProp = map->find("emissiveFactor");
+		if (roughnessProp != map->end())
+		{
+			tinygltf::Parameter &param = roughnessProp->second;
+			if (param.number_array.size() == 3)
+			{
+				emissiveFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
+				if (emissiveFactor)
+				{
+					UnrealMaterial->Expressions.Add(emissiveFactor);
+					emissiveFactor->DefaultValue.R = param.number_array[0];
+					emissiveFactor->DefaultValue.G = param.number_array[1];
+					emissiveFactor->DefaultValue.B = param.number_array[2];
+					emissiveFactor->DefaultValue.A = 1.0;
+
+					//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
+					if (emissiveTetxureProp == map->end())
+					{
+						MaterialInput.Expression = emissiveFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	// Find the image and add it to the material 
 	const auto &property = map->find(MaterialProperty);
 	if (property != map->end())
 	{
@@ -1008,6 +1007,14 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 							float ScaleU = 1.0;  //FbxTexture->GetScaleU();
 							float ScaleV = 1.0;  //FbxTexture->GetScaleV();
 
+							/*
+							if (texture.sampler >= 0 && texture.sampler < ImportContext.Model->samplers.size())
+							{
+								const auto &sampler = ImportContext.Model->samplers[texture.sampler];
+							}
+							*/
+
+
 							// and link it to the material 
 							UnrealTextureExpression = NewObject<UMaterialExpressionTextureSample>(UnrealMaterial);
 							UnrealMaterial->Expressions.Add(UnrealTextureExpression);
@@ -1018,14 +1025,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 							UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
 
 
-							// add/find UVSet and set it to the texture
-							//FbxString UVSetName = FbxTexture->UVSet.Get();
-							FString LocalUVSetName; // = UTF8_TO_TCHAR(UVSetName.Buffer());
-							if (LocalUVSetName.IsEmpty())
-							{
-								LocalUVSetName = TEXT("UVmap_0");
-							}
-							//int32 SetIndex = UVSet.Find(LocalUVSetName);
+							//Currently ignoring multiple UV sets.
 							int32 SetIndex = 0;
 							if ((SetIndex != 0 && SetIndex != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
 							{
@@ -1045,7 +1045,8 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					}
 				}
 
-				//normals have a scale
+				// Special case for normals (since there is no normalFactor like other channels)
+				// normals have a scale. 
 				if (FString(MaterialProperty) == "normalTexture")
 				{
 					const auto &textureScaleEntry = param.json_double_value.find("scale");
@@ -1056,17 +1057,13 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 						{
 							UnrealMaterial->Expressions.Add(scaleFactor);
 							scaleFactor->DefaultValue = textureScaleEntry->second;
-
-							UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
-							UnrealMaterial->Expressions.Add(MultiplyExpression);
-							MultiplyExpression->A.Expression = scaleFactor;
-							MultiplyExpression->B.Expression = UnrealTextureExpression;
-							MaterialInput.Expression = MultiplyExpression;
+							CreateMultiplyExpression(UnrealMaterial, MaterialInput, scaleFactor, UnrealTextureExpression);
 						}
 					}
 				}
 
-				//occlusion has a strength. Why don't both of these just have normalFactor and occlusionFactor?
+				// Special case for occlusion (since there is no occlusionFactor like other channels)
+				// occlusion has a strength. 
 				if (FString(MaterialProperty) == "occlusionTexture")
 				{
 					const auto &textureStrengthEntry = param.json_double_value.find("strength");
@@ -1091,7 +1088,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 							MaterialInput.Expression = MultiplyExpression;
 
-							colorChannel = -1; //Just use the default assignment.
+							colorChannel = ColorChannel_All; 
 						}
 					}
 				}
@@ -1109,39 +1106,13 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					default: break;
 					}
 				}
-
-				if (MaterialInput.Expression)
-				{
-					TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
-					FExpressionOutput* Output = Outputs.GetData();
-					MaterialInput.Mask = Output->Mask;
-
-					switch (colorChannel)
-					{
-					case 0:
-						MaterialInput.MaskR = Output->MaskR;
-						break;
-					case 1:
-						MaterialInput.MaskG = Output->MaskG;
-						break;
-					case 2:
-						MaterialInput.MaskB = Output->MaskB;
-						break;
-					default:
-						MaterialInput.MaskR = Output->MaskR;
-						MaterialInput.MaskG = Output->MaskG;
-						MaterialInput.MaskB = Output->MaskB;
-						MaterialInput.MaskA = Output->MaskA;
-						break;
-					}
-				}
+				AttachOutputs(MaterialInput, colorChannel);
 			}
 		}
 	}
 
 	return bCreated;
 }
-
 
 int32 UGLTFImporter::CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials)
 {
@@ -1171,7 +1142,7 @@ void FGltfImportContext::Init(UObject* InParent, const FString& InName, const FS
 	ImportPathName = InParent->GetOutermost()->GetName();
 
 	// Path should not include the filename
-	ImportPathName.RemoveFromEnd(FString(TEXT("/"))+InName);
+	ImportPathName.RemoveFromEnd(FString(TEXT("/")) + InName);
 
 	ImportObjectFlags = RF_Public | RF_Standalone | RF_Transactional;
 
@@ -1206,7 +1177,7 @@ void FGltfImportContext::AddErrorMessage(EMessageSeverity::Type MessageSeverity,
 
 void FGltfImportContext::DisplayErrorMessages(bool bAutomated)
 {
-	if(!bAutomated)
+	if (!bAutomated)
 	{
 		//Always clear the old message after an import or re-import
 		const TCHAR* LogTitle = TEXT("GLTFImport");
