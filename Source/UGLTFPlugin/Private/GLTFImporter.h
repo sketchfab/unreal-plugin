@@ -8,6 +8,7 @@
 #include "GLTFImportOptions.h"
 #include "TokenizedMessage.h"
 #include "GLTFPrimResolver.h"
+#include "Materials/MaterialExpressionTextureSample.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "tiny_gltf.h"
@@ -97,6 +98,8 @@ enum ColorChannel
 	ColorChannel_All,
 };
 
+typedef TMap<int32, UMaterialExpressionTextureSample*> MaterialExpressionMap;
+
 UCLASS(transient)
 class UGLTFImporter : public UObject
 {
@@ -115,7 +118,7 @@ public:
 
 	void CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
 
-	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGltfImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, const char* MaterialProperty, TextureType texType,
+	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGltfImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, MaterialExpressionMap &matMap, const char* MaterialProperty, TextureType texType,
 		FExpressionInput& MaterialInput, bool bSetupAsNormalMap, FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
 
 	int32 CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials);
