@@ -52,6 +52,9 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 	{
 		const auto &prim = primitives[primIdx];
 
+		if (prim.mode != TINYGLTF_MODE_TRIANGLES)
+			continue;
+
 		int32 VertexOffset = RawTriangles.VertexPositions.Num();
 		int32 WedgeOffset = RawTriangles.WedgeIndices.Num();
 		int32 FaceOffset = RawTriangles.FaceMaterialIndices.Num();
