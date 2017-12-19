@@ -463,13 +463,13 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 	SrcModel.RawMeshBulkData->SaveRawMesh(RawTriangles);
 
 	// Recompute normals if we did not import any
-	SrcModel.BuildSettings.bRecomputeNormals = RawTriangles.WedgeTangentZ.Num() == 0;
+	SrcModel.BuildSettings.bRecomputeNormals = true; // RawTriangles.WedgeTangentZ.Num() == 0;
 
 	// Use mikktSpace if we have normals
-	SrcModel.BuildSettings.bUseMikkTSpace = RawTriangles.WedgeTangentZ.Num() != 0;
+	SrcModel.BuildSettings.bUseMikkTSpace = false; // RawTriangles.WedgeTangentZ.Num() != 0;
 
 	// Recompute tangents if we did not import any
-	SrcModel.BuildSettings.bRecomputeTangents = RawTriangles.WedgeTangentX.Num() == 0;
+	SrcModel.BuildSettings.bRecomputeTangents = true; // RawTriangles.WedgeTangentX.Num() == 0;
 
 	SrcModel.BuildSettings.bGenerateLightmapUVs = true;
 	SrcModel.BuildSettings.bBuildAdjacencyBuffer = false;
