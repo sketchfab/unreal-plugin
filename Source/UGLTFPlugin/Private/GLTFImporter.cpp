@@ -652,19 +652,19 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 
 		FVector2D location(-250, -250);
 
-		MaterialExpressionMap matMap;
+		SharedTextureMap texMap;
 
-		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, matMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, false, location))
+		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, false, location))
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, matMap, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, false, location);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, false, location);
 		}
 
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, matMap, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, location);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, matMap, "specularTexture", TextureType_SPEC, UnrealMaterial->Specular, false, location);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, matMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, location, ColorChannel_Green);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, matMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, location, ColorChannel_Blue);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, matMap, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, location);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, matMap, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, location, ColorChannel_Red);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularTexture", TextureType_SPEC, UnrealMaterial->Specular, false, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, location, ColorChannel_Green);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, location, ColorChannel_Blue);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, location, ColorChannel_Red);
 
 		//KB: Leave this here as a reference, in case I need to add a diffuse channel. Perhaps it causes a bug if the glTF file does not contain a BaseColor for some reason?
 		//FixupMaterial(FbxMaterial, UnrealMaterial); // add random diffuse if none exists
@@ -733,7 +733,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	FGltfImportContext& ImportContext,
 	tinygltf::Material *mat,
 	UMaterial* UnrealMaterial,
-	MaterialExpressionMap &matMap,
+	SharedTextureMap &texMap,
 	const char* MaterialProperty,
 	TextureType texType,
 	FExpressionInput& MaterialInput,
@@ -978,7 +978,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				scaleValue = scaleEntry->second;
 			}
 
-			int texCoordValue = 0;
+			int32 texCoordValue = 0;
 			const auto &texCoordEntry = param.json_double_value.find("textCoord");
 			if (texCoordEntry != param.json_double_value.end())
 			{
@@ -999,14 +999,18 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 						tinygltf::Image &img = ImportContext.Model->images[source];
 
 						//See if we have already loaded in this image
-						UMaterialExpressionTextureSample **expr = matMap.Find(source);
-						if (expr)
+						SharedTexture *sharedMap = texMap.Find(source);
+						if (sharedMap)
 						{
-							UnrealTextureExpression = *expr;
-							MaterialInput.Expression = UnrealTextureExpression;
-							bCreated = true;
+							if (sharedMap->texCoords == texCoordValue)
+							{
+								UnrealTextureExpression = sharedMap->expression;
+								MaterialInput.Expression = UnrealTextureExpression;
+								bCreated = true;
+							}
 						}
-						else
+
+						if (!bCreated)
 						{
 							UTexture* UnrealTexture = ImportTexture(ImportContext, &img, bSetupAsNormalMap, MaterialProperty);
 							if (UnrealTexture)
@@ -1034,13 +1038,12 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 
 								//Currently ignoring multiple UV sets.
-								int32 SetIndex = 0;
-								if ((SetIndex != 0 && SetIndex != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
+								if ((texCoordValue != 0 && texCoordValue != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
 								{
 									// Create a texture coord node for the texture sample
 									UMaterialExpressionTextureCoordinate* MyCoordExpression = NewObject<UMaterialExpressionTextureCoordinate>(UnrealMaterial);
 									UnrealMaterial->Expressions.Add(MyCoordExpression);
-									MyCoordExpression->CoordinateIndex = (SetIndex >= 0) ? SetIndex : 0;
+									MyCoordExpression->CoordinateIndex = (texCoordValue >= 0) ? texCoordValue : 0;
 									MyCoordExpression->UTiling = ScaleU;
 									MyCoordExpression->VTiling = ScaleV;
 									UnrealTextureExpression->Coordinates.Expression = MyCoordExpression;
@@ -1048,7 +1051,10 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 									MyCoordExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
 								}
 
-								matMap.Add(source, UnrealTextureExpression);
+								SharedTexture sharedTex;
+								sharedTex.texCoords = texCoordValue;
+								sharedTex.expression = UnrealTextureExpression;
+								texMap.Add(source, sharedTex);
 
 								bCreated = true;
 							}

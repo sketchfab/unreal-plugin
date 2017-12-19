@@ -98,7 +98,14 @@ enum ColorChannel
 	ColorChannel_All,
 };
 
-typedef TMap<int32, UMaterialExpressionTextureSample*> MaterialExpressionMap;
+struct SharedTexture
+{
+	UMaterialExpressionTextureSample* expression;
+	int32 texCoords;
+
+};
+
+typedef TMap<int32, SharedTexture> SharedTextureMap;
 
 UCLASS(transient)
 class UGLTFImporter : public UObject
@@ -118,7 +125,7 @@ public:
 
 	void CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
 
-	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGltfImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, MaterialExpressionMap &matMap, const char* MaterialProperty, TextureType texType,
+	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGltfImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, SharedTextureMap &texMap, const char* MaterialProperty, TextureType texType,
 		FExpressionInput& MaterialInput, bool bSetupAsNormalMap, FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
 
 	int32 CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials);

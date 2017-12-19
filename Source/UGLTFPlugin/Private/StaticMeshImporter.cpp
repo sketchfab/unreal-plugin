@@ -363,85 +363,9 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 		}
 
 		bool uvsAdded = false;
-		const auto &texcoord0 = prim.attributes.find("TEXCOORD_0");
-		if (texcoord0 != prim.attributes.end())
+		for (int32 uv = 0; uv < MAX_MESH_TEXTURE_COORDS; uv++)
 		{
-			int accessorIndex = texcoord0->second;
-			if (accessorIndex >= 0 && accessorIndex < model->accessors.size())
-			{
-				const tinygltf::Accessor &accessor = model->accessors[accessorIndex];
-				const tinygltf::BufferView &bufferView = model->bufferViews[accessor.bufferView];
-				const tinygltf::Buffer &buffer = model->buffers[bufferView.buffer];
-				size_t offset = accessor.byteOffset + bufferView.byteOffset;
-
-				if (accessor.count > 0)
-				{
-					//One uv per vertex on every polygon
-					RawTriangles.WedgeTexCoords[0].AddUninitialized(NumFaces * 3);
-					TArray<FVector2D>& TexCoords = RawTriangles.WedgeTexCoords[0];
-					check(accessor.type == TINYGLTF_TYPE_VEC2);
-					if (accessor.type == TINYGLTF_TYPE_VEC2)
-					{
-						switch (accessor.componentType)
-						{
-						case TINYGLTF_COMPONENT_TYPE_FLOAT:
-						{
-							float *data = (float*)&buffer.data[offset];
-							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
-							{
-								const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
-								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
-
-								int32 index0 = RawTriangles.WedgeIndices[I0] - VertexOffset;
-								int32 index1 = RawTriangles.WedgeIndices[I1] - VertexOffset;
-								int32 index2 = RawTriangles.WedgeIndices[I2] - VertexOffset;
-
-								if (index0 >= accessor.count || index1 >= accessor.count || index2 >= accessor.count)
-									break;
-
-								index0 *= 2;
-								index1 *= 2;
-								index2 *= 2;
-
-								TexCoords[I0] = FVector2D(data[index0], data[index0 + 1]);
-								TexCoords[I1] = FVector2D(data[index1], data[index1 + 1]);
-								TexCoords[I2] = FVector2D(data[index2], data[index2 + 1]);
-							}
-							uvsAdded = true;
-						}
-						break;
-						case TINYGLTF_COMPONENT_TYPE_DOUBLE:
-						{
-							double *data = (double*)&buffer.data[offset];
-							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
-							{
-								const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
-								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
-
-								int32 index0 = RawTriangles.WedgeIndices[I0] - VertexOffset;
-								int32 index1 = RawTriangles.WedgeIndices[I1] - VertexOffset;
-								int32 index2 = RawTriangles.WedgeIndices[I2] - VertexOffset;
-
-								if (index0 >= accessor.count || index1 >= accessor.count || index2 >= accessor.count)
-									break;
-
-								index0 *= 2;
-								index1 *= 2;
-								index2 *= 2;
-
-								TexCoords[I0] = FVector2D(data[index0], data[index0 + 1]);
-								TexCoords[I1] = FVector2D(data[index1], data[index1 + 1]);
-								TexCoords[I2] = FVector2D(data[index2], data[index2 + 1]);
-							}
-						}
-						break;
-						default: check(false); break;
-						}
-					}
-				}
-			}
+			uvsAdded |= AddUVs(ImportContext.Model, prim, RawTriangles, NumFaces, WedgeOffset, VertexOffset, uv);
 		}
 
 		if (!uvsAdded)
@@ -555,6 +479,94 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 	SrcModel.BuildSettings.bUseHighPrecisionTangentBasis = false;
 
 	return ImportedMesh;
+}
+
+bool FGLTFStaticMeshImporter::AddUVs(const tinygltf::Model *model, const tinygltf::Primitive &prim, FRawMesh &RawTriangles, int32 NumFaces, int32 WedgeOffset, int32 VertexOffset, int32 uvIndex)
+{
+	bool uvsAdded = 0;
+	std::string name = "TEXCOORD_" + std::to_string(uvIndex);
+	const auto &texcoords = prim.attributes.find(name);
+	if (texcoords != prim.attributes.end())
+	{
+		int accessorIndex = texcoords->second;
+		if (accessorIndex >= 0 && accessorIndex < model->accessors.size())
+		{
+			const tinygltf::Accessor &accessor = model->accessors[accessorIndex];
+			const tinygltf::BufferView &bufferView = model->bufferViews[accessor.bufferView];
+			const tinygltf::Buffer &buffer = model->buffers[bufferView.buffer];
+			size_t offset = accessor.byteOffset + bufferView.byteOffset;
+
+			if (accessor.count > 0)
+			{
+				//One uv per vertex on every polygon
+				RawTriangles.WedgeTexCoords[uvIndex].AddUninitialized(NumFaces * 3);
+				TArray<FVector2D>& TexCoords = RawTriangles.WedgeTexCoords[uvIndex];
+				check(accessor.type == TINYGLTF_TYPE_VEC2);
+				if (accessor.type == TINYGLTF_TYPE_VEC2)
+				{
+					switch (accessor.componentType)
+					{
+					case TINYGLTF_COMPONENT_TYPE_FLOAT:
+					{
+						float *data = (float*)&buffer.data[offset];
+						for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+						{
+							const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
+							const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
+							const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
+
+							int32 index0 = RawTriangles.WedgeIndices[I0] - VertexOffset;
+							int32 index1 = RawTriangles.WedgeIndices[I1] - VertexOffset;
+							int32 index2 = RawTriangles.WedgeIndices[I2] - VertexOffset;
+
+							if (index0 >= accessor.count || index1 >= accessor.count || index2 >= accessor.count)
+								break;
+
+							index0 *= 2;
+							index1 *= 2;
+							index2 *= 2;
+
+							TexCoords[I0] = FVector2D(data[index0], data[index0 + 1]);
+							TexCoords[I1] = FVector2D(data[index1], data[index1 + 1]);
+							TexCoords[I2] = FVector2D(data[index2], data[index2 + 1]);
+						}
+						uvsAdded = true;
+					}
+					break;
+					case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+					{
+						double *data = (double*)&buffer.data[offset];
+						for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+						{
+							const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
+							const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
+							const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
+
+							int32 index0 = RawTriangles.WedgeIndices[I0] - VertexOffset;
+							int32 index1 = RawTriangles.WedgeIndices[I1] - VertexOffset;
+							int32 index2 = RawTriangles.WedgeIndices[I2] - VertexOffset;
+
+							if (index0 >= accessor.count || index1 >= accessor.count || index2 >= accessor.count)
+								break;
+
+							index0 *= 2;
+							index1 *= 2;
+							index2 *= 2;
+
+							TexCoords[I0] = FVector2D(data[index0], data[index0 + 1]);
+							TexCoords[I1] = FVector2D(data[index1], data[index1 + 1]);
+							TexCoords[I2] = FVector2D(data[index2], data[index2 + 1]);
+						}
+					}
+					break;
+					default: check(false); break;
+					}
+				}
+			}
+		}
+	}
+
+	return uvsAdded;
 }
 
 #undef LOCTEXT_NAMESPACE
