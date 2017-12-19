@@ -650,17 +650,18 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 
 		FScopedSlowTask MaterialProgress(8.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
 
-		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, false, FVector2D(-240, -320)))
+		FVector2D location(-250, -250);
+		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, false, location))
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, false, FVector2D(-240, -320));
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, false, location);
 		}
 
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, FVector2D(-240, -64));
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "specularTexture", TextureType_SPEC, UnrealMaterial->Specular, false, FVector2D(-240, -128));
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, FVector2D(-240, -180), ColorChannel_Green);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, FVector2D(-240, -210), ColorChannel_Blue);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, FVector2D(-240, 256));
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, FVector2D(-240, -310), ColorChannel_Red);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "specularTexture", TextureType_SPEC, UnrealMaterial->Specular, false, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, location, ColorChannel_Green);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, location, ColorChannel_Blue);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, location, ColorChannel_Red);
 
 		//KB: Leave this here as a reference, in case I need to add a diffuse channel. Perhaps it causes a bug if the glTF file does not contain a BaseColor for some reason?
 		//FixupMaterial(FbxMaterial, UnrealMaterial); // add random diffuse if none exists
@@ -733,7 +734,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	TextureType texType,
 	FExpressionInput& MaterialInput,
 	bool bSetupAsNormalMap,
-	const FVector2D& Location,
+	FVector2D& Location,
 	ColorChannel colorChannel)
 {
 	MaterialProgress.EnterProgressFrame(1.0f, FText::Format(LOCTEXT("ImportingGLTFMaterial", "Creating Material Node {0}"), FText::FromString(GLTFToUnreal::ConvertString(MaterialProperty))));
@@ -772,18 +773,12 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	UMaterialExpressionScalarParameter *metallicFactor = nullptr;
 	UMaterialExpressionScalarParameter *roughnessFactor = nullptr;
 	UMaterialExpressionVectorParameter *emissiveFactor = nullptr;
-	UMaterialExpressionTextureSample* UnrealTextureExpression = nullptr;
-
 	UMaterialExpressionVectorParameter *specularFactor = nullptr;
 	UMaterialExpressionVectorParameter *diffuseFactor = nullptr;
 
-	const auto &metallicRoghnessTextureProp = map->find("metallicRoughnessTexture");
-	const auto &baseColorTextureProp = map->find("baseColorTexture");
-	const auto &emissiveTetxureProp = map->find("emissiveTexture");
-	const auto &diffuseTextureProp = map->find("diffuseTexture");
-	const auto &specularTextureProp = map->find("specularTexture");
+	UMaterialExpressionTextureSample* UnrealTextureExpression = nullptr;
 
-	if (FString(MaterialProperty) == "baseColorTexture")
+	if (strcmp(MaterialProperty, "baseColorTexture") == 0)
 	{
 		pbrType = PBRTYPE_Color;
 
@@ -803,6 +798,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					baseColorFactor->DefaultValue.A = param.number_array[3];
 
 					//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
+					const auto &baseColorTextureProp = map->find("baseColorTexture");
 					if (baseColorTextureProp == map->end())
 					{
 						MaterialInput.Expression = baseColorFactor;
@@ -813,8 +809,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			}
 		}
 	}
-
-	if (FString(MaterialProperty) == "specularTexture")
+	else if (strcmp(MaterialProperty, "specularTexture") == 0)
 	{
 		pbrType = PBRTYPE_Specular;
 
@@ -834,6 +829,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					specularFactor->DefaultValue.A = 1.0;
 
 					//If there is no specularTexture then we just use this color by itself and hook it up directly to the material
+					const auto &specularTextureProp = map->find("specularTexture");
 					if (specularTextureProp == map->end())
 					{
 						MaterialInput.Expression = specularFactor;
@@ -844,8 +840,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			}
 		}
 	}
-
-	if (FString(MaterialProperty) == "diffuseTexture")
+	else if (strcmp(MaterialProperty, "diffuseTexture") == 0)
 	{
 		pbrType = PBRTYPE_Diffuse;
 
@@ -865,6 +860,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					diffuseFactor->DefaultValue.A = param.number_array[3];
 
 					//If there is no diffuseTexture then we just use this color by itself and hook it up directly to the material
+					const auto &diffuseTextureProp = map->find("diffuseTexture");
 					if (diffuseTextureProp == map->end())
 					{
 						MaterialInput.Expression = diffuseFactor;
@@ -875,9 +871,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			}
 		}
 	}
-
-	//Metallic comes from the blue channel of metallicRoughnessTexture
-	if (FString(MaterialProperty) == "metallicRoughnessTexture" && colorChannel == ColorChannel_Blue)
+	else if (strcmp(MaterialProperty, "metallicRoughnessTexture") == 0 && colorChannel == ColorChannel_Blue) //Metallic comes from the blue channel of metallicRoughnessTexture
 	{
 		pbrType = PBRTYPE_Metallic;
 
@@ -894,6 +888,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					metallicFactor->DefaultValue = param.number_array[0];
 
 					//If there is no metallicRoughnessTexture then we just use this color by itself and hook it up directly to the material
+					const auto &metallicRoghnessTextureProp = map->find("metallicRoughnessTexture");
 					if (metallicRoghnessTextureProp == map->end())
 					{
 						MaterialInput.Expression = metallicFactor;
@@ -904,9 +899,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			}
 		}
 	}
-
-	//roughness comes from the green channel of metallicRoughnessTexture
-	if (FString(MaterialProperty) == "metallicRoughnessTexture" && colorChannel == ColorChannel_Green)
+	else if (strcmp(MaterialProperty, "metallicRoughnessTexture") == 0 && colorChannel == ColorChannel_Green) 	//roughness comes from the green channel of metallicRoughnessTexture
 	{
 		pbrType = PBRTYPE_Roughness;
 
@@ -923,6 +916,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					roughnessFactor->DefaultValue = param.number_array[0];
 
 					//If there is no metallicRoughnessTexture then we just use this color by itself and hook it up directly to the material
+					const auto &metallicRoghnessTextureProp = map->find("metallicRoughnessTexture");
 					if (metallicRoghnessTextureProp == map->end())
 					{
 						MaterialInput.Expression = roughnessFactor;
@@ -934,8 +928,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			}
 		}
 	}
-
-	if (FString(MaterialProperty) == "emissiveTexture")
+	else  if (strcmp(MaterialProperty, "emissiveTexture") == 0)
 	{
 		pbrType = PBRTYPE_Emissive;
 
@@ -955,6 +948,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					emissiveFactor->DefaultValue.A = 1.0;
 
 					//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
+					const auto &emissiveTetxureProp = map->find("emissiveTexture");
 					if (emissiveTetxureProp == map->end())
 					{
 						MaterialInput.Expression = emissiveFactor;
@@ -1024,6 +1018,8 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 							UnrealTextureExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X);
 							UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
 
+							Location.Y += 200;
+
 
 							//Currently ignoring multiple UV sets.
 							int32 SetIndex = 0;
@@ -1047,7 +1043,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 				// Special case for normals (since there is no normalFactor like other channels)
 				// normals have a scale. 
-				if (FString(MaterialProperty) == "normalTexture")
+				if (strcmp(MaterialProperty, "normalTexture") == 0)
 				{
 					const auto &textureScaleEntry = param.json_double_value.find("scale");
 					if (textureScaleEntry != param.json_double_value.end())
@@ -1064,7 +1060,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 				// Special case for occlusion (since there is no occlusionFactor like other channels)
 				// occlusion has a strength. 
-				if (FString(MaterialProperty) == "occlusionTexture")
+				else if (strcmp(MaterialProperty, "occlusionTexture") == 0)
 				{
 					const auto &textureStrengthEntry = param.json_double_value.find("strength");
 					if (textureStrengthEntry != param.json_double_value.end())

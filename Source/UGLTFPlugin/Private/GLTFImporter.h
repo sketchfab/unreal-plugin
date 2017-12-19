@@ -116,7 +116,7 @@ public:
 	void CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
 
 	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGltfImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, const char* MaterialProperty, TextureType texType,
-		FExpressionInput& MaterialInput, bool bSetupAsNormalMap, const FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
+		FExpressionInput& MaterialInput, bool bSetupAsNormalMap, FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
 
 	int32 CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials);
 	void AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel);
