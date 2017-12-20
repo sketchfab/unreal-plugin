@@ -620,6 +620,46 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 			UnrealMaterial->TwoSided = param.bool_value;
 		}
 
+		bool alphaModeBlend = false;
+		const auto &alphaModeProp = Mat->additionalValues.find("alphaMode");
+		if (alphaModeProp != Mat->additionalValues.end())
+		{
+			tinygltf::Parameter &param = alphaModeProp->second;
+			if (param.string_value == "BLEND") 
+			{
+				alphaModeBlend = true;
+			}
+		}
+
+		float alphaCutOff = 1.0;
+		const auto &alphaCutoffProp = Mat->additionalValues.find("alphaCutoff");
+		if (alphaCutoffProp != Mat->additionalValues.end())
+		{
+			tinygltf::Parameter &param = alphaCutoffProp->second;
+			if (param.number_array.size() > 0)
+			{
+				alphaCutOff = param.number_array[0];
+			}
+		}
+
+		if (alphaModeBlend && alphaCutOff < 1.0)
+		{
+			UnrealMaterial->BlendMode = BLEND_Translucent;
+			UnrealMaterial->TranslucencyLightingMode = TLM_Surface;
+
+			UMaterialExpressionScalarParameter *Opacity = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+			if (Opacity)
+			{
+				UnrealMaterial->Expressions.Add(Opacity);
+				Opacity->DefaultValue = alphaCutOff;
+
+				UnrealMaterial->Opacity.Expression = Opacity;
+				AttachOutputs(UnrealMaterial->Opacity, ColorChannel_All);
+			}
+		}
+
+
+
 		/*
 		//KB: Leaving here for reference later on when I add support for skeletal meshes.
 		if (bForSkeletalMesh)
