@@ -620,14 +620,17 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 			UnrealMaterial->TwoSided = param.bool_value;
 		}
 
-		bool alphaModeBlend = false;
 		const auto &alphaModeProp = Mat->additionalValues.find("alphaMode");
 		if (alphaModeProp != Mat->additionalValues.end())
 		{
 			tinygltf::Parameter &param = alphaModeProp->second;
 			if (param.string_value == "BLEND") 
 			{
-				alphaModeBlend = true;
+				UnrealMaterial->BlendMode = BLEND_Translucent;
+			}
+			else if (param.string_value == "MASK")
+			{
+				UnrealMaterial->BlendMode = BLEND_Masked;
 			}
 		}
 
@@ -642,9 +645,8 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 			}
 		}
 
-		if (alphaModeBlend && alphaCutOff < 1.0)
+		if (UnrealMaterial->BlendMode == BLEND_Translucent && alphaCutOff < 1.0)
 		{
-			UnrealMaterial->BlendMode = BLEND_Translucent;
 			UnrealMaterial->TranslucencyLightingMode = TLM_Surface;
 
 			UMaterialExpressionScalarParameter *Opacity = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
@@ -657,6 +659,21 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 				AttachOutputs(UnrealMaterial->Opacity, ColorChannel_All);
 			}
 		}
+		/*
+		//TODO: Need an example before I can implement this
+		else if (UnrealMaterial->BlendMode == BLEND_Masked && alphaCutOff < 1.0)
+		{
+			UMaterialExpressionScalarParameter *Opacity = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+			if (Opacity)
+			{
+				UnrealMaterial->Expressions.Add(Opacity);
+				Opacity->DefaultValue = alphaCutOff;
+
+				UnrealMaterial->Opacity.Expression = Opacity;
+				AttachOutputs(UnrealMaterial->Opacity, ColorChannel_All);
+			}
+		}
+		*/
 
 
 
