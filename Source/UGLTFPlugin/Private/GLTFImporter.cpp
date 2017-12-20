@@ -664,9 +664,9 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 	}
 }
 
-void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& MaterialInput, UMaterialExpression *ExpressionA, UMaterialExpression *ExpressionB)
+void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& MaterialInput, UMaterialExpression *ExpressionFactor, UMaterialExpression *UnrealTextureExpression, ColorChannel colorChannel)
 {
-	if (!UnrealMaterial || !ExpressionA || !ExpressionB)
+	if (!UnrealMaterial || !ExpressionFactor || !UnrealTextureExpression)
 		return;
 
 	UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
@@ -674,9 +674,39 @@ void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& Mater
 		return;
 
 	UnrealMaterial->Expressions.Add(MultiplyExpression);
-	MultiplyExpression->A.Expression = ExpressionA;
-	MultiplyExpression->B.Expression = ExpressionB;
+	MultiplyExpression->A.Expression = ExpressionFactor;
+	MultiplyExpression->B.Expression = UnrealTextureExpression;
 	MaterialInput.Expression = MultiplyExpression;
+
+	if (colorChannel != ColorChannel_All)
+	{
+		TArray<FExpressionOutput> Outputs = MultiplyExpression->B.Expression->GetOutputs();
+		FExpressionOutput* Output = Outputs.GetData();
+		MultiplyExpression->B.Mask = Output->Mask;
+
+		switch (colorChannel)
+		{
+		case ColorChannel_Red:
+			MultiplyExpression->B.MaskR = Output->MaskR;
+			break;
+		case ColorChannel_Green:
+			MultiplyExpression->B.MaskG = Output->MaskG;
+			break;
+		case ColorChannel_Blue:
+			MultiplyExpression->B.MaskB = Output->MaskB;
+			break;
+		case ColorChannel_Alpha:
+			MultiplyExpression->B.MaskA = Output->MaskA;
+			break;
+		case ColorChannel_All:
+		default:
+			MultiplyExpression->B.MaskR = Output->MaskR;
+			MultiplyExpression->B.MaskG = Output->MaskG;
+			MultiplyExpression->B.MaskB = Output->MaskB;
+			MultiplyExpression->B.MaskA = Output->MaskA;
+			break;
+		}
+	}
 }
 
 void UGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel)
@@ -1060,7 +1090,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 						{
 							UnrealMaterial->Expressions.Add(scaleFactor);
 							scaleFactor->DefaultValue = textureScaleEntry->second;
-							CreateMultiplyExpression(UnrealMaterial, MaterialInput, scaleFactor, UnrealTextureExpression);
+							CreateMultiplyExpression(UnrealMaterial, MaterialInput, scaleFactor, UnrealTextureExpression, ColorChannel_All);
 						}
 					}
 				}
@@ -1078,18 +1108,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 							UnrealMaterial->Expressions.Add(strengthFactor);
 							strengthFactor->DefaultValue = textureStrengthEntry->second;
 
-							UMaterialExpressionMultiply* MultiplyExpression = NewObject<UMaterialExpressionMultiply>(UnrealMaterial);
-							UnrealMaterial->Expressions.Add(MultiplyExpression);
-							MultiplyExpression->A.Expression = strengthFactor;
-							MultiplyExpression->B.Expression = UnrealTextureExpression;
-
-							//Hook up the red channel of the texture map for ambient occlusion
-							TArray<FExpressionOutput> Outputs = MultiplyExpression->B.Expression->GetOutputs();
-							FExpressionOutput* Output = Outputs.GetData();
-							MultiplyExpression->B.Mask = Output->Mask;
-							MultiplyExpression->B.MaskR = Output->MaskR;
-
-							MaterialInput.Expression = MultiplyExpression;
+							CreateMultiplyExpression(UnrealMaterial, MaterialInput, strengthFactor, UnrealTextureExpression, ColorChannel_Red);
 
 							colorChannel = ColorChannel_All; 
 						}
@@ -1100,12 +1119,12 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				{
 					switch (pbrType)
 					{
-					case PBRTYPE_Color:		CreateMultiplyExpression(UnrealMaterial, MaterialInput, baseColorFactor, UnrealTextureExpression); break;
-					case PBRTYPE_Roughness:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, roughnessFactor, UnrealTextureExpression); break;
-					case PBRTYPE_Metallic:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, metallicFactor, UnrealTextureExpression); break;
-					case PBRTYPE_Emissive:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, emissiveFactor, UnrealTextureExpression); break;
-					case PBRTYPE_Diffuse:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, diffuseFactor, UnrealTextureExpression); break;
-					case PBRTYPE_Specular:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, specularFactor, UnrealTextureExpression); break;
+					case PBRTYPE_Color:		CreateMultiplyExpression(UnrealMaterial, MaterialInput, baseColorFactor, UnrealTextureExpression, colorChannel); break;
+					case PBRTYPE_Roughness:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, roughnessFactor, UnrealTextureExpression, colorChannel); break;
+					case PBRTYPE_Metallic:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, metallicFactor, UnrealTextureExpression, colorChannel); break;
+					case PBRTYPE_Emissive:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, emissiveFactor, UnrealTextureExpression, colorChannel); break;
+					case PBRTYPE_Diffuse:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, diffuseFactor, UnrealTextureExpression, colorChannel); break;
+					case PBRTYPE_Specular:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, specularFactor, UnrealTextureExpression, colorChannel); break;
 					default: break;
 					}
 				}
