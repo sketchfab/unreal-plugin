@@ -162,22 +162,6 @@ private:
 	bool bShouldImport;
 };
 
-
-/*
-const FUsdGeomData* FUsdPrimToImport::GetGeomData(int32 LODIndex, double Time) const
-{
-	if (NumLODs == 0)
-	{
-		return Prim->GetGeometryData(Time);
-	}
-	else
-	{
-		IUsdPrim* Child = Prim->GetLODChild(LODIndex);
-		return Child->GetGeometryData(Time);
-	}
-}
-*/
-
 UGLTFImporter::UGLTFImporter(const FObjectInitializer& Initializer)
 	: Super(Initializer)
 {
@@ -765,13 +749,16 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	// TODO: For readability refactor each channel out into its own method
 	enum PBRTYPE
 	{
+		PBRTYPE_Undefined,
 		PBRTYPE_Color,
 		PBRTYPE_Metallic,
 		PBRTYPE_Roughness,
 		PBRTYPE_Emissive,
 		PBRTYPE_Specular,
 		PBRTYPE_Diffuse
-	} pbrType;
+	};
+
+	PBRTYPE pbrType = PBRTYPE_Undefined;
 
 	UMaterialExpressionVectorParameter *baseColorFactor = nullptr;
 	UMaterialExpressionScalarParameter *metallicFactor = nullptr;
@@ -1015,10 +1002,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 							UTexture* UnrealTexture = ImportTexture(ImportContext, &img, bSetupAsNormalMap, MaterialProperty);
 							if (UnrealTexture)
 							{
-								float ScaleU = 1.0;  //FbxTexture->GetScaleU();
-								float ScaleV = 1.0;  //FbxTexture->GetScaleV();
+								float ScaleU = 1.0;  
+								float ScaleV = 1.0; 
 
 								/*
+								//TODO: Respect the sampler settings
 								if (texture.sampler >= 0 && texture.sampler < ImportContext.Model->samplers.size())
 								{
 									const auto &sampler = ImportContext.Model->samplers[texture.sampler];
@@ -1036,8 +1024,6 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 								Location.Y += 200;
 
-
-								//Currently ignoring multiple UV sets.
 								if ((texCoordValue != 0 && texCoordValue != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
 								{
 									// Create a texture coord node for the texture sample
