@@ -904,8 +904,8 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					if (opacityFactor)
 					{
 						UnrealMaterial->Expressions.Add(opacityFactor);
-						roughnessFactor->DefaultValue = param.number_array[3];
-						MaterialInput.Expression = roughnessFactor;
+						opacityFactor->DefaultValue = param.number_array[3];
+						MaterialInput.Expression = opacityFactor;
 						AttachOutputs(MaterialInput, ColorChannel_All);
 						return true;
 					}
