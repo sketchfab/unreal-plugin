@@ -868,6 +868,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				baseColorFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
 				if (baseColorFactor)
 				{
+					if (baseColorFactor->CanRenameNode())
+					{
+						baseColorFactor->SetEditableName(GLTFToUnreal::ConvertString("baseColorFactor"));
+					}
+
 					UnrealMaterial->Expressions.Add(baseColorFactor);
 					baseColorFactor->DefaultValue.R = param.number_array[0];
 					baseColorFactor->DefaultValue.G = param.number_array[1];
@@ -903,6 +908,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					UMaterialExpressionScalarParameter *opacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
 					if (opacityFactor)
 					{
+						if (opacityFactor->CanRenameNode())
+						{
+							opacityFactor->SetEditableName(GLTFToUnreal::ConvertString("opacityFactor"));
+						}
+
 						UnrealMaterial->Expressions.Add(opacityFactor);
 						opacityFactor->DefaultValue = param.number_array[3];
 						MaterialInput.Expression = opacityFactor;
@@ -926,6 +936,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				specularFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
 				if (specularFactor)
 				{
+					if (specularFactor->CanRenameNode())
+					{
+						specularFactor->SetEditableName(GLTFToUnreal::ConvertString("specularFactor"));
+					}
+
 					UnrealMaterial->Expressions.Add(specularFactor);
 					specularFactor->DefaultValue.R = param.number_array[0];
 					specularFactor->DefaultValue.G = param.number_array[1];
@@ -957,6 +972,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				diffuseFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
 				if (diffuseFactor)
 				{
+					if (diffuseFactor->CanRenameNode())
+					{
+						diffuseFactor->SetEditableName(GLTFToUnreal::ConvertString("diffuseFactor"));
+					}
+
 					UnrealMaterial->Expressions.Add(diffuseFactor);
 					diffuseFactor->DefaultValue.R = param.number_array[0];
 					diffuseFactor->DefaultValue.G = param.number_array[1];
@@ -988,6 +1008,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				metallicFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
 				if (metallicFactor)
 				{
+					if (metallicFactor->CanRenameNode())
+					{
+						metallicFactor->SetEditableName(GLTFToUnreal::ConvertString("metallicFactor"));
+					}
+
 					UnrealMaterial->Expressions.Add(metallicFactor);
 					metallicFactor->DefaultValue = param.number_array[0];
 
@@ -1016,6 +1041,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				roughnessFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
 				if (roughnessFactor)
 				{
+					if (roughnessFactor->CanRenameNode())
+					{
+						roughnessFactor->SetEditableName(GLTFToUnreal::ConvertString("roughnessFactor"));
+					}
+
 					UnrealMaterial->Expressions.Add(roughnessFactor);
 					roughnessFactor->DefaultValue = param.number_array[0];
 
@@ -1045,6 +1075,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				emissiveFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
 				if (emissiveFactor)
 				{
+					if (emissiveFactor->CanRenameNode())
+					{
+						emissiveFactor->SetEditableName(GLTFToUnreal::ConvertString("emissiveFactor"));
+					}
+
 					UnrealMaterial->Expressions.Add(emissiveFactor);
 					emissiveFactor->DefaultValue.R = param.number_array[0];
 					emissiveFactor->DefaultValue.G = param.number_array[1];
@@ -1128,34 +1163,40 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 								// and link it to the material 
 								UnrealTextureExpression = NewObject<UMaterialExpressionTextureSample>(UnrealMaterial);
-								UnrealMaterial->Expressions.Add(UnrealTextureExpression);
-								MaterialInput.Expression = UnrealTextureExpression;
-								UnrealTextureExpression->Texture = UnrealTexture;
-								UnrealTextureExpression->SamplerType = bSetupAsNormalMap ? SAMPLERTYPE_Normal : SAMPLERTYPE_Color;
-								UnrealTextureExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X);
-								UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
-
-								Location.Y += 200;
-
-								if ((texCoordValue != 0 && texCoordValue != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
+								if (UnrealTextureExpression)
 								{
-									// Create a texture coord node for the texture sample
-									UMaterialExpressionTextureCoordinate* MyCoordExpression = NewObject<UMaterialExpressionTextureCoordinate>(UnrealMaterial);
-									UnrealMaterial->Expressions.Add(MyCoordExpression);
-									MyCoordExpression->CoordinateIndex = (texCoordValue >= 0) ? texCoordValue : 0;
-									MyCoordExpression->UTiling = ScaleU;
-									MyCoordExpression->VTiling = ScaleV;
-									UnrealTextureExpression->Coordinates.Expression = MyCoordExpression;
-									MyCoordExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X - 175);
-									MyCoordExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
+									UnrealMaterial->Expressions.Add(UnrealTextureExpression);
+									MaterialInput.Expression = UnrealTextureExpression;
+									UnrealTextureExpression->Texture = UnrealTexture;
+									UnrealTextureExpression->SamplerType = bSetupAsNormalMap ? SAMPLERTYPE_Normal : SAMPLERTYPE_Color;
+									UnrealTextureExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X);
+									UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
+
+									Location.Y += 200;
+
+									if ((texCoordValue != 0 && texCoordValue != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
+									{
+										// Create a texture coord node for the texture sample
+										UMaterialExpressionTextureCoordinate* MyCoordExpression = NewObject<UMaterialExpressionTextureCoordinate>(UnrealMaterial);
+										if (MyCoordExpression)
+										{
+											UnrealMaterial->Expressions.Add(MyCoordExpression);
+											MyCoordExpression->CoordinateIndex = (texCoordValue >= 0) ? texCoordValue : 0;
+											MyCoordExpression->UTiling = ScaleU;
+											MyCoordExpression->VTiling = ScaleV;
+											UnrealTextureExpression->Coordinates.Expression = MyCoordExpression;
+											MyCoordExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X - 175);
+											MyCoordExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
+										}
+									}
+
+									SharedTexture sharedTex;
+									sharedTex.texCoords = texCoordValue;
+									sharedTex.expression = UnrealTextureExpression;
+									texMap.Add(source, sharedTex);
+
+									bCreated = true;
 								}
-
-								SharedTexture sharedTex;
-								sharedTex.texCoords = texCoordValue;
-								sharedTex.expression = UnrealTextureExpression;
-								texMap.Add(source, sharedTex);
-
-								bCreated = true;
 							}
 						}
 					}
@@ -1171,6 +1212,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 						UMaterialExpressionScalarParameter *scaleFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
 						if (scaleFactor)
 						{
+							if (scaleFactor->CanRenameNode())
+							{
+								scaleFactor->SetEditableName(GLTFToUnreal::ConvertString("normalTextureScale"));
+							}
+
 							UnrealMaterial->Expressions.Add(scaleFactor);
 							scaleFactor->DefaultValue = textureScaleEntry->second;
 							CreateMultiplyExpression(UnrealMaterial, MaterialInput, scaleFactor, UnrealTextureExpression, ColorChannel_All);
@@ -1188,6 +1234,11 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 						UMaterialExpressionScalarParameter *strengthFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
 						if (strengthFactor)
 						{
+							if (strengthFactor->CanRenameNode())
+							{
+								strengthFactor->SetEditableName(GLTFToUnreal::ConvertString("occlusionTextureStrength"));
+							}
+
 							UnrealMaterial->Expressions.Add(strengthFactor);
 							strengthFactor->DefaultValue = textureStrengthEntry->second;
 
