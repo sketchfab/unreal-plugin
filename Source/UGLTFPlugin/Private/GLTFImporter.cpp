@@ -663,17 +663,13 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		//TODO: Need an example before I can implement this
 		else if (UnrealMaterial->BlendMode == BLEND_Masked && alphaCutOff < 1.0)
 		{
-			UMaterialExpressionScalarParameter *Opacity = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-			if (Opacity)
-			{
-				UnrealMaterial->Expressions.Add(Opacity);
-				Opacity->DefaultValue = alphaCutOff;
-
-				UnrealMaterial->Opacity.Expression = Opacity;
-				AttachOutputs(UnrealMaterial->Opacity, ColorChannel_All);
-			}
+			UnrealMaterial->OpacityMaskClipValue = alphaCutOff;
+			
+			//Now we just need to attach a texture to the Opacity channel itself that contains the alpha information to clip using this cutoff mask value.
 		}
 		*/
+
+		
 
 
 
