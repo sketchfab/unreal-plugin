@@ -113,77 +113,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 			}
 		}
 
-		const auto &normals = prim.attributes.find("NORMAL");
-		if (normals != prim.attributes.end())
-		{
-			int accessorIndex = normals->second;
-			if (accessorIndex >= 0 && accessorIndex < model->accessors.size())
-			{
-				const tinygltf::Accessor &accessor = model->accessors[accessorIndex];
-				const tinygltf::BufferView &bufferView = model->bufferViews[accessor.bufferView];
-				const tinygltf::Buffer &buffer = model->buffers[bufferView.buffer];
-				size_t offset = accessor.byteOffset + bufferView.byteOffset;
-
-				{
-					RawTriangles.WedgeTangentZ.AddUninitialized(NumFaces * 3);
-					check(accessor.type == TINYGLTF_TYPE_VEC3);
-					if (accessor.type == TINYGLTF_TYPE_VEC3)
-					{
-						switch (accessor.componentType)
-						{
-						case TINYGLTF_COMPONENT_TYPE_FLOAT:
-						{
-							float *data = (float*)&buffer.data[offset];
-							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
-							{
-								const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
-								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
-
-								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 2 - VertexOffset]);
-								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 2 - VertexOffset]);
-								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 2 - VertexOffset]);
-
-								FVector TransformedNormal0 = FinalTransformIT.TransformVector(normal0);
-								FVector TransformedNormal1 = FinalTransformIT.TransformVector(normal1);
-								FVector TransformedNormal2 = FinalTransformIT.TransformVector(normal2);
-
-								RawTriangles.WedgeTangentZ[I0] = TransformedNormal0.GetSafeNormal();
-								RawTriangles.WedgeTangentZ[I1] = TransformedNormal1.GetSafeNormal();
-								RawTriangles.WedgeTangentZ[I2] = TransformedNormal2.GetSafeNormal();
-							}
-						}
-						break;
-						case TINYGLTF_COMPONENT_TYPE_DOUBLE:
-						{
-							double *data = (double*)&buffer.data[offset];
-							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
-							{
-								const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
-								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
-
-								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 2 - VertexOffset]);
-								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 2 - VertexOffset]);
-								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 2 - VertexOffset]);
-
-								FVector TransformedNormal0 = FinalTransformIT.TransformVector(normal0);
-								FVector TransformedNormal1 = FinalTransformIT.TransformVector(normal1);
-								FVector TransformedNormal2 = FinalTransformIT.TransformVector(normal2);
-
-								RawTriangles.WedgeTangentZ[I0] = TransformedNormal0.GetSafeNormal();
-								RawTriangles.WedgeTangentZ[I1] = TransformedNormal1.GetSafeNormal();
-								RawTriangles.WedgeTangentZ[I2] = TransformedNormal2.GetSafeNormal();
-							}
-						}
-						break;
-						default: check(false); break;
-						}
-					}
-				}
-			}
-		}
-
 		const auto &position = prim.attributes.find("POSITION");
 		if (position != prim.attributes.end())
 		{
@@ -233,6 +162,64 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 			}
 		}
 
+
+		const auto &normals = prim.attributes.find("NORMAL");
+		if (normals != prim.attributes.end())
+		{
+			int accessorIndex = normals->second;
+			if (accessorIndex >= 0 && accessorIndex < model->accessors.size())
+			{
+				const tinygltf::Accessor &accessor = model->accessors[accessorIndex];
+				const tinygltf::BufferView &bufferView = model->bufferViews[accessor.bufferView];
+				const tinygltf::Buffer &buffer = model->buffers[bufferView.buffer];
+				size_t offset = accessor.byteOffset + bufferView.byteOffset;
+
+				{
+					RawTriangles.WedgeTangentZ.AddUninitialized(NumFaces * 3);
+					check(accessor.type == TINYGLTF_TYPE_VEC3);
+					if (accessor.type == TINYGLTF_TYPE_VEC3)
+					{
+						switch (accessor.componentType)
+						{
+						case TINYGLTF_COMPONENT_TYPE_FLOAT:
+						{
+							float *data = (float*)&buffer.data[offset];
+							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+							{
+								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+								{
+									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 3;
+									FVector Normal = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
+									FVector TransformedNormal = FinalTransformIT.TransformVector(Normal);
+									RawTriangles.WedgeTangentZ[WedgeIdx] = TransformedNormal.GetSafeNormal();
+								}
+							}
+						}
+						break;
+						case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+						{
+							double *data = (double*)&buffer.data[offset];
+							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+							{
+								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+								{
+									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 3;
+									FVector Normal = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
+									FVector TransformedNormal = FinalTransformIT.TransformVector(Normal);
+									RawTriangles.WedgeTangentZ[WedgeIdx] = TransformedNormal.GetSafeNormal();
+								}
+							}
+						}
+						break;
+						default: check(false); break;
+						}
+					}
+				}
+			}
+		}
+
 		const auto &tangent = prim.attributes.find("TANGENT");
 		if (tangent != prim.attributes.end())
 		{
@@ -257,45 +244,30 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 							float *data = (float*)&buffer.data[offset];
 							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
 							{
-								const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
-								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
-
-								// Flip V for Unreal uv's which match directx
-								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 2 - VertexOffset]);
-								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 2 - VertexOffset]);
-								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 2 - VertexOffset]);
-
-								FVector TransformedNormal0 = FinalTransformIT.TransformVector(normal0);
-								FVector TransformedNormal1 = FinalTransformIT.TransformVector(normal1);
-								FVector TransformedNormal2 = FinalTransformIT.TransformVector(normal2);
-
-								RawTriangles.WedgeTangentX[I0] = TransformedNormal0.GetSafeNormal();
-								RawTriangles.WedgeTangentX[I1] = TransformedNormal1.GetSafeNormal();
-								RawTriangles.WedgeTangentX[I2] = TransformedNormal2.GetSafeNormal();
+								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+								{
+									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 3;
+									FVector Tangent = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
+									FVector TransformedTangent = FinalTransformIT.TransformVector(Tangent);
+									RawTriangles.WedgeTangentX[WedgeIdx] = TransformedTangent.GetSafeNormal();
+								}
 							}
 						}
 						break;
 						case TINYGLTF_COMPONENT_TYPE_DOUBLE:
 						{
 							double *data = (double*)&buffer.data[offset];
-							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+							for (int32 FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
 							{
-								const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
-								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
-
-								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 3 + 2 - VertexOffset]);
-								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 3 + 2 - VertexOffset]);
-								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 3 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 3 + 2 - VertexOffset]);
-
-								FVector TransformedNormal0 = FinalTransformIT.TransformVector(normal0);
-								FVector TransformedNormal1 = FinalTransformIT.TransformVector(normal1);
-								FVector TransformedNormal2 = FinalTransformIT.TransformVector(normal2);
-
-								RawTriangles.WedgeTangentX[I0] = TransformedNormal0.GetSafeNormal();
-								RawTriangles.WedgeTangentX[I1] = TransformedNormal1.GetSafeNormal();
-								RawTriangles.WedgeTangentX[I2] = TransformedNormal2.GetSafeNormal();
+								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+								{
+									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 3;
+									FVector Tangent = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
+									FVector TransformedTangent = FinalTransformIT.TransformVector(Tangent);
+									RawTriangles.WedgeTangentX[WedgeIdx] = TransformedTangent.GetSafeNormal();
+								}
 							}
 						}
 						break;
@@ -303,7 +275,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 						}
 					}
 					break;
-					/*
 					case TINYGLTF_TYPE_VEC4:
 					{
 						switch (accessor.componentType)
@@ -311,46 +282,32 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 						case TINYGLTF_COMPONENT_TYPE_FLOAT:
 						{
 							float *data = (float*)&buffer.data[offset];
-							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+							for (int32 FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
 							{
-								const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
-								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
-
-								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 4 + 2 - VertexOffset]);
-								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 4 + 2 - VertexOffset]);
-								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 4 + 2 - VertexOffset]);
-
-								FVector TransformedNormal0 = FinalTransformIT.TransformVector(normal0);
-								FVector TransformedNormal1 = FinalTransformIT.TransformVector(normal1);
-								FVector TransformedNormal2 = FinalTransformIT.TransformVector(normal2);
-
-								RawTriangles.WedgeTangentX[I0] = TransformedNormal0.GetSafeNormal();
-								RawTriangles.WedgeTangentX[I1] = TransformedNormal1.GetSafeNormal();
-								RawTriangles.WedgeTangentX[I2] = TransformedNormal2.GetSafeNormal();
+								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+								{
+									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 4;
+									FVector Tangent = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
+									FVector TransformedTangent = FinalTransformIT.TransformVector(Tangent);
+									RawTriangles.WedgeTangentX[WedgeIdx] = TransformedTangent.GetSafeNormal();
+								}
 							}
 						}
 						break;
 						case TINYGLTF_COMPONENT_TYPE_DOUBLE:
 						{
 							double *data = (double*)&buffer.data[offset];
-							for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+							for (int32 FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
 							{
-								const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-								const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
-								const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
-
-								FVector normal0 = FVector(data[RawTriangles.WedgeIndices[I0] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I0] * 4 + 2 - VertexOffset]);
-								FVector normal1 = FVector(data[RawTriangles.WedgeIndices[I1] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I1] * 4 + 2 - VertexOffset]);
-								FVector normal2 = FVector(data[RawTriangles.WedgeIndices[I2] * 4 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 4 + 1 - VertexOffset], data[RawTriangles.WedgeIndices[I2] * 4 + 2 - VertexOffset]);
-
-								FVector TransformedNormal0 = FinalTransformIT.TransformVector(normal0);
-								FVector TransformedNormal1 = FinalTransformIT.TransformVector(normal1);
-								FVector TransformedNormal2 = FinalTransformIT.TransformVector(normal2);
-
-								RawTriangles.WedgeTangentX[I0] = TransformedNormal0.GetSafeNormal();
-								RawTriangles.WedgeTangentX[I1] = TransformedNormal1.GetSafeNormal();
-								RawTriangles.WedgeTangentX[I2] = TransformedNormal2.GetSafeNormal();
+								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+								{
+									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 4;
+									FVector Tangent = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
+									FVector TransformedTangent = FinalTransformIT.TransformVector(Tangent);
+									RawTriangles.WedgeTangentX[WedgeIdx] = TransformedTangent.GetSafeNormal();
+								}
 							}
 						}
 						break;
@@ -359,7 +316,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 					}
 					break;
 					default: check(false); break;
-					*/
 					}
 				}
 			}
@@ -466,13 +422,13 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 	SrcModel.RawMeshBulkData->SaveRawMesh(RawTriangles);
 
 	// Recompute normals if we did not import any
-	SrcModel.BuildSettings.bRecomputeNormals = true; // RawTriangles.WedgeTangentZ.Num() == 0;
+	SrcModel.BuildSettings.bRecomputeNormals = RawTriangles.WedgeTangentZ.Num() == 0;
 
 	// Use mikktSpace if we have normals
-	SrcModel.BuildSettings.bUseMikkTSpace = false; // RawTriangles.WedgeTangentZ.Num() != 0;
+	SrcModel.BuildSettings.bUseMikkTSpace = RawTriangles.WedgeTangentZ.Num() != 0;
 
 	// Recompute tangents if we did not import any
-	SrcModel.BuildSettings.bRecomputeTangents = true; // RawTriangles.WedgeTangentX.Num() == 0;
+	SrcModel.BuildSettings.bRecomputeTangents = RawTriangles.WedgeTangentX.Num() == 0;
 
 	SrcModel.BuildSettings.bGenerateLightmapUVs = true;
 	SrcModel.BuildSettings.bBuildAdjacencyBuffer = false;
