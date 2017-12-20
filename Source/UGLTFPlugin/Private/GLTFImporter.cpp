@@ -627,50 +627,23 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 			if (param.string_value == "BLEND") 
 			{
 				UnrealMaterial->BlendMode = BLEND_Translucent;
+				UnrealMaterial->TranslucencyLightingMode = TLM_Surface;
 			}
 			else if (param.string_value == "MASK")
 			{
-				//UnrealMaterial->BlendMode = BLEND_Masked;
+				UnrealMaterial->BlendMode = BLEND_Masked;
+
+				const auto &alphaCutoffProp = Mat->additionalValues.find("alphaCutoff");
+				if (alphaCutoffProp != Mat->additionalValues.end())
+				{
+					tinygltf::Parameter &param = alphaCutoffProp->second;
+					if (param.number_array.size() > 0)
+					{
+						UnrealMaterial->OpacityMaskClipValue = param.number_array[0];
+					}
+				}
 			}
 		}
-
-		float alphaCutOff = 1.0;
-		const auto &alphaCutoffProp = Mat->additionalValues.find("alphaCutoff");
-		if (alphaCutoffProp != Mat->additionalValues.end())
-		{
-			tinygltf::Parameter &param = alphaCutoffProp->second;
-			if (param.number_array.size() > 0)
-			{
-				alphaCutOff = param.number_array[0];
-			}
-		}
-
-		if (UnrealMaterial->BlendMode == BLEND_Translucent && alphaCutOff < 1.0)
-		{
-			UnrealMaterial->TranslucencyLightingMode = TLM_Surface;
-
-			UMaterialExpressionScalarParameter *Opacity = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-			if (Opacity)
-			{
-				UnrealMaterial->Expressions.Add(Opacity);
-				Opacity->DefaultValue = alphaCutOff;
-
-				UnrealMaterial->Opacity.Expression = Opacity;
-				AttachOutputs(UnrealMaterial->Opacity, ColorChannel_All);
-			}
-		}
-		/*
-		//TODO: Need an example before I can implement this
-		else if (UnrealMaterial->BlendMode == BLEND_Masked && alphaCutOff < 1.0)
-		{
-			UnrealMaterial->OpacityMaskClipValue = alphaCutOff;
-			
-			//Now we just need to attach a texture to the Opacity channel itself that contains the alpha information to clip using this cutoff mask value.
-		}
-		*/
-
-		
-
 
 
 		/*
@@ -685,7 +658,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		// Set the dirty flag so this package will get saved later
 		Package->SetDirtyFlag(true);
 
-		FScopedSlowTask MaterialProgress(8.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
+		FScopedSlowTask MaterialProgress(9.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
 
 		FVector2D location(-260, -260);
 
@@ -702,6 +675,17 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, location, ColorChannel_Blue);
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, location);
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, location, ColorChannel_Red);
+
+
+		if (UnrealMaterial->BlendMode == BLEND_Translucent)
+		{
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->Opacity, false, location, ColorChannel_Alpha);
+		}
+		else if (UnrealMaterial->BlendMode == BLEND_Masked)
+		{
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->OpacityMask, false, location, ColorChannel_Alpha);
+		}
+
 
 		//KB: Leave this here as a reference, in case I need to add a diffuse channel. Perhaps it causes a bug if the glTF file does not contain a BaseColor for some reason?
 		//FixupMaterial(FbxMaterial, UnrealMaterial); // add random diffuse if none exists
@@ -734,31 +718,39 @@ void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& Mater
 	if (colorChannel != ColorChannel_All)
 	{
 		TArray<FExpressionOutput> Outputs = MultiplyExpression->B.Expression->GetOutputs();
-		FExpressionOutput* Output = Outputs.GetData();
-		MultiplyExpression->B.Mask = Output->Mask;
-
-		switch (colorChannel)
+		FExpressionOutput* Output = nullptr;
+		if (Outputs.Num() == 5)
 		{
-		case ColorChannel_Red:
-			MultiplyExpression->B.MaskR = Output->MaskR;
-			break;
-		case ColorChannel_Green:
-			MultiplyExpression->B.MaskG = Output->MaskG;
-			break;
-		case ColorChannel_Blue:
-			MultiplyExpression->B.MaskB = Output->MaskB;
-			break;
-		case ColorChannel_Alpha:
-			MultiplyExpression->B.MaskA = Output->MaskA;
-			break;
-		case ColorChannel_All:
-		default:
-			MultiplyExpression->B.MaskR = Output->MaskR;
-			MultiplyExpression->B.MaskG = Output->MaskG;
-			MultiplyExpression->B.MaskB = Output->MaskB;
-			MultiplyExpression->B.MaskA = Output->MaskA;
-			break;
+			switch (colorChannel)
+			{
+			case ColorChannel_Red:
+				Output = &Outputs[1];
+				break;
+			case ColorChannel_Green:
+				Output = &Outputs[2];
+				break;
+			case ColorChannel_Blue:
+				Output = &Outputs[3];
+				break;
+			case ColorChannel_Alpha:
+				Output = &Outputs[4];
+				break;
+			case ColorChannel_All:
+			default:
+				Output = &Outputs[0];
+				break;
+			}
 		}
+		else
+		{
+			Output = Outputs.GetData();
+		}
+
+		MultiplyExpression->B.Mask = Output->Mask;
+		MultiplyExpression->B.MaskR = Output->MaskR;
+		MultiplyExpression->B.MaskG = Output->MaskG;
+		MultiplyExpression->B.MaskB = Output->MaskB;
+		MultiplyExpression->B.MaskA = Output->MaskA;
 	}
 }
 
@@ -767,31 +759,41 @@ void UGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel 
 	if (MaterialInput.Expression)
 	{
 		TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
-		FExpressionOutput* Output = Outputs.GetData();
-		MaterialInput.Mask = Output->Mask;
+		FExpressionOutput* Output = nullptr;
 
-		switch (colorChannel)
+		if (Outputs.Num() == 5)
 		{
-		case ColorChannel_Red:
-			MaterialInput.MaskR = Output->MaskR;
-			break;
-		case ColorChannel_Green:
-			MaterialInput.MaskG = Output->MaskG;
-			break;
-		case ColorChannel_Blue:
-			MaterialInput.MaskB = Output->MaskB;
-			break;
-		case ColorChannel_Alpha:
-			MaterialInput.MaskA = Output->MaskA;
-			break;
-		case ColorChannel_All:
-		default:
-			MaterialInput.MaskR = Output->MaskR;
-			MaterialInput.MaskG = Output->MaskG;
-			MaterialInput.MaskB = Output->MaskB;
-			MaterialInput.MaskA = Output->MaskA;
-			break;
+			switch (colorChannel)
+			{
+			case ColorChannel_Red:
+				Output = &Outputs[1];
+				break;
+			case ColorChannel_Green:
+				Output = &Outputs[2];
+				break;
+			case ColorChannel_Blue:
+				Output = &Outputs[3];
+				break;
+			case ColorChannel_Alpha:
+				Output = &Outputs[4];
+				break;
+			case ColorChannel_All:
+			default:
+				Output = &Outputs[0];
+				break;
+			}
 		}
+		else
+		{
+			Output = Outputs.GetData();
+		}
+
+		MaterialInput.Mask = Output->Mask;
+		MaterialInput.MaskR = Output->MaskR;
+		MaterialInput.MaskG = Output->MaskG;
+		MaterialInput.MaskB = Output->MaskB;
+		MaterialInput.MaskA = Output->MaskA;
+
 	}
 }
 
@@ -838,7 +840,8 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 		PBRTYPE_Roughness,
 		PBRTYPE_Emissive,
 		PBRTYPE_Specular,
-		PBRTYPE_Diffuse
+		PBRTYPE_Diffuse,
+		PBRTYPE_Opacity,
 	};
 
 	PBRTYPE pbrType = PBRTYPE_Undefined;
@@ -852,7 +855,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 	UMaterialExpressionTextureSample* UnrealTextureExpression = nullptr;
 
-	if (strcmp(MaterialProperty, "baseColorTexture") == 0)
+	if (strcmp(MaterialProperty, "baseColorTexture") == 0 && colorChannel == ColorChannel_All)
 	{
 		pbrType = PBRTYPE_Color;
 
@@ -876,6 +879,33 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					if (baseColorTextureProp == map->end())
 					{
 						MaterialInput.Expression = baseColorFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
+	else if (strcmp(MaterialProperty, "baseColorTexture") == 0 && colorChannel == ColorChannel_Alpha)
+	{
+		pbrType = PBRTYPE_Opacity;
+
+		const auto &baseColorProp = map->find("baseColorFactor");
+		if (baseColorProp != map->end())
+		{
+			tinygltf::Parameter &param = baseColorProp->second;
+			if (param.number_array.size() == 4)
+			{
+				//If there is no baseColorTexture then we just use this alpha part of the baseColorFactor and hook it up directly to the material
+				const auto &baseColorTextureProp = map->find("baseColorTexture");
+				if (baseColorTextureProp == map->end())
+				{
+					UMaterialExpressionScalarParameter *opacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+					if (opacityFactor)
+					{
+						UnrealMaterial->Expressions.Add(opacityFactor);
+						roughnessFactor->DefaultValue = param.number_array[3];
+						MaterialInput.Expression = roughnessFactor;
 						AttachOutputs(MaterialInput, ColorChannel_All);
 						return true;
 					}
@@ -1021,7 +1051,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					emissiveFactor->DefaultValue.B = param.number_array[2];
 					emissiveFactor->DefaultValue.A = 1.0;
 
-					//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
+					//If there is no emissiveTexture then we just use this color by itself and hook it up directly to the material
 					const auto &emissiveTetxureProp = map->find("emissiveTexture");
 					if (emissiveTetxureProp == map->end())
 					{
