@@ -630,7 +630,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 			}
 			else if (param.string_value == "MASK")
 			{
-				UnrealMaterial->BlendMode = BLEND_Masked;
+				//UnrealMaterial->BlendMode = BLEND_Masked;
 			}
 		}
 
