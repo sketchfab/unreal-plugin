@@ -32,18 +32,21 @@
 #include "Engine/Texture.h"
 #include "Factories/TextureFactory.h"
 #include "Engine/Texture2D.h"
+
 #include "Materials/MaterialExpressionTextureSample.h"
 #include "Materials/MaterialExpressionTextureCoordinate.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
 #include "Materials/MaterialInstanceConstant.h"
+#include "Materials/MaterialExpressionMultiply.h"
+#include "Materials/MaterialExpressionOneMinus.h"
+
 #include "Factories/MaterialInstanceConstantFactoryNew.h"
 #include "IAssetTools.h"
 #include "AssetToolsModule.h"
 #include "ARFilter.h"
 #include "Factories/MaterialImportHelpers.h"
 #include "EditorFramework/AssetImportData.h"
-#include "Materials/MaterialExpressionMultiply.h"
 #include "RawMesh.h" 
 
 
@@ -658,7 +661,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		// Set the dirty flag so this package will get saved later
 		Package->SetDirtyFlag(true);
 
-		FScopedSlowTask MaterialProgress(9.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
+		FScopedSlowTask MaterialProgress(8.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
 
 		FVector2D location(-260, -260);
 
@@ -672,9 +675,20 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		}
 
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, location);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularTexture", TextureType_SPEC, UnrealMaterial->Specular, false, location);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, location, ColorChannel_Green);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, location, ColorChannel_Blue);
+
+		if (usingPBR)
+		{
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, location, ColorChannel_Green);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, location, ColorChannel_Blue);
+		}
+		else
+		{
+			//For now I am ignoring the specular data (rgb) since it makes materials too dark. The method does work, but due to the look its disabled for now.
+			//CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Specular, false, location);
+
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Roughness, false, location, ColorChannel_Alpha);
+		}
+
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, location);
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, location, ColorChannel_Red);
 
@@ -764,6 +778,56 @@ void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& Mater
 	}
 }
 
+UMaterialExpressionOneMinus* CreateOneMinusExpression(UMaterial* UnrealMaterial, UMaterialExpression *UnrealTextureExpression, ColorChannel colorChannel)
+{
+	if (!UnrealMaterial || !UnrealTextureExpression)
+		return nullptr;
+
+	UMaterialExpressionOneMinus* OneMinusExpression = NewObject<UMaterialExpressionOneMinus>(UnrealMaterial);
+	if (!OneMinusExpression)
+		return nullptr;
+
+	UnrealMaterial->Expressions.Add(OneMinusExpression);
+	OneMinusExpression->Input.Expression = UnrealTextureExpression;
+
+	TArray<FExpressionOutput> Outputs = UnrealTextureExpression->GetOutputs();
+	FExpressionOutput* Output = nullptr;
+	if (Outputs.Num() == 5)
+	{
+		switch (colorChannel)
+		{
+		case ColorChannel_Red:
+			Output = &Outputs[1];
+			break;
+		case ColorChannel_Green:
+			Output = &Outputs[2];
+			break;
+		case ColorChannel_Blue:
+			Output = &Outputs[3];
+			break;
+		case ColorChannel_Alpha:
+			Output = &Outputs[4];
+			break;
+		case ColorChannel_All:
+		default:
+			Output = &Outputs[0];
+			break;
+		}
+	}
+	else
+	{
+		Output = Outputs.GetData();
+	}
+
+	OneMinusExpression->Input.Mask = Output->Mask;
+	OneMinusExpression->Input.MaskR = Output->MaskR;
+	OneMinusExpression->Input.MaskG = Output->MaskG;
+	OneMinusExpression->Input.MaskB = Output->MaskB;
+	OneMinusExpression->Input.MaskA = Output->MaskA;
+
+	return OneMinusExpression;
+}
+
 void UGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel)
 {
 	if (MaterialInput.Expression)
@@ -850,6 +914,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 		PBRTYPE_Roughness,
 		PBRTYPE_Emissive,
 		PBRTYPE_Specular,
+		PBRTYPE_Glossiness,
 		PBRTYPE_Diffuse,
 		PBRTYPE_Opacity,
 	};
@@ -862,6 +927,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	UMaterialExpressionVectorParameter *emissiveFactor = nullptr;
 	UMaterialExpressionVectorParameter *specularFactor = nullptr;
 	UMaterialExpressionVectorParameter *diffuseFactor = nullptr;
+	UMaterialExpressionScalarParameter *glossinessFactor = nullptr;
 
 	UMaterialExpressionTextureSample* UnrealTextureExpression = nullptr;
 
@@ -1001,7 +1067,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			}
 		}
 	}
-	else if (strcmp(MaterialProperty, "specularTexture") == 0)
+	else if (strcmp(MaterialProperty, "specularGlossinessTexture") == 0 && colorChannel == ColorChannel_All) //RGB is used for specular channel
 	{
 		pbrType = PBRTYPE_Specular;
 
@@ -1026,10 +1092,43 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					specularFactor->DefaultValue.A = 1.0;
 
 					//If there is no specularTexture then we just use this color by itself and hook it up directly to the material
-					const auto &specularTextureProp = map->find("specularTexture");
+					const auto &specularTextureProp = map->find("specularGlossinessTexture");
 					if (specularTextureProp == map->end())
 					{
 						MaterialInput.Expression = specularFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
+	else if (strcmp(MaterialProperty, "specularGlossinessTexture") == 0 && colorChannel == ColorChannel_Alpha) //Alpha is used for roughness channel with an additional negation node (1 - value).
+	{
+		pbrType = PBRTYPE_Glossiness;
+
+		const auto &glossinessProp = map->find("glossinessFactor");
+		if (glossinessProp != map->end())
+		{
+			tinygltf::Parameter &param = glossinessProp->second;
+			if (param.number_array.size() == 1)
+			{
+				glossinessFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (glossinessFactor)
+				{
+					if (glossinessFactor->CanRenameNode())
+					{
+						glossinessFactor->SetEditableName(GLTFToUnreal::ConvertString("glossinessFactor"));
+					}
+
+					UnrealMaterial->Expressions.Add(glossinessFactor);
+					glossinessFactor->DefaultValue = param.number_array[0];
+
+					//If there is no specularTexture then we just use this color by itself and hook it up directly to the material
+					const auto &specularGlossinessTextureProp = map->find("specularGlossinessTexture");
+					if (specularGlossinessTextureProp == map->end())
+					{
+						MaterialInput.Expression = glossinessFactor;
 						AttachOutputs(MaterialInput, ColorChannel_All);
 						return true;
 					}
@@ -1291,19 +1390,31 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					}
 				}
 
-				if (UnrealTextureExpression)
+				switch (pbrType)
 				{
-					switch (pbrType)
+				case PBRTYPE_Color:		CreateMultiplyExpression(UnrealMaterial, MaterialInput, baseColorFactor, UnrealTextureExpression, colorChannel); break;
+				case PBRTYPE_Roughness:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, roughnessFactor, UnrealTextureExpression, colorChannel); break;
+				case PBRTYPE_Metallic:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, metallicFactor, UnrealTextureExpression, colorChannel); break;
+				case PBRTYPE_Emissive:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, emissiveFactor, UnrealTextureExpression, colorChannel); break;
+				case PBRTYPE_Diffuse:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, diffuseFactor, UnrealTextureExpression, colorChannel); break;
+				case PBRTYPE_Specular:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, specularFactor, UnrealTextureExpression, colorChannel); break;
+				case PBRTYPE_Glossiness: 
+				{
+					//Add the OneMinus node to invert the glossiness channel for non prb materials
+					UMaterialExpressionOneMinus* OneMinus = CreateOneMinusExpression(UnrealMaterial, UnrealTextureExpression, colorChannel);
+					if (glossinessFactor)
 					{
-					case PBRTYPE_Color:		CreateMultiplyExpression(UnrealMaterial, MaterialInput, baseColorFactor, UnrealTextureExpression, colorChannel); break;
-					case PBRTYPE_Roughness:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, roughnessFactor, UnrealTextureExpression, colorChannel); break;
-					case PBRTYPE_Metallic:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, metallicFactor, UnrealTextureExpression, colorChannel); break;
-					case PBRTYPE_Emissive:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, emissiveFactor, UnrealTextureExpression, colorChannel); break;
-					case PBRTYPE_Diffuse:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, diffuseFactor, UnrealTextureExpression, colorChannel); break;
-					case PBRTYPE_Specular:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, specularFactor, UnrealTextureExpression, colorChannel); break;
-					default: break;
+						CreateMultiplyExpression(UnrealMaterial, MaterialInput, glossinessFactor, OneMinus, colorChannel);
+					}
+					else
+					{
+						MaterialInput.Expression = OneMinus;
 					}
 				}
+				break;
+				default: break;
+				}
+
 				AttachOutputs(MaterialInput, colorChannel);
 			}
 		}
