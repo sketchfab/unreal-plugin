@@ -664,9 +664,11 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 
 		SharedTextureMap texMap;
 
+		bool usingPBR = true;
 		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, false, location))
 		{
 			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, false, location);
+			usingPBR = false;
 		}
 
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, location);
@@ -677,13 +679,21 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, location, ColorChannel_Red);
 
 
+		const char *opactityMaterial = "baseColorTexture";
+		TextureType opactityType = TextureType_PBR;
+		if (!usingPBR)
+		{
+			opactityMaterial = "diffuseTexture";
+			opactityType = TextureType_SPEC;
+		}
+
 		if (UnrealMaterial->BlendMode == BLEND_Translucent)
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->Opacity, false, location, ColorChannel_Alpha);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, opactityMaterial, opactityType, UnrealMaterial->Opacity, false, location, ColorChannel_Alpha);
 		}
 		else if (UnrealMaterial->BlendMode == BLEND_Masked)
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->OpacityMask, false, location, ColorChannel_Alpha);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, opactityMaterial, opactityType, UnrealMaterial->OpacityMask, false, location, ColorChannel_Alpha);
 		}
 
 
@@ -923,6 +933,74 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			}
 		}
 	}
+	else if (strcmp(MaterialProperty, "diffuseTexture") == 0 && colorChannel == ColorChannel_All)
+	{
+		pbrType = PBRTYPE_Diffuse;
+
+		const auto &diffuseProp = map->find("diffuseFactor");
+		if (diffuseProp != map->end())
+		{
+			tinygltf::Parameter &param = diffuseProp->second;
+			if (param.number_array.size() == 4)
+			{
+				diffuseFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
+				if (diffuseFactor)
+				{
+					if (diffuseFactor->CanRenameNode())
+					{
+						diffuseFactor->SetEditableName(GLTFToUnreal::ConvertString("diffuseFactor"));
+					}
+
+					UnrealMaterial->Expressions.Add(diffuseFactor);
+					diffuseFactor->DefaultValue.R = param.number_array[0];
+					diffuseFactor->DefaultValue.G = param.number_array[1];
+					diffuseFactor->DefaultValue.B = param.number_array[2];
+					diffuseFactor->DefaultValue.A = param.number_array[3];
+
+					//If there is no diffuseTexture then we just use this color by itself and hook it up directly to the material
+					const auto &diffuseTextureProp = map->find("diffuseTexture");
+					if (diffuseTextureProp == map->end())
+					{
+						MaterialInput.Expression = diffuseFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
+	else if (strcmp(MaterialProperty, "diffuseTexture") == 0 && colorChannel == ColorChannel_Alpha) //Using alpha from diffuse texture, or diffuseFactor, for Opacity.
+	{
+		pbrType = PBRTYPE_Opacity;
+
+		const auto &diffuseProp = map->find("diffuseFactor");
+		if (diffuseProp != map->end())
+		{
+			tinygltf::Parameter &param = diffuseProp->second;
+			if (param.number_array.size() == 4)
+			{
+				//If there is no diffuseTexture then we just use this color by itself and hook it up directly to the material
+				const auto &diffuseTextureProp = map->find("diffuseTexture");
+				if (diffuseTextureProp == map->end())
+				{
+					UMaterialExpressionScalarParameter *opacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+					if (opacityFactor)
+					{
+						if (opacityFactor->CanRenameNode())
+						{
+							opacityFactor->SetEditableName(GLTFToUnreal::ConvertString("opacityFactor"));
+						}
+
+						UnrealMaterial->Expressions.Add(opacityFactor);
+						opacityFactor->DefaultValue = param.number_array[3];
+						MaterialInput.Expression = opacityFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
 	else if (strcmp(MaterialProperty, "specularTexture") == 0)
 	{
 		pbrType = PBRTYPE_Specular;
@@ -952,42 +1030,6 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					if (specularTextureProp == map->end())
 					{
 						MaterialInput.Expression = specularFactor;
-						AttachOutputs(MaterialInput, ColorChannel_All);
-						return true;
-					}
-				}
-			}
-		}
-	}
-	else if (strcmp(MaterialProperty, "diffuseTexture") == 0)
-	{
-		pbrType = PBRTYPE_Diffuse;
-
-		const auto &diffuseProp = map->find("diffuseFactor");
-		if (diffuseProp != map->end())
-		{
-			tinygltf::Parameter &param = diffuseProp->second;
-			if (param.number_array.size() == 4)
-			{
-				diffuseFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
-				if (diffuseFactor)
-				{
-					if (diffuseFactor->CanRenameNode())
-					{
-						diffuseFactor->SetEditableName(GLTFToUnreal::ConvertString("diffuseFactor"));
-					}
-
-					UnrealMaterial->Expressions.Add(diffuseFactor);
-					diffuseFactor->DefaultValue.R = param.number_array[0];
-					diffuseFactor->DefaultValue.G = param.number_array[1];
-					diffuseFactor->DefaultValue.B = param.number_array[2];
-					diffuseFactor->DefaultValue.A = param.number_array[3];
-
-					//If there is no diffuseTexture then we just use this color by itself and hook it up directly to the material
-					const auto &diffuseTextureProp = map->find("diffuseTexture");
-					if (diffuseTextureProp == map->end())
-					{
-						MaterialInput.Expression = diffuseFactor;
 						AttachOutputs(MaterialInput, ColorChannel_All);
 						return true;
 					}
