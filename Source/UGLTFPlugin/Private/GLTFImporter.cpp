@@ -683,7 +683,10 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		}
 		else
 		{
-			//For now I am ignoring the specular data (rgb) since it makes materials too dark. The method does work, but due to the look its disabled for now.
+			// For now I am ignoring the specular data (rgb) since it makes materials too dark. The method does work, but due to the look its disabled for now.
+			// To get use the specular map I may need to multiply the specular map color against the color channel and add the result to the color input. 
+			// Then possibly also add the specular map the specular input.
+			// On the Adam Head Model it looks ok if I multiply the specularFactor against the diffuse Texture and place the result into the color input.
 			//CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Specular, false, location);
 
 			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Roughness, false, location, ColorChannel_Alpha);
