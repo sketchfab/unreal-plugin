@@ -35,16 +35,17 @@ If you wish to give this plugin to someone to use, but not pass on the source co
 ## What Is Currently Supported
 
 - Only imports the first scene found in the glTF file
-- Loading in a glTF file as a static mesh
-- Loading in a glTF file where every mesh becomes its own static mesh
+- Loading in a glTF, or glb, file as a static mesh
+- Loading in a glTF, or glb, file where every mesh becomes its own static mesh
 - PBR materials
 - Specular/Glossy workflows is a WIP.
 	- Specular textures are currently not being used. 
 	- Nothing is currently attached to the scalar specular input on a material. 
 	- Alpha channel of the Glossy map is inverted and used as roughness.
-- Only supports ascii *.gltf files currently. Binary support coming soon.
-- Only supports external textures (ie does not support textures in binary files). Embedded texture support coming soon.
-- No sampler support yet (ie uv tiling). This will be coming soon.
+- Supports ascii *.gltf and binary .glb files.
+- Supports external textures and textures embedded in binary files. 
+	- Does not support textures embedded as ascii inside gltf files.
+- No sampler support (ie uv tiling).
 
 ## Partially Implemented
 
