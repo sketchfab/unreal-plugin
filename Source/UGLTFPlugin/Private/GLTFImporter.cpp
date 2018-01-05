@@ -663,7 +663,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 
 		FScopedSlowTask MaterialProgress(8.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
 
-		FVector2D location(-260, -260);
+		FVector2D location(-300, -260);
 
 		SharedTextureMap texMap;
 
@@ -712,10 +712,6 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		{
 			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, opactityMaterial, opactityType, UnrealMaterial->OpacityMask, false, location, ColorChannel_Alpha);
 		}
-
-
-		//KB: Leave this here as a reference, in case I need to add a diffuse channel. Perhaps it causes a bug if the glTF file does not contain a BaseColor for some reason?
-		//FixupMaterial(FbxMaterial, UnrealMaterial); // add random diffuse if none exists
 
 		if (UnrealMaterial)
 		{
@@ -1309,6 +1305,8 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 								UnrealTextureExpression = NewObject<UMaterialExpressionTextureSample>(UnrealMaterial);
 								if (UnrealTextureExpression)
 								{
+									UnrealTextureExpression->Desc = FPaths::GetBaseFilename(GLTFToUnreal::ConvertString(img.uri));
+									UnrealTextureExpression->bCommentBubbleVisible = true;
 									UnrealMaterial->Expressions.Add(UnrealTextureExpression);
 									MaterialInput.Expression = UnrealTextureExpression;
 									UnrealTextureExpression->Texture = UnrealTexture;
@@ -1316,7 +1314,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 									UnrealTextureExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X);
 									UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
 
-									Location.Y += 200;
+									Location.Y += 240;
 
 									if ((texCoordValue != 0 && texCoordValue != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
 									{
@@ -1478,7 +1476,7 @@ void FGltfImportContext::Init(UObject* InParent, const FString& InName, const FS
 		));
 
 	Model = InModel;
-	bApplyWorldTransformToGeometry = false;
+	bApplyWorldTransformToGeometry = true;
 	bFindUnrealAssetReferences = false;
 }
 

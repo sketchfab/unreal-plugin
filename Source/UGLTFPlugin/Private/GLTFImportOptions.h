@@ -56,7 +56,7 @@ public:
 	UPROPERTY(config, EditAnywhere, Category=Mesh)
 	bool bGenerateUniquePathPerMesh;
 
-	UPROPERTY(config, EditAnywhere, Category=Mesh)
+	//UPROPERTY(config, EditAnywhere, Category=Mesh)
 	bool bApplyWorldTransformToGeometry;
 
 	UPROPERTY(config, EditAnywhere, Category = Mesh)

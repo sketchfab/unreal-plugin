@@ -26,7 +26,6 @@ This is a WIP. There is a lot of source code commented out and still being worke
 1. Leave "Generate Unique Path Per Mesh" unchecked to load the file in as a single mesh. Check to create a new asset per mesh.
 1. Press Import.
 
-- "Apply World Transform To Geometry" is currently not finished. Please ignore for now.
 - Note: Objects are currently scaled up by a factor of 100. This may be removed in future.
 
 ## Shipping The PreBuilt Plugin
@@ -39,7 +38,10 @@ If you wish to give this plugin to someone to use, but not pass on the source co
 - Loading in a glTF file as a static mesh
 - Loading in a glTF file where every mesh becomes its own static mesh
 - PBR materials
-- Basic support for Specular/Glossy workflows
+- Specular/Glossy workflows is a WIP.
+	- Specular textures are currently not being used. 
+	- Nothing is currently attached to the scalar specular input on a material. 
+	- Alpha channel of the Glossy map is inverted and used as roughness.
 - Only supports ascii *.gltf files currently. Binary support coming soon.
 - Only supports external textures (ie does not support textures in binary files). Embedded texture support coming soon.
 - No sampler support yet (ie uv tiling). This will be coming soon.

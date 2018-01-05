@@ -32,7 +32,7 @@ UGLTFSceneImportOptions::UGLTFSceneImportOptions(const FObjectInitializer& Objec
 	PathForAssets.Path = TEXT("/Game");
 	bGenerateUniqueMeshes = true;
 	bGenerateUniquePathPerMesh = true;
-	bApplyWorldTransformToGeometry = false;
+	bApplyWorldTransformToGeometry = true;
 	bImportMaterials = true;
 }
 
