@@ -1493,7 +1493,7 @@ void FGltfImportContext::DisplayErrorMessages(bool bAutomated)
 		const TCHAR* LogTitle = TEXT("GLTFImport");
 		FMessageLogModule& MessageLogModule = FModuleManager::LoadModuleChecked<FMessageLogModule>("MessageLog");
 		TSharedPtr<class IMessageLogListing> LogListing = MessageLogModule.GetLogListing(LogTitle);
-		LogListing->SetLabel(FText::FromString("USD Import"));
+		LogListing->SetLabel(FText::FromString("GLTF Import"));
 		LogListing->ClearMessages();
 
 		if (TokenizedErrorMessages.Num() > 0)

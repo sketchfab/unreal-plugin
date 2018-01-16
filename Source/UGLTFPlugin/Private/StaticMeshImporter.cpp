@@ -58,6 +58,9 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 		int32 VertexOffset = RawTriangles.VertexPositions.Num();
 		int32 WedgeOffset = RawTriangles.WedgeIndices.Num();
 		int32 FaceOffset = RawTriangles.FaceMaterialIndices.Num();
+		int32 TangentXOffset = RawTriangles.WedgeTangentX.Num();
+		int32 TangentYOffset = RawTriangles.WedgeTangentY.Num();
+		int32 TangentZOffset = RawTriangles.WedgeTangentZ.Num();
 		int32 NumFaces = 0;
 
 		// Indices
@@ -189,10 +192,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
 								{
 									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									const int32 NormalIdx = TangentZOffset + FaceIdx * 3 + CornerIdx;
 									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 3;
 									FVector Normal = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
 									FVector TransformedNormal = FinalTransformIT.TransformVector(Normal);
-									RawTriangles.WedgeTangentZ[WedgeIdx] = TransformedNormal.GetSafeNormal();
+									RawTriangles.WedgeTangentZ[NormalIdx] = TransformedNormal.GetSafeNormal();
 								}
 							}
 						}
@@ -205,10 +209,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
 								{
 									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									const int32 NormalIdx = TangentZOffset + FaceIdx * 3 + CornerIdx;
 									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 3;
 									FVector Normal = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
 									FVector TransformedNormal = FinalTransformIT.TransformVector(Normal);
-									RawTriangles.WedgeTangentZ[WedgeIdx] = TransformedNormal.GetSafeNormal();
+									RawTriangles.WedgeTangentZ[NormalIdx] = TransformedNormal.GetSafeNormal();
 								}
 							}
 						}
@@ -287,10 +292,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
 								{
 									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									const int32 TangentXIdx = TangentXOffset + FaceIdx * 3 + CornerIdx;
 									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 4;
 									FVector Tangent = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
 									FVector TransformedTangent = FinalTransformIT.TransformVector(Tangent);
-									RawTriangles.WedgeTangentX[WedgeIdx] = TransformedTangent.GetSafeNormal();
+									RawTriangles.WedgeTangentX[TangentXIdx] = TransformedTangent.GetSafeNormal();
 								}
 							}
 						}
@@ -303,10 +309,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 								for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
 								{
 									const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+									const int32 TangentXIdx = TangentXOffset + FaceIdx * 3 + CornerIdx;
 									int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 4;
 									FVector Tangent = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
 									FVector TransformedTangent = FinalTransformIT.TransformVector(Tangent);
-									RawTriangles.WedgeTangentX[WedgeIdx] = TransformedTangent.GetSafeNormal();
+									RawTriangles.WedgeTangentX[TangentXIdx] = TransformedTangent.GetSafeNormal();
 								}
 							}
 						}
@@ -343,20 +350,28 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 			// Flip anything that is indexed
 			for (int32 FaceIdx = 0; FaceIdx < NumFaces; ++FaceIdx)
 			{
-				const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
-				const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
+				int32 fidx = FaceIdx * 3;
+				int32 I0 = WedgeOffset + fidx + 0;
+				int32 I2 = WedgeOffset + fidx + 2;
 				Swap(RawTriangles.WedgeIndices[I0], RawTriangles.WedgeIndices[I2]);
 
+
+				I0 = TangentXOffset + fidx + 0;
+				I2 = TangentXOffset + fidx + 2;
 				if (RawTriangles.WedgeTangentX.Num())
 				{
 					Swap(RawTriangles.WedgeTangentX[I0], RawTriangles.WedgeTangentX[I2]);
 				}
 
+				I0 = TangentYOffset + fidx + 0;
+				I2 = TangentYOffset + fidx + 2;
 				if (RawTriangles.WedgeTangentY.Num())
 				{
 					Swap(RawTriangles.WedgeTangentY[I0], RawTriangles.WedgeTangentY[I2]);
 				}
 
+				I0 = TangentZOffset + fidx + 0;
+				I2 = TangentZOffset + fidx + 2;
 				if (RawTriangles.WedgeTangentZ.Num())
 				{
 					Swap(RawTriangles.WedgeTangentZ[I0], RawTriangles.WedgeTangentZ[I2]);

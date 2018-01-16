@@ -41,7 +41,10 @@ UObject* UGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* In
 
 	UGLTFImporter* GLTFImporter = IGLTFImporterModule::Get().GetImporter();
 
-	if (IsAutomatedImport() || GLTFImporter->ShowImportOptions(*ImportOptions))
+	// For now we won't show the import options and just import the full mesh each time
+	// When we require more options that are useful then show this dialog and also add new parameters to it.
+	//if (IsAutomatedImport() || GLTFImporter->ShowImportOptions(*ImportOptions))
+	if (1)
 	{
 		tinygltf::Model* Model = GLTFImporter->ReadGLTFFile(ImportContext, Filename);
 		if (Model)
