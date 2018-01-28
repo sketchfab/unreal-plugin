@@ -1,6 +1,3 @@
-// Copyright 2017 Sketchfab, Inc. All Rights Reserved.
-
-// Based on the USD and FBX Unreal Importers
-// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+// Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "GLTFConversionUtils.h"

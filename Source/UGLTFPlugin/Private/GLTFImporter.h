@@ -1,7 +1,4 @@
-// Copyright 2017 Sketchfab, Inc. All Rights Reserved.
-
-// Based on the USD and FBX Unreal Importers
-// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+// Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #pragma once 
 
@@ -64,9 +61,6 @@ struct FGltfImportContext
 	/** Whether or not to apply world transformations to the actual geometry */
 	bool bApplyWorldTransformToGeometry;
 
-	/** If true stop at any USD prim that has an unreal asset reference.  Geometry that is a child such prims will be ignored */
-	bool bFindUnrealAssetReferences;
-
 	/** Whether to automatically create Unreal materials for materials found in the glTF scene */
 	bool bImportMaterials;
 
@@ -121,7 +115,6 @@ public:
 	UStaticMesh* ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh = nullptr);
 
 	UTexture* ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, bool bSetupAsNormalMap, const char *MaterialProperty = nullptr);
-	void ImportTexturesFromNode(FGltfImportContext& ImportContext, tinygltf::Model* Model, tinygltf::Node* Node);
 
 	void CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
 

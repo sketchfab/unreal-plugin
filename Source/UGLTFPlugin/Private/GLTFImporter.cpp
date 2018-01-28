@@ -1,7 +1,4 @@
-// Copyright 2017 Sketchfab, Inc. All Rights Reserved.
-
-// Based on the USD and FBX Unreal Importers
-// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+// Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "GLTFImporter.h"
 #include "ScopedSlowTask.h"
@@ -211,16 +208,7 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 
 			FString MeshName = RawPrimName;
 
-			if (ImportContext.ImportOptions->bGenerateUniquePathPerMesh)
-			{
-				/*
-				FString USDPath = GLTFToUnreal::ConvertString(PrimToImport.Prim->GetPrimPath());
-				USDPath.RemoveFromStart(TEXT("/"));
-				USDPath.RemoveFromEnd(RawPrimName);
-				FinalPackagePathName /= USDPath;
-				*/
-			}
-			else
+			if (!ImportContext.ImportOptions->bGenerateUniquePathPerMesh)
 			{
 				// Make unique names
 				int* ExistingCount = ExistingNamesToCount.Find(MeshName);
@@ -424,12 +412,9 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 
 	UTexture* ExistingTexture = NULL;
 	UPackage* TexturePackage = NULL;
-	// First check if the asset already exists.
-	{
-		FString ObjectPath = BasePackageName + TEXT(".") + TextureName;
-		ExistingTexture = LoadObject<UTexture>(NULL, *ObjectPath, nullptr, LOAD_Quiet | LOAD_NoWarn);
-	}
 
+	FString ObjectPath = BasePackageName + TEXT(".") + TextureName;
+	ExistingTexture = LoadObject<UTexture>(NULL, *ObjectPath, nullptr, LOAD_Quiet | LOAD_NoWarn);
 
 	if (!ExistingTexture)
 	{
@@ -449,22 +434,15 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 	FString FinalFilePath;
 	if (IFileManager::Get().FileExists(*AbsoluteFilename))
 	{
-		// try opening from absolute path
 		FinalFilePath = AbsoluteFilename;
 	}
 	else if (IFileManager::Get().FileExists(*(FileBasePath / GLTFToUnreal::ConvertString(img->uri))))
 	{
-		// try fbx file base path + relative path
 		FinalFilePath = FileBasePath / GLTFToUnreal::ConvertString(img->uri);
 	}
 	else if (IFileManager::Get().FileExists(*(FileBasePath / AbsoluteFilename)))
 	{
-		// Some fbx files dont store the actual absolute filename as absolute and it is actually relative.  Try to get it relative to the FBX file we are importing
 		FinalFilePath = FileBasePath / AbsoluteFilename;
-	}
-	else
-	{
-		//UE_LOG(LogFbxMaterialImport, Warning, TEXT("Unable to find Texture file %s"), *AbsoluteFilename);
 	}
 
 	TArray<uint8> DataBinary;
@@ -491,28 +469,20 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 
 	if (DataBinary.Num() > 0)
 	{
-		//UE_LOG(LogFbxMaterialImport, Verbose, TEXT("Loading texture file %s"), *FinalFilePath);
 		const uint8* PtrTexture = DataBinary.GetData();
 		const auto &TextureFact = NewObject<UTextureFactory>();
 		TextureFact->AddToRoot();
 
-		// save texture settings if texture exist
 		TextureFact->SuppressImportOverwriteDialog();
 		const TCHAR* TextureType = *Extension;
 
-		// Unless the normal map setting is used during import, 
-		//	the user has to manually hit "reimport" then "recompress now" button
 		if (bSetupAsNormalMap)
 		{
 			if (!ExistingTexture)
 			{
 				TextureFact->LODGroup = TEXTUREGROUP_WorldNormalMap;
 				TextureFact->CompressionSettings = TC_Normalmap;
-				TextureFact->bFlipNormalMapGreenChannel = false; // ImportContext.ImportOptions->bInvertNormalMap;
-			}
-			else
-			{
-				//UE_LOG(LogFbxMaterialImport, Warning, TEXT("Manual texture reimport and recompression may be needed for %s"), *TextureName);
+				TextureFact->bFlipNormalMapGreenChannel = false;
 			}
 		}
 
@@ -523,7 +493,7 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 
 		if (UnrealTexture != NULL)
 		{
-			//Make sure the AssetImportData point on the texture file and not on the fbx files since the factory point on the fbx file
+			//Make sure the AssetImportData point on the texture file and not on the gltf files since the factory point on the gltf file
 			UnrealTexture->AssetImportData->Update(IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*FinalFilePath));
 
 			// Notify the asset registry
@@ -538,55 +508,9 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 	return UnrealTexture;
 }
 
-
-void UGLTFImporter::ImportTexturesFromNode(FGltfImportContext& ImportContext, tinygltf::Model* Model, tinygltf::Node* Node)
-{
-	const FString &Path = ImportContext.BasePath;
-
-	int32 NbMat = Model->materials.size(); //Should be the number of materials used by the node (ie its mesh and their primitives).
-
-	// visit all materials
-	int32 MaterialIndex;
-	for (MaterialIndex = 0; MaterialIndex < NbMat; MaterialIndex++)
-	{
-		tinygltf::Material &Material = Model->materials[MaterialIndex];
-
-		//go through all the possible textures
-		{
-			const auto &baseColorTexture = Material.values.find("baseColorTexture");
-			if (baseColorTexture != Material.values.end())
-			{
-				tinygltf::Parameter &param = baseColorTexture->second;
-				if (param.json_double_value.size() > 0)
-				{
-					const auto &textureIndexEntry = param.json_double_value.find("index");
-					if (textureIndexEntry != param.json_double_value.end())
-					{
-						int32 textureIndex = textureIndexEntry->second;
-						if (textureIndex >= 0 && textureIndex < Model->textures.size())
-						{
-							tinygltf::Texture &texture = Model->textures[textureIndex];
-							int32 source = texture.source;
-
-							if (source >= 0 && source < Model->images.size())
-							{
-								tinygltf::Image &img = Model->images[source];
-
-								bool bSetupAsNormalMap = false;
-								ImportTexture(ImportContext, &img, bSetupAsNormalMap);
-							}
-						}
-					}
-				}
-			}
-		}//end if(Material)
-	}// end for MaterialIndex
-}
-
 void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *Mat, TArray<UMaterialInterface*>& OutMaterials)
 {
 	// Make sure we have a parent
-	//if (!ensure(ImportContext.Parent.IsValid()))
 	if (!ImportContext.Parent)
 	{
 		return;
@@ -648,16 +572,6 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 			}
 		}
 
-
-		/*
-		//KB: Leaving here for reference later on when I add support for skeletal meshes.
-		if (bForSkeletalMesh)
-		{
-			bool bNeedsRecompile = false;
-			UnrealMaterial->GetMaterial()->SetMaterialUsage(bNeedsRecompile, MATUSAGE_SkeletalMesh);
-		}
-		*/
-
 		// Set the dirty flag so this package will get saved later
 		Package->SetDirtyFlag(true);
 
@@ -683,12 +597,6 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		}
 		else
 		{
-			// For now I am ignoring the specular data (rgb) since it makes materials too dark. The method does work, but due to the look its disabled for now.
-			// To get use the specular map I may need to multiply the specular map color against the color channel and add the result to the color input. 
-			// Then possibly also add the specular map the specular input.
-			// On the Adam Head Model it looks ok if I multiply the specularFactor against the diffuse Texture and place the result into the color input.
-			//CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Specular, false, location);
-
 			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Roughness, false, location, ColorChannel_Alpha);
 		}
 
@@ -902,9 +810,6 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 		break;
 	}
 
-	// This method is currently used to do all the material attachments 
-	// This enum is just used to identify what channel we are actually dealing with
-	// TODO: For readability refactor each channel out into its own method
 	enum PBRTYPE
 	{
 		PBRTYPE_Undefined,
@@ -1254,7 +1159,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			}
 
 			int32 texCoordValue = 0;
-			const auto &texCoordEntry = param.json_double_value.find("textCoord");
+			const auto &texCoordEntry = param.json_double_value.find("texCoord");
 			if (texCoordEntry != param.json_double_value.end())
 			{
 				texCoordValue = (int32)texCoordEntry->second;
@@ -1293,14 +1198,6 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 								float ScaleU = 1.0;  
 								float ScaleV = 1.0; 
 
-								/*
-								//TODO: Respect the sampler settings
-								if (texture.sampler >= 0 && texture.sampler < ImportContext.Model->samplers.size())
-								{
-									const auto &sampler = ImportContext.Model->samplers[texture.sampler];
-								}
-								*/
-
 								// and link it to the material 
 								UnrealTextureExpression = NewObject<UMaterialExpressionTextureSample>(UnrealMaterial);
 								if (UnrealTextureExpression)
@@ -1313,8 +1210,6 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 									UnrealTextureExpression->SamplerType = bSetupAsNormalMap ? SAMPLERTYPE_Normal : SAMPLERTYPE_Color;
 									UnrealTextureExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X);
 									UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
-
-									Location.Y += 240;
 
 									if ((texCoordValue != 0 && texCoordValue != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
 									{
@@ -1331,6 +1226,8 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 											MyCoordExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
 										}
 									}
+
+									Location.Y += 240;
 
 									SharedTexture sharedTex;
 									sharedTex.texCoords = texCoordValue;
@@ -1477,7 +1374,6 @@ void FGltfImportContext::Init(UObject* InParent, const FString& InName, const FS
 
 	Model = InModel;
 	bApplyWorldTransformToGeometry = true;
-	bFindUnrealAssetReferences = false;
 }
 
 void FGltfImportContext::AddErrorMessage(EMessageSeverity::Type MessageSeverity, FText ErrorMessage)

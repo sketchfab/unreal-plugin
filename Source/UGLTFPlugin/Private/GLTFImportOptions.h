@@ -1,7 +1,4 @@
-// Copyright 2017 Sketchfab, Inc. All Rights Reserved.
-
-// Based on the USD and FBX Unreal Importers
-// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+// Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #pragma once 
 
@@ -105,13 +102,5 @@ public:
 	/** What should happen with existing assets */
 	UPROPERTY(config, EditAnywhere, Category=Mesh, meta = (EditCondition=bImportMeshes))
 	EExistingAssetPolicy ExistingAssetPolicy;
-
-	/** 
-	 * This setting determines what to do if more than one USD prim is found with the same name.  If this setting is true a unique name will be generated and a unique asset will be imported 
-	 * If this is false, the first asset found is generated. Assets will be reused when spawning actors into the world.
-	 */
-	UPROPERTY(config, EditAnywhere, Category=Mesh, meta=(EditCondition=bImportMeshes))
-	bool bGenerateUniqueMeshes;
-
 };
 

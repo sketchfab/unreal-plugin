@@ -1,7 +1,4 @@
-// Copyright 2017 Sketchfab, Inc. All Rights Reserved.
-
-// Based on the USD and FBX Unreal Importers
-// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+// Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "GLTFAssetImportFactory.h"
 #include "GLTFImporter.h"
@@ -57,12 +54,6 @@ UObject* UGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* In
 			{
 				GLTFImporter->CreateNodeMaterials(ImportContext, ImportContext.Materials);
 			}
-			/*
-			else if (ImportOptions->bImportTextures)
-			{
-				GLTFImporter->ImportTexturesFromNode(ImportContext, Model);
-			}
-			*/
 
 			TArray<FGltfPrimToImport> PrimsToImport;
 			ImportContext.PrimResolver->FindPrimsToImport(ImportContext, PrimsToImport);
@@ -100,7 +91,6 @@ bool UGLTFAssetImportFactory::FactoryCanImport(const FString& Filename)
 void UGLTFAssetImportFactory::CleanUp()
 {
 	ImportContext = FGLTFAssetImportContext();
-	//UnrealUSDWrapper::CleanUp();
 }
 
 void UGLTFAssetImportFactory::ParseFromJson(TSharedRef<class FJsonObject> ImportSettingsJson)
