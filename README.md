@@ -2,8 +2,6 @@
 
 An Unreal Importer plugin for Unreal Engine. Compatible with 4.18 onwards. Utilizes the tinygltf library for loading in the glTF 2.0 file format: https://github.com/syoyo/tinygltf
 
-This is a WIP. There is a lot of source code commented out and still being worked on. No code is final at this stage.
-
 ## Installation
 
 1. Open the Unreal Editor.
@@ -22,11 +20,10 @@ This is a WIP. There is a lot of source code commented out and still being worke
 
 1. In the Unreal Editor go to the Content Browser at the bottom.
 1. Select Import.
-1. Choose a glTF 2.0 file to load (*.gltf).
-1. Leave "Generate Unique Path Per Mesh" unchecked to load the file in as a single mesh. Check to create a new asset per mesh.
-1. Press Import.
+1. Choose a glTF 2.0 file to load (*.gltf or *.glb).
+1. Press Open.
 
-- Note: Objects are currently scaled up by a factor of 100. This may be removed in future.
+- Note: Objects are currently scaled up by a factor of 100.
 
 ## Shipping The PreBuilt Plugin
 
@@ -36,9 +33,8 @@ If you wish to give this plugin to someone to use, but not pass on the source co
 
 - Only imports the first scene found in the glTF file
 - Loading in a glTF, or glb, file as a static mesh
-- Loading in a glTF, or glb, file where every mesh becomes its own static mesh
 - PBR materials
-- Specular/Glossy workflows is a WIP.
+- Specular workflows are limited.
 	- Specular textures are currently not being used. 
 	- Nothing is currently attached to the scalar specular input on a material. 
 	- Alpha channel of the Glossy map is inverted and used as roughness.
@@ -46,10 +42,6 @@ If you wish to give this plugin to someone to use, but not pass on the source co
 - Supports external textures and textures embedded in binary files. 
 	- Does not support textures embedded as ascii inside gltf files.
 - No sampler support (ie uv tiling).
-
-## Partially Implemented
-
-There is also WIP on importing a scene via 'File->Import Into Level'. This does not import anything at this stage and you should avoid using it to load glTF files.
 
 ## What's Not Supported And Will Not Be In Version 1.0
 
