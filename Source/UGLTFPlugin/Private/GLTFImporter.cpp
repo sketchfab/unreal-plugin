@@ -376,7 +376,7 @@ tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGltfImportContext& ImportContext, 
 	return Model;
 }
 
-UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, bool bSetupAsNormalMap, const char *MaterialProperty)
+UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty)
 {
 	if (!img)
 	{
@@ -476,7 +476,7 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 		TextureFact->SuppressImportOverwriteDialog();
 		const TCHAR* TextureType = *Extension;
 
-		if (bSetupAsNormalMap)
+		if (samplerType == SAMPLERTYPE_Normal)
 		{
 			if (!ExistingTexture)
 			{
@@ -493,6 +493,11 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 
 		if (UnrealTexture != NULL)
 		{
+			if (samplerType == SAMPLERTYPE_LinearColor)
+			{
+				UnrealTexture->SRGB = false;
+			}
+
 			//Make sure the AssetImportData point on the texture file and not on the gltf files since the factory point on the gltf file
 			UnrealTexture->AssetImportData->Update(IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*FinalFilePath));
 
@@ -582,26 +587,26 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 		SharedTextureMap texMap;
 
 		bool usingPBR = true;
-		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, false, location))
+		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, SAMPLERTYPE_Color, location))
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, false, location);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, SAMPLERTYPE_Color, location);
 			usingPBR = false;
 		}
 
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, false, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, SAMPLERTYPE_Color, location);
 
 		if (usingPBR)
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, false, location, ColorChannel_Green);
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, false, location, ColorChannel_Blue);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Roughness, SAMPLERTYPE_LinearColor, location, ColorChannel_Green);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "metallicRoughnessTexture", TextureType_PBR, UnrealMaterial->Metallic, SAMPLERTYPE_LinearColor, location, ColorChannel_Blue);
 		}
 		else
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Roughness, false, location, ColorChannel_Alpha);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Roughness, SAMPLERTYPE_LinearColor, location, ColorChannel_Alpha);
 		}
 
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, true, location);
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, false, location, ColorChannel_Red);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, SAMPLERTYPE_Normal, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, SAMPLERTYPE_LinearColor, location, ColorChannel_Red);
 
 
 		const char *opactityMaterial = "baseColorTexture";
@@ -614,11 +619,11 @@ void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tiny
 
 		if (UnrealMaterial->BlendMode == BLEND_Translucent)
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, opactityMaterial, opactityType, UnrealMaterial->Opacity, false, location, ColorChannel_Alpha);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, opactityMaterial, opactityType, UnrealMaterial->Opacity, SAMPLERTYPE_Color, location, ColorChannel_Alpha);
 		}
 		else if (UnrealMaterial->BlendMode == BLEND_Masked)
 		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, opactityMaterial, opactityType, UnrealMaterial->OpacityMask, false, location, ColorChannel_Alpha);
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, opactityMaterial, opactityType, UnrealMaterial->OpacityMask, SAMPLERTYPE_Color, location, ColorChannel_Alpha);
 		}
 
 		if (UnrealMaterial)
@@ -787,7 +792,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	const char* MaterialProperty,
 	TextureType texType,
 	FExpressionInput& MaterialInput,
-	bool bSetupAsNormalMap,
+	EMaterialSamplerType samplerType,
 	FVector2D& Location,
 	ColorChannel colorChannel)
 {
@@ -1192,7 +1197,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 						if (!bCreated)
 						{
-							UTexture* UnrealTexture = ImportTexture(ImportContext, &img, bSetupAsNormalMap, MaterialProperty);
+							UTexture* UnrealTexture = ImportTexture(ImportContext, &img, samplerType, MaterialProperty);
 							if (UnrealTexture)
 							{
 								float ScaleU = 1.0;  
@@ -1207,7 +1212,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 									UnrealMaterial->Expressions.Add(UnrealTextureExpression);
 									MaterialInput.Expression = UnrealTextureExpression;
 									UnrealTextureExpression->Texture = UnrealTexture;
-									UnrealTextureExpression->SamplerType = bSetupAsNormalMap ? SAMPLERTYPE_Normal : SAMPLERTYPE_Color;
+									UnrealTextureExpression->SamplerType = samplerType;
 									UnrealTextureExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X);
 									UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
 

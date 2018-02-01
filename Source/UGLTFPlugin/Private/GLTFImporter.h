@@ -114,12 +114,12 @@ public:
 	UObject* ImportMeshes(FGltfImportContext& ImportContext, const TArray<FGltfPrimToImport>& PrimsToImport);
 	UStaticMesh* ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh = nullptr);
 
-	UTexture* ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, bool bSetupAsNormalMap, const char *MaterialProperty = nullptr);
+	UTexture* ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty = nullptr);
 
 	void CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
 
 	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGltfImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, SharedTextureMap &texMap, const char* MaterialProperty, TextureType texType,
-		FExpressionInput& MaterialInput, bool bSetupAsNormalMap, FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
+		FExpressionInput& MaterialInput, EMaterialSamplerType samplerType, FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
 
 	int32 CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials);
 	void AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel);
