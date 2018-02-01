@@ -352,6 +352,14 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 				int32 I2 = WedgeOffset + fidx + 2;
 				Swap(RawTriangles.WedgeIndices[I0], RawTriangles.WedgeIndices[I2]);
 
+				for (int32 TexCoordIdx = 0; TexCoordIdx < MAX_MESH_TEXTURE_COORDS; ++TexCoordIdx)
+				{
+					TArray<FVector2D>& TexCoords = RawTriangles.WedgeTexCoords[TexCoordIdx];
+					if (TexCoords.Num() > 0)
+					{
+						Swap(TexCoords[I0], TexCoords[I2]);
+					}
+				}
 
 				I0 = TangentXOffset + fidx + 0;
 				I2 = TangentXOffset + fidx + 2;
@@ -372,15 +380,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& Impor
 				if (RawTriangles.WedgeTangentZ.Num())
 				{
 					Swap(RawTriangles.WedgeTangentZ[I0], RawTriangles.WedgeTangentZ[I2]);
-				}
-
-				for (int32 TexCoordIdx = 0; TexCoordIdx < MAX_MESH_TEXTURE_COORDS; ++TexCoordIdx)
-				{
-					TArray<FVector2D>& TexCoords = RawTriangles.WedgeTexCoords[TexCoordIdx];
-					if (TexCoords.Num() > 0)
-					{
-						Swap(TexCoords[I0], TexCoords[I2]);
-					}
 				}
 			}
 		}
