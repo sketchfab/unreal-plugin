@@ -15,13 +15,12 @@ THIRD_PARTY_INCLUDES_END
 
 
 class UGLTFPrimResolver;
-class IGltfPrim;
 struct FRawMesh;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogGLTFImport, Log, All);
 
 USTRUCT()
-struct FGltfImportContext
+struct FGLTFImportContext
 {
 	GENERATED_BODY()
 	
@@ -64,7 +63,7 @@ struct FGltfImportContext
 	/** Whether to automatically create Unreal materials for materials found in the glTF scene */
 	bool bImportMaterials;
 
-	virtual ~FGltfImportContext() { }
+	virtual ~FGLTFImportContext() { }
 
 	virtual void Init(UObject* InParent, const FString& InName, const FString &InBasePath, tinygltf::Model* InModel);
 
@@ -109,19 +108,19 @@ class UGLTFImporter : public UObject
 public:
 	bool ShowImportOptions(UObject& ImportOptions);
 
-	tinygltf::Model* ReadGLTFFile(FGltfImportContext& ImportContext, const FString& Filename);
+	tinygltf::Model* ReadGLTFFile(FGLTFImportContext& ImportContext, const FString& Filename);
 
-	UObject* ImportMeshes(FGltfImportContext& ImportContext, const TArray<FGltfPrimToImport>& PrimsToImport);
-	UStaticMesh* ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh = nullptr);
+	UObject* ImportMeshes(FGLTFImportContext& ImportContext, const TArray<FGLTFPrimToImport>& PrimsToImport);
+	UStaticMesh* ImportSingleMesh(FGLTFImportContext& ImportContext, EGLTFMeshImportType ImportType, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh = nullptr);
 
-	UTexture* ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty = nullptr);
+	UTexture* ImportTexture(FGLTFImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty = nullptr);
 
-	void CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
+	void CreateUnrealMaterial(FGLTFImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
 
-	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGltfImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, SharedTextureMap &texMap, const char* MaterialProperty, TextureType texType,
+	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGLTFImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, SharedTextureMap &texMap, const char* MaterialProperty, TextureType texType,
 		FExpressionInput& MaterialInput, EMaterialSamplerType samplerType, FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
 
-	int32 CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials);
+	int32 CreateNodeMaterials(FGLTFImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials);
 	void AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel);
 
 };

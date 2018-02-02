@@ -9,7 +9,7 @@
 #include "GLTFAssetImportFactory.generated.h"
 
 USTRUCT()
-struct FGLTFAssetImportContext : public FGltfImportContext
+struct FGLTFAssetImportContext : public FGLTFImportContext
 {
 	GENERATED_USTRUCT_BODY()
 

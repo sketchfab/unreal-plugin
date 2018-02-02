@@ -32,7 +32,7 @@ enum class EExistingAssetPolicy : uint8
 };
 
 UENUM()
-enum class EGltfMeshImportType : uint8
+enum class EGLTFMeshImportType : uint8
 {
 	StaticMesh,
 };
@@ -44,7 +44,7 @@ class UGLTFImportOptions : public UObject
 public:
 	/** Defines what should happen with existing actors */
 	UPROPERTY(config, EditAnywhere, Category=Mesh)
-	EGltfMeshImportType MeshImportType;
+	EGLTFMeshImportType MeshImportType;
 
 	/**
 	 * If checked, To enforce unique asset paths, all assets will be created in directories that match with their mesh path 

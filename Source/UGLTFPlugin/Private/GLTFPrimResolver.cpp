@@ -19,7 +19,7 @@ void UGLTFPrimResolver::Init()
 	AssetRegistry = &FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
 }
 
-void UGLTFPrimResolver::FindPrimsToImport(FGltfImportContext& ImportContext, TArray<FGltfPrimToImport>& OutPrimsToImport)
+void UGLTFPrimResolver::FindPrimsToImport(FGLTFImportContext& ImportContext, TArray<FGLTFPrimToImport>& OutPrimsToImport)
 {
 	if (ImportContext.Model->scenes.size() == 0)
 		return;
@@ -34,7 +34,7 @@ void UGLTFPrimResolver::FindPrimsToImport(FGltfImportContext& ImportContext, TAr
 	}
 }
 
-void UGLTFPrimResolver::FindPrimsToImport_Recursive(FGltfImportContext& ImportContext, tinygltf::Node* Prim, TArray<FGltfPrimToImport>& OutTopLevelPrims, FMatrix ParentMat)
+void UGLTFPrimResolver::FindPrimsToImport_Recursive(FGLTFImportContext& ImportContext, tinygltf::Node* Prim, TArray<FGLTFPrimToImport>& OutTopLevelPrims, FMatrix ParentMat)
 {
 	const FString PrimName = GLTFToUnreal::ConvertString(Prim->name);
 
@@ -43,7 +43,7 @@ void UGLTFPrimResolver::FindPrimsToImport_Recursive(FGltfImportContext& ImportCo
 	
 	if (Prim->mesh >= 0 && Prim->mesh < ImportContext.Model->meshes.size())
 	{
-		FGltfPrimToImport NewPrim;
+		FGLTFPrimToImport NewPrim;
 		NewPrim.NumLODs = 0;
 		NewPrim.Prim = Prim;
 

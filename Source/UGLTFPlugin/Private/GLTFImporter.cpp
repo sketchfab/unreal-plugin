@@ -167,7 +167,7 @@ UGLTFImporter::UGLTFImporter(const FObjectInitializer& Initializer)
 {
 }
 
-UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TArray<FGltfPrimToImport>& PrimsToImport)
+UObject* UGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const TArray<FGLTFPrimToImport>& PrimsToImport)
 {
 	FScopedSlowTask SlowTask(1.0f, LOCTEXT("ImportingGLTFMeshes", "Importing glTF Meshes"));
 	SlowTask.Visibility = ESlowTaskVisibility::ForceVisible;
@@ -175,7 +175,7 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 
 	const FTransform& ConversionTransform = ImportContext.ConversionTransform;
 
-	EGltfMeshImportType MeshImportType = ImportContext.ImportOptions->MeshImportType;
+	EGLTFMeshImportType MeshImportType = ImportContext.ImportOptions->MeshImportType;
 
 	// Make unique names
 	TMap<FString, int> ExistingNamesToCount;
@@ -188,7 +188,7 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 	UStaticMesh* singleStaticMesh = nullptr;
 
 	FRawMesh RawTriangles;
-	for (const FGltfPrimToImport& PrimToImport : PrimsToImport)
+	for (const FGLTFPrimToImport& PrimToImport : PrimsToImport)
 	{
 		FString FinalPackagePathName = ContentDirectoryLocation;
 		SlowTask.EnterProgressFrame(1.0f / PrimsToImport.Num(), FText::Format(LOCTEXT("ImportingGLTFMesh", "Importing Mesh {0} of {1}"), MeshCount + 1, PrimsToImport.Num()));
@@ -297,11 +297,11 @@ UObject* UGLTFImporter::ImportMeshes(FGltfImportContext& ImportContext, const TA
 	return ImportContext.PathToImportAssetMap.Num() ? ImportContext.PathToImportAssetMap.CreateIterator().Value() : nullptr;
 }
 
-UStaticMesh* UGLTFImporter::ImportSingleMesh(FGltfImportContext& ImportContext, EGltfMeshImportType ImportType, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
+UStaticMesh* UGLTFImporter::ImportSingleMesh(FGLTFImportContext& ImportContext, EGLTFMeshImportType ImportType, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
 {
 	UStaticMesh* NewMesh = nullptr;
 
-	if (ImportType == EGltfMeshImportType::StaticMesh)
+	if (ImportType == EGLTFMeshImportType::StaticMesh)
 	{
 		NewMesh = FGLTFStaticMeshImporter::ImportStaticMesh(ImportContext, PrimToImport, RawTriangles, singleMesh);
 	}
@@ -337,7 +337,7 @@ bool UGLTFImporter::ShowImportOptions(UObject& ImportOptions)
 	return OptionsWindow->ShouldImport();
 }
 
-tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGltfImportContext& ImportContext, const FString& Filename)
+tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGLTFImportContext& ImportContext, const FString& Filename)
 {
 	FString FilePath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*Filename);
 	FString CleanFilename = FPaths::GetCleanFilename(Filename);
@@ -376,7 +376,7 @@ tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGltfImportContext& ImportContext, 
 	return Model;
 }
 
-UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty)
+UTexture* UGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty)
 {
 	if (!img)
 	{
@@ -513,7 +513,7 @@ UTexture* UGLTFImporter::ImportTexture(FGltfImportContext& ImportContext, tinygl
 	return UnrealTexture;
 }
 
-void UGLTFImporter::CreateUnrealMaterial(FGltfImportContext& ImportContext, tinygltf::Material *Mat, TArray<UMaterialInterface*>& OutMaterials)
+void UGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, tinygltf::Material *Mat, TArray<UMaterialInterface*>& OutMaterials)
 {
 	// Make sure we have a parent
 	if (!ImportContext.Parent)
@@ -785,7 +785,7 @@ void UGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel 
 
 bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	FScopedSlowTask &MaterialProgress,
-	FGltfImportContext& ImportContext,
+	FGLTFImportContext& ImportContext,
 	tinygltf::Material *mat,
 	UMaterial* UnrealMaterial,
 	SharedTextureMap &texMap,
@@ -1326,7 +1326,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	return bCreated;
 }
 
-int32 UGLTFImporter::CreateNodeMaterials(FGltfImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials)
+int32 UGLTFImporter::CreateNodeMaterials(FGLTFImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials)
 {
 	FScopedSlowTask SlowTask(1.0f, LOCTEXT("ImportingGLTFMaterials", "Importing glTF Materials"));
 	SlowTask.Visibility = ESlowTaskVisibility::ForceVisible;
@@ -1346,7 +1346,7 @@ int32 UGLTFImporter::CreateNodeMaterials(FGltfImportContext &ImportContext, TArr
 
 //======================================================================================================
 
-void FGltfImportContext::Init(UObject* InParent, const FString& InName, const FString &InBasePath, tinygltf::Model* InModel)
+void FGLTFImportContext::Init(UObject* InParent, const FString& InName, const FString &InBasePath, tinygltf::Model* InModel)
 {
 	Parent = InParent;
 	ObjectName = InName;
@@ -1381,12 +1381,12 @@ void FGltfImportContext::Init(UObject* InParent, const FString& InName, const FS
 	bApplyWorldTransformToGeometry = true;
 }
 
-void FGltfImportContext::AddErrorMessage(EMessageSeverity::Type MessageSeverity, FText ErrorMessage)
+void FGLTFImportContext::AddErrorMessage(EMessageSeverity::Type MessageSeverity, FText ErrorMessage)
 {
 	TokenizedErrorMessages.Add(FTokenizedMessage::Create(MessageSeverity, ErrorMessage));
 }
 
-void FGltfImportContext::DisplayErrorMessages(bool bAutomated)
+void FGLTFImportContext::DisplayErrorMessages(bool bAutomated)
 {
 	if (!bAutomated)
 	{
@@ -1412,7 +1412,7 @@ void FGltfImportContext::DisplayErrorMessages(bool bAutomated)
 	}
 }
 
-void FGltfImportContext::ClearErrorMessages()
+void FGLTFImportContext::ClearErrorMessages()
 {
 	TokenizedErrorMessages.Empty();
 }

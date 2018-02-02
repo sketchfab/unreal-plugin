@@ -6,7 +6,7 @@
 UGLTFImportOptions::UGLTFImportOptions(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	MeshImportType = EGltfMeshImportType::StaticMesh;
+	MeshImportType = EGLTFMeshImportType::StaticMesh;
 	bApplyWorldTransformToGeometry = true;
 	bImportMaterials = true;
 }

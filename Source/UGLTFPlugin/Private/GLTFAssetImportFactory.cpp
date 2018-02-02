@@ -12,7 +12,7 @@
 
 void FGLTFAssetImportContext::Init(UObject* InParent, const FString& InName, const FString& InBasePath, class tinygltf::Model* InModel)
 {
-	FGltfImportContext::Init(InParent, InName, InBasePath, InModel);
+	FGLTFImportContext::Init(InParent, InName, InBasePath, InModel);
 }
 
 
@@ -55,7 +55,7 @@ UObject* UGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* In
 				GLTFImporter->CreateNodeMaterials(ImportContext, ImportContext.Materials);
 			}
 
-			TArray<FGltfPrimToImport> PrimsToImport;
+			TArray<FGLTFPrimToImport> PrimsToImport;
 			ImportContext.PrimResolver->FindPrimsToImport(ImportContext, PrimsToImport);
 			ImportedObject = GLTFImporter->ImportMeshes(ImportContext, PrimsToImport);
 

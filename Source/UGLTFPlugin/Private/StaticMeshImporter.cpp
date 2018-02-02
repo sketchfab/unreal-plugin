@@ -12,7 +12,7 @@
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
 
-UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGltfImportContext& ImportContext, const FGltfPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
+UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& ImportContext, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
 {
 	const FTransform& ConversionTransform = ImportContext.ConversionTransform;
 	const FMatrix PrimToWorld = ImportContext.bApplyWorldTransformToGeometry ? PrimToImport.WorldPrimTransform : FMatrix::Identity;

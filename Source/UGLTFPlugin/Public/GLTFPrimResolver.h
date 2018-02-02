@@ -13,13 +13,13 @@ THIRD_PARTY_INCLUDES_END
 
 class IAssetRegistry;
 class UActorFactory;
-struct FGltfImportContext;
+struct FGLTFImportContext;
 struct FGltfGeomData;
 struct FGLTFSceneImportContext;
 
-struct FGltfPrimToImport
+struct FGLTFPrimToImport
 {
-	FGltfPrimToImport()
+	FGLTFPrimToImport()
 		: Prim(nullptr)
 		, NumLODs(0)
 		, LocalPrimTransform(FMatrix::Identity)
@@ -42,10 +42,10 @@ class UGLTFPrimResolver : public UObject
 
 public:
 	virtual void Init();
-	virtual void FindPrimsToImport(FGltfImportContext& ImportContext, TArray<FGltfPrimToImport>& OutPrimsToImport);
+	virtual void FindPrimsToImport(FGLTFImportContext& ImportContext, TArray<FGLTFPrimToImport>& OutPrimsToImport);
 
 protected:
-	void FindPrimsToImport_Recursive(FGltfImportContext& ImportContext, tinygltf::Node* Prim, TArray<FGltfPrimToImport>& OutTopLevelPrims, FMatrix ParentMat);
+	void FindPrimsToImport_Recursive(FGLTFImportContext& ImportContext, tinygltf::Node* Prim, TArray<FGLTFPrimToImport>& OutTopLevelPrims, FMatrix ParentMat);
 	bool IsValidPathForImporting(const FString& TestPath) const;
 
 protected:
