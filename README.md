@@ -2,6 +2,9 @@
 
 An Unreal Importer plugin for Unreal Engine. Compatible with 4.18 onwards. Utilizes the tinygltf library for loading in the glTF 2.0 file format: https://github.com/syoyo/tinygltf
 
+## Note
+This plugin relies on a modified version of ZipUtility which can be found at https://github.com/GameLogicDesign/ZipUtility-ue4
+
 ## Installation
 
 1. Open the Unreal Editor.
@@ -12,7 +15,8 @@ An Unreal Importer plugin for Unreal Engine. Compatible with 4.18 onwards. Utili
 1. On your computer go to the location where your project was created.
 1. In your project folder create a new folder called "Plugins".
 1. Download this unreal-exporter project from github and extract into this folder.
-1. You should now have a folder structure which looks something like "MyProject/Plugins/unreal-exporter/...".
+1. Download this Modified ZipUtility Plugin project (from https://github.com/GameLogicDesign/ZipUtility-ue4) and also extract into this folder.
+1. You should now have a folder structure which looks something like "MyProject/Plugins/unreal-exporter/..."  and "MyProject/Plugins/ZipUtility-ue4/...".
 1. Shut down the Unreal Editor if its still running.
 1. Double click the MyProject.uproject file to run Unreal Editor again. ("MyProject/MyProject.uproject")
 

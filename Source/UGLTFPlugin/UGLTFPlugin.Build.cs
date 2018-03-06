@@ -7,8 +7,8 @@ namespace UnrealBuildTool.Rules
 		public UGLTFPlugin(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-			
-			PublicIncludePaths.AddRange(
+
+            PublicIncludePaths.AddRange(
 				new string[] {
 					// ... add public include paths required here ...
 				}
@@ -39,6 +39,7 @@ namespace UnrealBuildTool.Rules
                     "RHI",
                     "MessageLog",
                     "JsonUtilities",
+                    "ZipUtility" //https://github.com/GameLogicDesign/ZipUtility-ue4
 					// ... add other public dependencies that you statically link with here ...
 				}
 				);

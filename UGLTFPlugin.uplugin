@@ -21,5 +21,11 @@
 			"Type" : "Editor",
 			"LoadingPhase" : "Default"
 		}
-	]
+	],
+	"Plugins": [                     
+    {                             
+       "Name": "ZipUtility",  
+       "Enabled": true              
+    }                              
+   ]                             
 }
