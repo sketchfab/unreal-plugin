@@ -2,6 +2,9 @@
 	"BuildId": "3709383",
 	"Modules": 
 	{
-		"UGLTFPlugin": "UE4Editor-UGLTFPlugin.dll"
+		"SketchfabAssetBrowser": "UE4Editor-SketchfabAssetBrowser.dll",
+		"SketchfabGLTF": "UE4Editor-SketchfabGLTF.dll",
+		"WindowsFileUtility": "UE4Editor-WindowsFileUtility.dll",
+		"ZipUtility": "UE4Editor-ZipUtility.dll"
 	}
 }

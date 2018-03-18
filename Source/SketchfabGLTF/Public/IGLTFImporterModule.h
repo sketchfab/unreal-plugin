@@ -10,12 +10,12 @@ class IGLTFImporterModule : public IModuleInterface
 public:
 	static inline IGLTFImporterModule& Get()
 	{
-		return FModuleManager::LoadModuleChecked< IGLTFImporterModule >( "UGLTFPlugin" );
+		return FModuleManager::LoadModuleChecked< IGLTFImporterModule >( "SketchfabGLTF" );
 	}
 
 	static inline bool IsAvailable()
 	{
-		return FModuleManager::Get().IsModuleLoaded( "UGLTFPlugin" );
+		return FModuleManager::Get().IsModuleLoaded( "SketchfabGLTF" );
 	}
 
 	virtual class UGLTFImporter* GetImporter() = 0;

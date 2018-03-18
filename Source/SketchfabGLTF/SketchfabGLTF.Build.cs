@@ -2,9 +2,9 @@
 
 namespace UnrealBuildTool.Rules
 {
-	public class UGLTFPlugin : ModuleRules
+	public class SketchfabGLTF : ModuleRules
 	{
-		public UGLTFPlugin(ReadOnlyTargetRules Target) : base(Target)
+		public SketchfabGLTF(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
