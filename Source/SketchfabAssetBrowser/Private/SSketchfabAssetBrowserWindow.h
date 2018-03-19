@@ -6,6 +6,7 @@
 #include "SSketchfabAssetView.h"
 
 #include "Runtime/Online/HTTP/Public/Http.h"
+#include "SketchfabTask.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowserWindow, Log, All);
 
@@ -65,6 +66,12 @@ private:
 	void OnModelProgress(FHttpRequestPtr HttpRequest, int32 BytesSent, int32 BytesReceived);
 
 	void AddAuthorization(TSharedRef<IHttpRequest> Request);
+
+private:
+	//SketchfabRESTClient callbacks
+	void OnModelList(const FSketchfabTask& InSwarmTask);
+	void OnDownloadThumbnail(const FSketchfabTask& InSwarmTask);
+	void OnSketchfabTaskFailed(const FSketchfabTask& InSwarmTask);
 
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;

@@ -41,6 +41,7 @@
 #include "SSplitter.h"
 #include "SSketchfabAssetView.h"
 #include "SOAuthWebBrowser.h"
+#include "SketchfabRESTClient.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
@@ -122,7 +123,20 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	//When the object is constructed, Get the HTTP module
 	Http = &FHttpModule::Get();
 
-	GetModels("https://api.sketchfab.com/v3/search?type=models&downloadable=true&staffpicked=true&sort_by=-publishedAt");
+	//GetModels("https://api.sketchfab.com/v3/search?type=models&downloadable=true&staffpicked=true&sort_by=-publishedAt");
+
+	FSketchfabTaskData TaskData;
+	TaskData.ModelSearchURL = "https://api.sketchfab.com/v3/search?type=models&downloadable=true&staffpicked=true&sort_by=-publishedAt";
+	TaskData.Token = Token;
+	TaskData.CacheFolder = CacheFolder;
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> SwarmTask = MakeShareable(new FSketchfabTask(TaskData));
+	SwarmTask->SetState(SRS_GETMODELS);
+	SwarmTask->OnThumbnailRequired().BindRaw(this, &SSketchfabAssetBrowserWindow::OnDownloadThumbnail);
+	SwarmTask->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnSketchfabTaskFailed);
+	SwarmTask->OnModelList().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelList);
+	FSketchfabRESTClient::Get()->AddTask(SwarmTask);
 }
 
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
@@ -709,6 +723,33 @@ void SSketchfabAssetBrowserWindow::OnUserDataReceived(FHttpRequestPtr Request, F
 	}
 }
 
+void SSketchfabAssetBrowserWindow::OnDownloadThumbnail(const FSketchfabTask& InSwarmTask)
+{
+	/*
+	FSketchfabTaskData TaskData;
+	TaskData.ModelSearchURL = "https://api.sketchfab.com/v3/search?type=models&downloadable=true&staffpicked=true&sort_by=-publishedAt";
+	TaskData.Token = Token;
+	TaskData.CacheFolder = CacheFolder;
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> SwarmTask = MakeShareable(new FSketchfabTask(TaskData));
+	SwarmTask->SetState(SRS_GETMODELS);
+	SwarmTask->OnThumbnailRequired().BindRaw(this, &SSketchfabAssetBrowserWindow::OnDownloadThumbnail);
+	SwarmTask->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnSketchfabTaskFailed);
+	SwarmTask->OnModelList().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelList);
+	FSketchfabRESTClient::Get()->AddTask(SwarmTask);
+	*/
+}
+
+void SSketchfabAssetBrowserWindow::OnSketchfabTaskFailed(const FSketchfabTask& InSwarmTask)
+{
+
+}
+
+void SSketchfabAssetBrowserWindow::OnModelList(const FSketchfabTask& InSwarmTask)
+{
+
+}
 
 #undef LOCTEXT_NAMESPACE
 

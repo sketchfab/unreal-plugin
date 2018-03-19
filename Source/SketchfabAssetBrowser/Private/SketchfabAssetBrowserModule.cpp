@@ -9,6 +9,7 @@
 
 #include "Engine.h"
 #include "LevelEditor.h"
+#include "SketchfabRESTClient.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
@@ -37,10 +38,13 @@ public:
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(Extender);
 
 		//FModuleManager::Get().OnModulesChanged().AddRaw(this, &FFunctionalTestingEditorModule::OnModulesChanged);
+
+		FSketchfabRESTClient::Get(); //Initialize
 	}
 
 	virtual void ShutdownModule() override
 	{
+		FSketchfabRESTClient::Shutdown();
 		AssetBrowser = nullptr;
 	}
 
