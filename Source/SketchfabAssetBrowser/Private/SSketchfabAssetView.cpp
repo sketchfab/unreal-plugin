@@ -533,20 +533,9 @@ bool SSketchfabAssetView::CanOpenContextMenu() const
 	return bLoadSuccessful;
 }
 
+/*
 void SSketchfabAssetView::CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID)
 {
-	/*
-	if (!ensure(AssetClass || Factory))
-	{
-		return;
-	}
-
-	if (AssetClass && Factory && !ensure(AssetClass->IsChildOf(Factory->GetSupportedClass())))
-	{
-		return;
-	}
-	*/
-
 	// we should only be creating one deferred asset per tick
 	check(!DeferredAssetToCreate.IsValid());
 
@@ -591,19 +580,16 @@ void SSketchfabAssetView::DeferredCreateNewAsset()
 		DeferredAssetToCreate.Reset();
 	}
 }
+*/
 
-void SSketchfabAssetView::ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID)
+void SSketchfabAssetView::ForceCreateNewAsset(const FString& ModelNameStr, const FString& ContentFolderStr, const FString& ModelAssetUID, const FString& ThumbAssetUID)
 {
-	FString PackageNameStr = PackagePath + "/" + DefaultAssetName;
-	FName PackageName = FName(*PackageNameStr);
-	FName PackagePathFName = FName(*PackagePath);
-	FName AssetName = FName(*DefaultAssetName);
-	FName AssetClassName = "SketchAsset";
+	FName ContentFolder = FName(*ContentFolderStr);
+	FName ModelName = FName(*ModelNameStr);
 	FName ObjectUIDName = FName(*ModelAssetUID);
 	FName ThumbAssetUIDName = FName(*ThumbAssetUID);
 
-	FSketchfabAssetData NewAssetData(PackageName, PackagePathFName, AssetName, AssetClassName, ObjectUIDName, ThumbAssetUIDName);
-	//NewAssetData.ObjectPath = TEXT("d/uesketchfab/model.jpg");
+	FSketchfabAssetData NewAssetData(ContentFolder, ModelName, ObjectUIDName, ThumbAssetUIDName);
 
 	TSharedPtr<FAssetViewItem> NewItem = MakeShareable(new FAssetViewAsset(NewAssetData));
 
@@ -777,7 +763,7 @@ void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double I
 	}
 	*/
 	// create any assets & folders we need to now
-	DeferredCreateNewAsset();
+	//DeferredCreateNewAsset();
 	//DeferredCreateNewFolder();
 
 	/*

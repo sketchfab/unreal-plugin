@@ -22,25 +22,11 @@ struct FSketchfabAssetData
 {
 	GENERATED_BODY()
 public:
-
-	/** The object path for the asset in the form PackageName.AssetName. Only top level objects in a package can have AssetData */
 	FName ModelUID;
-	/** The name of the package in which the asset is found, this is the full long package name such as /Game/Path/Package */
-	FName PackageName;
-	/** The path to the package in which the asset is found, this is /Game/Path with the Package stripped off */
 	FName ContentFolder;
-	/** The name of the asset without the package */
 	FName AssetName;
-	/** The name of the asset's class */
-	FName AssetClass;
-	/** The map of values for properties that were marked AssetRegistrySearchable or added by GetAssetRegistryTags */
-	FAssetDataTagMapSharedView TagsAndValues;
-	/** The IDs of the chunks this asset is located in for streaming install.  Empty if not assigned to a chunk */
-	TArray<int32> ChunkIDs;
-	/** Asset package flags */
-	uint32 PackageFlags;
-	/** Unique ID of the Thumbnail Image */
 	FName ThumbUID;
+	FAssetDataTagMapSharedView TagsAndValues;
 
 public:
 	/** Default constructor */
@@ -48,69 +34,14 @@ public:
 	{}
 
 	/** Constructor */
-	FSketchfabAssetData(FName InPackageName, FName InPackagePath, FName InAssetName, FName InAssetClass, FName InObjectUID, FName InThumbUID, FAssetDataTagMap InTags = FAssetDataTagMap(), TArray<int32> InChunkIDs = TArray<int32>(), uint32 InPackageFlags = 0)
-		: PackageName(InPackageName)
-		, ContentFolder(InPackagePath)
+	FSketchfabAssetData(FName InContentFolder, FName InAssetName, FName InModelUID, FName InThumbUID, FAssetDataTagMap InTags = FAssetDataTagMap())
+		: ContentFolder(InContentFolder)
 		, AssetName(InAssetName)
-		, AssetClass(InAssetClass)
-		, TagsAndValues(MoveTemp(InTags))
-		, ChunkIDs(MoveTemp(InChunkIDs))
-		, PackageFlags(InPackageFlags)
-		, ModelUID(InObjectUID)
+		, ModelUID(InModelUID)
 		, ThumbUID(InThumbUID)
+		, TagsAndValues(MoveTemp(InTags))
 	{
-		/*
-		FString ObjectPathStr = PackageName.ToString() + TEXT(".");
-		ObjectPathStr += AssetName.ToString();
-		ObjectPath = FName(*ObjectPathStr);
-		*/
-
-		//In UE the ObjectPath is used as a unique identifier in the package. Since this class does not use packages I am reusing this value 
-		//by just setting it to the unique id for the Sketchfab asset.
-		ModelUID = ModelUID; 
 	}
-
-	/** Constructor taking a UObject. By default trying to create one for a blueprint class will create one for the UBlueprint instead, but this can be overridden */
-	/*
-	FSketchfabAssetData(const UObject* InAsset, bool bAllowBlueprintClass = false)
-	{
-		if ( InAsset != nullptr )
-		{
-			const UClass* InClass = Cast<UClass>(InAsset);
-			if (InClass && InClass->ClassGeneratedBy && !bAllowBlueprintClass)
-			{
-				// For Blueprints, the AssetData refers to the UBlueprint and not the UBlueprintGeneratedClass
-				InAsset = InClass->ClassGeneratedBy;
-			}
-
-			const UPackage* Outermost = InAsset->GetOutermost();
-			const UObject* Outer = InAsset->GetOuter();
-
-			PackageName = Outermost->GetFName();
-			PackagePath = FName(*FPackageName::GetLongPackagePath(Outermost->GetName()));
-			AssetName = InAsset->GetFName();
-			AssetClass = InAsset->GetClass()->GetFName();
-			ObjectPath = FName(*InAsset->GetPathName());
-
-			TArray<UObject::FAssetRegistryTag> ObjectTags;
-			InAsset->GetAssetRegistryTags(ObjectTags);
-
-			FAssetDataTagMap NewTagsAndValues;
-			for (UObject::FAssetRegistryTag& AssetRegistryTag : ObjectTags)
-			{
-				if (AssetRegistryTag.Name != NAME_None && !AssetRegistryTag.Value.IsEmpty())
-				{
-					// Don't add empty tags
-					NewTagsAndValues.Add(AssetRegistryTag.Name, AssetRegistryTag.Value);
-				}
-			}
-
-			TagsAndValues = FAssetDataTagMapSharedView(MoveTemp(NewTagsAndValues));
-			ChunkIDs = Outermost->GetChunkIDs();
-			PackageFlags = Outermost->GetPackageFlags();
-		}
-	}
-	*/
 
 	/** FAssetDatas are equal if their object paths match */
 	bool operator==(const FSketchfabAssetData& Other) const
@@ -139,12 +70,6 @@ public:
 		return ModelUID != NAME_None;
 	}
 
-	/** Returns true if this asset was found in a UAsset file */
-	bool IsUAsset() const
-	{
-		return FPackageName::GetLongPackageAssetName(PackageName.ToString()) == AssetName.ToString();
-	}
-
 	/** Returns the full name for the asset in the form: Class ObjectPath */
 	FString GetFullName() const
 	{
@@ -153,12 +78,10 @@ public:
 		return FullName;
 	}
 
-	/** Populates OutFullName with the full name for the asset in the form: Class ObjectPath */
 	void GetFullName(FString& OutFullName) const
 	{
 		OutFullName.Reset();
-		AssetClass.AppendString(OutFullName);
-		OutFullName.AppendChar(' ');
+		ContentFolder.AppendString(OutFullName);
 		ModelUID.AppendString(OutFullName);
 	}
 
@@ -174,45 +97,9 @@ public:
 	void GetExportTextName(FString& OutExportTextName) const
 	{
 		OutExportTextName.Reset();
-		AssetClass.AppendString(OutExportTextName);
 		OutExportTextName.AppendChar('\'');
 		ModelUID.AppendString(OutExportTextName);
 		OutExportTextName.AppendChar('\'');
-	}
-
-	/** Returns true if the this asset is a redirector. */
-	bool IsRedirector() const
-	{
-		if ( AssetClass == UObjectRedirector::StaticClass()->GetFName() )
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	/** Returns the class UClass if it is loaded. It is not possible to load the class if it is unloaded since we only have the short name. */
-	UClass* GetClass() const
-	{
-		if ( !IsValid() )
-		{
-			// Dont even try to find the class if the objectpath isn't set
-			return NULL;
-		}
-
-		UClass* FoundClass = FindObject<UClass>(ANY_PACKAGE, *AssetClass.ToString());
-
-		if (!FoundClass)
-		{
-			// Look for class redirectors
-			FName NewPath = FLinkerLoad::FindNewNameForClass(AssetClass, false);
-
-			if (NewPath != NAME_None)
-			{
-				FoundClass = FindObject<UClass>(ANY_PACKAGE, *NewPath.ToString());
-			}
-		}
-		return FoundClass;
 	}
 
 	/** Convert to a SoftObjectPath for loading */
@@ -260,26 +147,6 @@ public:
 		return Asset;
 	}
 
-	UPackage* GetPackage() const
-	{
-		if (PackageName == NAME_None)
-		{
-			return NULL;
-		}
-
-		UPackage* Package = FindPackage(NULL, *PackageName.ToString());
-		if (Package)
-		{
-			Package->FullyLoad();
-		}
-		else
-		{
-			Package = LoadPackage(NULL, *PackageName.ToString(), LOAD_None);
-		}
-
-		return Package;
-	}
-
 	/** Try and get the value associated with the given tag as a type converted value */
 	template <typename ValueType>
 	bool GetTagValue(const FName InTagName, ValueType& OutTagValue) const;
@@ -299,70 +166,12 @@ public:
 	{
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("    FSketchfabAssetData for %s"), *ModelUID.ToString());
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("    ============================="));
-		UE_LOG(LogSketchfabAssetData, Log, TEXT("        PackageName: %s"), *PackageName.ToString());
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("        PackagePath: %s"), *ContentFolder.ToString());
-		UE_LOG(LogSketchfabAssetData, Log, TEXT("        AssetName: %s"), *AssetName.ToString());
-		UE_LOG(LogSketchfabAssetData, Log, TEXT("        AssetClass: %s"), *AssetClass.ToString());
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("        TagsAndValues: %d"), TagsAndValues.Num());
-
 		for (const auto& TagValue: TagsAndValues)
 		{
 			UE_LOG(LogSketchfabAssetData, Log, TEXT("            %s : %s"), *TagValue.Key.ToString(), *TagValue.Value);
 		}
-
-		UE_LOG(LogSketchfabAssetData, Log, TEXT("        ChunkIDs: %d"), ChunkIDs.Num());
-
-		for (int32 Chunk: ChunkIDs)
-		{
-			UE_LOG(LogSketchfabAssetData, Log, TEXT("                 %d"), Chunk);
-		}
-
-		UE_LOG(LogSketchfabAssetData, Log, TEXT("        PackageFlags: %d"), PackageFlags);
-	}
-
-	/** Get the first FSketchfabAssetData of a particular class from an Array of FSketchfabAssetData */
-	static FSketchfabAssetData GetFirstAssetDataOfClass(const TArray<FSketchfabAssetData>& Assets, const UClass* DesiredClass)
-	{
-		for(int32 AssetIdx=0; AssetIdx<Assets.Num(); AssetIdx++)
-		{
-			const FSketchfabAssetData& Data = Assets[AssetIdx];
-			UClass* AssetClass = Data.GetClass();
-			if( AssetClass != NULL && AssetClass->IsChildOf(DesiredClass) )
-			{
-				return Data;
-			}
-		}
-		return FSketchfabAssetData();
-	}
-
-	/** Convenience template for finding first asset of a class */
-	template <class T>
-	static T* GetFirstAsset(const TArray<FSketchfabAssetData>& Assets)
-	{
-		UClass* DesiredClass = T::StaticClass();
-		UObject* Asset = FSketchfabAssetData::GetFirstAssetDataOfClass(Assets, DesiredClass).GetAsset();
-		check(Asset == NULL || Asset->IsA(DesiredClass));
-		return (T*)Asset;
-	}
-
-	/** 
-	 * Serialize as part of the registry cache. This is not meant to be serialized as part of a package so  it does not handle versions normally
-	 * To version this data change FAssetRegistryVersion
-	 */
-	void SerializeForCache(FArchive& Ar)
-	{
-		// Serialize out the asset info
-		Ar << ModelUID;
-		Ar << ContentFolder;
-		Ar << AssetClass;
-
-		// These are derived from ObjectPath, we manually serialize them because they get pooled
-		Ar << PackageName;
-		Ar << AssetName;
-
-		Ar << TagsAndValues;
-		Ar << ChunkIDs;
-		Ar << PackageFlags;
 	}
 
 private:

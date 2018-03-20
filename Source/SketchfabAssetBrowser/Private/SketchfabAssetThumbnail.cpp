@@ -602,11 +602,7 @@ private:
 	{
 		if( Label != ESketchfabThumbnailLabel::NoLabel )
 		{
-			if ( Label == ESketchfabThumbnailLabel::ClassName )
-			{
-				return GetAssetClassDisplayName();
-			}
-			else if ( Label == ESketchfabThumbnailLabel::AssetName ) 
+			if ( Label == ESketchfabThumbnailLabel::AssetName ) 
 			{
 				return GetAssetDisplayName();
 			}
@@ -619,15 +615,6 @@ private:
 		FText ClassDisplayName;
 		if ( Class )
 		{
-			/*
-			FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
-			TWeakPtr<IAssetTypeActions> AssetTypeActions = AssetToolsModule.Get().GetAssetTypeActionsForClass(Class);
-			if ( AssetTypeActions.IsValid() )
-			{
-				ClassDisplayName = AssetTypeActions.Pin()->GetName();
-			}
-			*/
-
 			if ( ClassDisplayName.IsEmpty() )
 			{
 				ClassDisplayName = FText::FromString( FName::NameToDisplayString(*Class->GetName(), false) );
@@ -637,30 +624,9 @@ private:
 		return ClassDisplayName;
 	}
 
-	FText GetAssetClassDisplayName() const
-	{
-		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
-		FString AssetClass = AssetData.AssetClass.ToString();
-		UClass* Class = FindObjectSafe<UClass>(ANY_PACKAGE, *AssetClass);
-
-		if ( Class )
-		{
-			return GetDisplayNameForClass( Class );
-		}
-
-		return FText::FromString(AssetClass);
-	}
-
 	FText GetAssetDisplayName() const
 	{
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
-
-		if ( AssetData.GetClass() == UClass::StaticClass() )
-		{
-			UClass* Class = Cast<UClass>( AssetData.GetAsset() );
-			return GetDisplayNameForClass( Class );
-		}
-
 		return FText::FromName(AssetData.AssetName);
 	}
 

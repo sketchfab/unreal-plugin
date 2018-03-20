@@ -403,8 +403,8 @@ public:
 
 public:
 	void Construct(const FArguments& InArgs);
-	void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
-	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID);
+	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
+	void ForceCreateNewAsset(const FString& ModelName, const FString& ContentFolder, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 	void NeedRefresh();
 
 private:
@@ -423,7 +423,7 @@ private:
 	TSharedPtr<FSketchfabAssetThumbnail> AddItemToNewThumbnailRelevancyMap(const TSharedPtr<FAssetViewAsset>& Item, TMap< TSharedPtr<FAssetViewAsset>, TSharedPtr<FSketchfabAssetThumbnail> >& NewRelevantThumbnails);
 
 
-	void DeferredCreateNewAsset();
+	//void DeferredCreateNewAsset();
 	void UpdateThumbnails();
 	void UpdateAssetList();
 
