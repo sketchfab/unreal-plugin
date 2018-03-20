@@ -111,6 +111,8 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		[
 			SNew(SUniformGridPanel)
 			.SlotPadding(2)
+
+			
 			+ SUniformGridPanel::Slot(0, 0)
 			[
 				SNew(SButton)
@@ -118,6 +120,17 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
 			.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
 			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(2)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("Login to your Sketchfab account. Double click on a model to download it. Import by dragging it into the content browser."))
+			.Justification(ETextJustify::Center)
+			.AutoWrapText(true)
+			.MinDesiredWidth(400.0f)
 		]
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
