@@ -205,7 +205,7 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 			if (FJsonSerializer::Deserialize(Reader, JsonObject))
 			{
 				TArray<TSharedPtr<FJsonValue>> results = JsonObject->GetArrayField("results");
-				FString next = JsonObject->GetStringField("next");
+				TaskData.NextURL = JsonObject->GetStringField("next");
 
 				for (int r = 0; r < results.Num(); r++)
 				{
@@ -567,6 +567,7 @@ void FSketchfabTask::DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 By
 {
 	if (!this->IsCompleted &&  OnModelDownloadProgress().IsBound())
 	{
+		TaskData.DownloadedBytes = BytesReceived;
 		OnModelDownloadProgress().Execute(*this);
 	}
 }

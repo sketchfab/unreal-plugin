@@ -582,6 +582,12 @@ void SSketchfabAssetView::DeferredCreateNewAsset()
 }
 */
 
+
+void SSketchfabAssetView::DownloadProgress(const FString& ModelUID, float progress)
+{
+	DownloadProgressData.Add(ModelUID, progress);
+}
+
 void SSketchfabAssetView::ForceCreateNewAsset(const FString& ModelNameStr, const FString& ContentFolderStr, const FString& ModelAssetUID, const FString& ThumbAssetUID)
 {
 	FName ContentFolder = FName(*ContentFolderStr);
@@ -626,15 +632,18 @@ void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double I
 
 	if (bPendingUpdateThumbnails)
 	{
-		UpdateThumbnails();
 		bPendingUpdateThumbnails = false;
+		UpdateThumbnails();
 	}
 
 	if (bNeedsRefresh)
 	{
+		bNeedsRefresh = false;
 		UpdateAssetList();
 		UpdateThumbnails();
-		bNeedsRefresh = false;
+
+		//This is a hack for now. Just refresh all the widgets.
+		TileView->RebuildList();
 	}
 
 	/*
@@ -888,6 +897,23 @@ void SSketchfabAssetView::UpdateThumbnails()
 
 		// Assign the new map of relevant thumbnails. This will remove any entries that were no longer relevant.
 		RelevantThumbnails = NewRelevantThumbnails;
+
+		//Update any progress information
+		//This is a temporary hack for now to update the progress information for thumbnails when downloading.
+		for (auto ItemIt = RelevantThumbnails.CreateIterator(); ItemIt; ++ItemIt)
+		{
+			auto& Item = *ItemIt;
+			TSharedPtr<FSketchfabAssetThumbnail> Thumbnail = StaticCastSharedPtr<FSketchfabAssetThumbnail>(Item.Value);
+			float * progress = DownloadProgressData.Find(Thumbnail->GetAssetData().ModelUID.ToString());
+			if (progress)
+			{
+				if ((*progress) < 1.0)
+				{
+					Thumbnail->SetProgress((*progress));
+				}
+			}
+		}
+
 	}
 }
 

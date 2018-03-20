@@ -70,7 +70,6 @@ public:
 	 * @param InHeight	The height that the thumbnail should be
 	 * @param InThumbnailPool	The thumbnail pool to request textures from
 	 */
-	FSketchfabAssetThumbnail(UObject* InAsset, uint32 InWidth, uint32 InHeight, const TSharedPtr<class FSketchfabAssetThumbnailPool>& InThumbnailPool);
 	FSketchfabAssetThumbnail( const FSketchfabAssetData& InAsset, uint32 InWidth, uint32 InHeight, const TSharedPtr<class FSketchfabAssetThumbnailPool>& InThumbnailPool );
 	~FSketchfabAssetThumbnail();
 
@@ -125,6 +124,8 @@ public:
 
 	DECLARE_EVENT(FSketchfabAssetThumbnail, FOnSketchfabAssetDataChanged);
 	FOnSketchfabAssetDataChanged& OnAssetDataChanged() { return AssetDataChangedEvent; }
+
+	void SetProgress(float progress);
 
 private:
 	/** Thumbnail pool for rendering the thumbnail */

@@ -108,8 +108,6 @@ public:
 
 		TSharedRef<SOverlay> OverlayWidget = SNew(SOverlay);
 
-		UpdateThumbnailClass();
-
 		ClassThumbnailBrushOverride = InArgs._ClassThumbnailBrushOverride;
 
 		// The generic representation of the thumbnail, for use before the rendered version, if it exists
@@ -265,6 +263,17 @@ public:
 			.Padding(this, &SSketchfabAssetThumbnail::GetAssetColorStripPadding)
 		];
 
+		// The asset color strip
+		OverlayWidget->AddSlot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Bottom)
+			[
+				SAssignNew(AssetColorStripWidget, SBorder)
+				.BorderImage(FEditorStyle::GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor::Green)
+			.Padding(this, &SSketchfabAssetThumbnail::GetDownloadProgressColorStripPadding)
+			];
+
 		/*
 		if( InArgs._AllowAssetSpecificThumbnailOverlay && AssetTypeActions.IsValid() )
 		{
@@ -287,12 +296,6 @@ public:
 
 		UpdateThumbnailVisibilities();
 
-	}
-
-	void UpdateThumbnailClass()
-	{
-		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
-		//ThumbnailClass = FClassIconFinder::GetIconClassForAssetData(AssetData, &bIsClassType);
 	}
 
 	FSlateColor GetHintBackgroundColor() const
@@ -365,17 +368,6 @@ private:
 
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
 
-		/*
-		UClass* Class = FindObject<UClass>(ANY_PACKAGE, *AssetData.AssetClass.ToString());
-		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
-		TWeakPtr<IAssetTypeActions> AssetTypeActions;
-		if ( Class != NULL )
-		{
-			AssetTypeActions = AssetToolsModule.Get().GetAssetTypeActionsForClass(Class);
-		}
-		*/
-
-		UpdateThumbnailClass();
 
 		AssetColor = FLinearColor(1.f, 1.f, 1.f, 1.f);
 
@@ -442,6 +434,15 @@ private:
 		const float Height = GetAssetColorStripHeight();
 		return FMargin(0,Height,0,0);
 	}
+
+	FMargin GetDownloadProgressColorStripPadding() const
+	{
+		const float Height = GetAssetColorStripHeight();
+		float progress = AssetThumbnail->GetAssetData().DownloadProgress;
+		float Width = WidthLastFrame * progress;
+		return FMargin(Width, Height, 0, 0);
+	}
+
 
 	const FSlateBrush* GetClassThumbnailBrush() const
 	{
@@ -827,6 +828,13 @@ void FSketchfabAssetThumbnail::RefreshThumbnail()
 		ThumbnailPool.Pin()->RefreshThumbnail( SharedThis(this) );
 	}
 }
+
+void FSketchfabAssetThumbnail::SetProgress(float progress)
+{
+	AssetData.DownloadProgress = progress;
+}
+
+//==============================================================
 
 FSketchfabAssetThumbnailPool::FSketchfabAssetThumbnailPool( uint32 InNumInPool, const TAttribute<bool>& InAreRealTimeThumbnailsAllowed, double InMaxFrameTimeAllowance, uint32 InMaxRealTimeThumbnailsPerFrame )
 	: AreRealTimeThumbnailsAllowed( InAreRealTimeThumbnailsAllowed )
@@ -1512,3 +1520,4 @@ void FSketchfabAssetThumbnailPool::DirtyThumbnailForObject(UObject* ObjectBeingM
 		RefreshThumbnailsFor( FName(*ObjectBeingModified->GetPathName()) );
 	}
 }
+

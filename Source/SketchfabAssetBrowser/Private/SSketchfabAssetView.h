@@ -406,6 +406,7 @@ public:
 	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 	void ForceCreateNewAsset(const FString& ModelName, const FString& ContentFolder, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 	void NeedRefresh();
+	void DownloadProgress(const FString& ModelUID, float progress);
 
 private:
 	void CreateCurrentView();
@@ -575,6 +576,9 @@ private:
 	bool bBulkSelecting;
 
 	bool bNeedsRefresh;
+
+	/** Progress information for ModelUID download. Gets set on the RelevantThumbnails */
+	TMap<FString, float> DownloadProgressData;
 
 };
 

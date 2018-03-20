@@ -13,6 +13,8 @@ DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowserWindow, Log, All);
 class SSketchfabAssetBrowserWindow : public SCompoundWidget
 {
 public:
+	~SSketchfabAssetBrowserWindow();
+
 	SLATE_BEGIN_ARGS(SSketchfabAssetBrowserWindow)
 	{}
 
@@ -30,6 +32,7 @@ public:
 	//Main Window
 	FReply OnLogin();
 	FReply OnCancel();
+	FReply OnNext();
 
 	//Browser Window
 	void OnUrlChanged(const FText &url);
@@ -42,10 +45,12 @@ public:
 	void Search();
 	void GetUserData();
 
+private:
+	void Search(const FString &url);
+
 public:
 	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID);
-
 
 private:
 	FString Token;
@@ -67,5 +72,7 @@ private:
 	TSharedPtr<SSketchfabAssetView> AssetViewPtr;
 
 	FString CacheFolder;
+
+	FString NextURL;
 };
 

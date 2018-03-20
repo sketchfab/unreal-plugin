@@ -49,6 +49,11 @@ DEFINE_LOG_CATEGORY(LogSketchfabAssetBrowserWindow);
 
 int32 g_pageCount = 0;
 
+SSketchfabAssetBrowserWindow::~SSketchfabAssetBrowserWindow()
+{
+	FSketchfabRESTClient::Get()->Shutdown();
+}
+
 void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 {
 	g_pageCount = 10;
@@ -100,6 +105,21 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			]
 		]
 		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Right)
+		.Padding(2)
+		[
+			SNew(SUniformGridPanel)
+			.SlotPadding(2)
+			+ SUniformGridPanel::Slot(0, 0)
+			[
+				SNew(SButton)
+				.HAlign(HAlign_Center)
+			.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
+			.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
+			]
+		]
+		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
 		.Padding(0)
 		[
@@ -125,25 +145,24 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
 {
-	const FText LoadingTemplate = LOCTEXT("LoadingAssetName", "Loading {0}...");
-	const FText DefaultText = ActivatedAssets.Num() == 1 ? FText::Format(LoadingTemplate, FText::FromName(ActivatedAssets[0].ModelUID)) : LOCTEXT("DownloadingModels", "Downloading Models...");
-	FScopedSlowTask SlowTask(100, DefaultText);
-
-	for (auto AssetIt = ActivatedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
+	if (!Token.IsEmpty())
 	{
-		const FSketchfabAssetData& AssetData = *AssetIt;
+		for (auto AssetIt = ActivatedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
+		{
+			const FSketchfabAssetData& AssetData = *AssetIt;
 
-		FSketchfabTaskData TaskData;
-		TaskData.Token = Token;
-		TaskData.CacheFolder = CacheFolder;
-		TaskData.ModelUID = AssetData.ModelUID.ToString();
-		TaskData.StateLock = new FCriticalSection();
+			FSketchfabTaskData TaskData;
+			TaskData.Token = Token;
+			TaskData.CacheFolder = CacheFolder;
+			TaskData.ModelUID = AssetData.ModelUID.ToString();
+			TaskData.StateLock = new FCriticalSection();
 
-		TSharedPtr<FSketchfabTask> SwarmTask = MakeShareable(new FSketchfabTask(TaskData));
-		SwarmTask->SetState(SRS_GETMODELLINK);
-		SwarmTask->OnModelLink().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelLink);
-		SwarmTask->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-		FSketchfabRESTClient::Get()->AddTask(SwarmTask);
+			TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+			Task->SetState(SRS_GETMODELLINK);
+			Task->OnModelLink().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelLink);
+			Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+			FSketchfabRESTClient::Get()->AddTask(Task);
+		}
 	}
 }
 
@@ -204,6 +223,12 @@ FReply SSketchfabAssetBrowserWindow::OnCancel()
 	return FReply::Handled();
 }
 
+FReply SSketchfabAssetBrowserWindow::OnNext()
+{
+	g_pageCount = 5;
+	Search(NextURL);
+	return FReply::Handled();
+}
 
 void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
 {
@@ -296,17 +321,22 @@ void SSketchfabAssetBrowserWindow::ForceCreateNewAsset(const FString& DefaultAss
 
 void SSketchfabAssetBrowserWindow::Search()
 {
+	Search("https://api.sketchfab.com/v3/search?type=models&downloadable=true&staffpicked=true&sort_by=-publishedAt");
+}
+
+void SSketchfabAssetBrowserWindow::Search(const FString &url)
+{
 	FSketchfabTaskData TaskData;
-	TaskData.ModelSearchURL = "https://api.sketchfab.com/v3/search?type=models&downloadable=true&staffpicked=true&sort_by=-publishedAt";
+	TaskData.ModelSearchURL = url;
 	TaskData.Token = Token;
 	TaskData.CacheFolder = CacheFolder;
 	TaskData.StateLock = new FCriticalSection();
 
-	TSharedPtr<FSketchfabTask> SwarmTask = MakeShareable(new FSketchfabTask(TaskData));
-	SwarmTask->SetState(SRS_SEARCH);
-	SwarmTask->OnSearch().BindRaw(this, &SSketchfabAssetBrowserWindow::OnSearch);
-	SwarmTask->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-	FSketchfabRESTClient::Get()->AddTask(SwarmTask);
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_SEARCH);
+	Task->OnSearch().BindRaw(this, &SSketchfabAssetBrowserWindow::OnSearch);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
 }
 
 void SSketchfabAssetBrowserWindow::GetUserData()
@@ -316,11 +346,11 @@ void SSketchfabAssetBrowserWindow::GetUserData()
 	TaskData.CacheFolder = CacheFolder;
 	TaskData.StateLock = new FCriticalSection();
 
-	TSharedPtr<FSketchfabTask> SwarmTask = MakeShareable(new FSketchfabTask(TaskData));
-	SwarmTask->SetState(SRS_GETUSERDATA);
-	SwarmTask->OnUserData().BindRaw(this, &SSketchfabAssetBrowserWindow::OnUserData);
-	SwarmTask->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-	FSketchfabRESTClient::Get()->AddTask(SwarmTask);
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETUSERDATA);
+	Task->OnUserData().BindRaw(this, &SSketchfabAssetBrowserWindow::OnUserData);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
 }
 
 //=====================================================
@@ -356,15 +386,22 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 			FSketchfabTaskData TaskData = (*Data);
 			TaskData.StateLock = new FCriticalSection();
 
-			TSharedPtr<FSketchfabTask> SwarmTask = MakeShareable(new FSketchfabTask(TaskData));
-			SwarmTask->SetState(SRS_GETTHUMBNAIL);
-			SwarmTask->OnThumbnailDownloaded().BindRaw(this, &SSketchfabAssetBrowserWindow::OnThumbnailDownloaded);
-			SwarmTask->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-			FSketchfabRESTClient::Get()->AddTask(SwarmTask);
+			TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+			Task->SetState(SRS_GETTHUMBNAIL);
+			Task->OnThumbnailDownloaded().BindRaw(this, &SSketchfabAssetBrowserWindow::OnThumbnailDownloaded);
+			Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+			FSketchfabRESTClient::Get()->AddTask(Task);
 		}
 	}
 
 	AssetViewPtr->NeedRefresh();
+
+	NextURL = InTask.TaskData.NextURL;
+
+	while ((--g_pageCount) > 0)
+	{
+		Search(NextURL);
+	}
 }
 
 void SSketchfabAssetBrowserWindow::OnModelLink(const FSketchfabTask& InTask)
@@ -372,20 +409,27 @@ void SSketchfabAssetBrowserWindow::OnModelLink(const FSketchfabTask& InTask)
 	FSketchfabTaskData TaskData = InTask.TaskData;
 	TaskData.StateLock = new FCriticalSection();
 
-	TSharedPtr<FSketchfabTask> SwarmTask = MakeShareable(new FSketchfabTask(TaskData));
-	SwarmTask->SetState(SRS_DOWNLOADMODEL);
-	SwarmTask->OnModelDownloaded().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelDownloaded);
-	SwarmTask->OnModelDownloadProgress().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelDownloadProgress);
-	FSketchfabRESTClient::Get()->AddTask(SwarmTask);
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_DOWNLOADMODEL);
+	Task->OnModelDownloaded().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelDownloaded);
+	Task->OnModelDownloadProgress().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelDownloadProgress);
+	FSketchfabRESTClient::Get()->AddTask(Task);
 }
 
 void SSketchfabAssetBrowserWindow::OnModelDownloaded(const FSketchfabTask& InTask)
 {
+	AssetViewPtr->DownloadProgress(InTask.TaskData.ModelUID, 0.0);
 	AssetViewPtr->NeedRefresh();
 }
 
 void SSketchfabAssetBrowserWindow::OnModelDownloadProgress(const FSketchfabTask& InTask)
 {
+	float progress = (float)InTask.TaskData.DownloadedBytes / (float)InTask.TaskData.ModelSize;
+	if (progress < 0 || progress > 1.0)
+	{
+		progress = 1.0;
+	}
+	AssetViewPtr->DownloadProgress(InTask.TaskData.ModelUID, progress);
 	AssetViewPtr->NeedRefresh();
 }
 

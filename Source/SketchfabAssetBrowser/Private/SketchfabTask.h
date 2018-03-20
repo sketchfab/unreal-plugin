@@ -75,7 +75,10 @@ struct FSketchfabTaskData
 	FString ModelURL;
 
 	/** Download size of the model in bytes */
-	int32 ModelSize;
+	uint64 ModelSize;
+
+	/** Download size of the model in bytes */
+	uint64 DownloadedBytes;
 
 	/** Thumbnail Unique Identifier */
 	FString ThumbnailUID;
@@ -88,6 +91,16 @@ struct FSketchfabTaskData
 
 	/** The Cache folder for downloaded content */
 	FString UserName;
+
+	/** The Next Page URL to get */
+	FString NextURL;
+
+	FSketchfabTaskData()
+	{
+		ModelSize = 0;
+		DownloadedBytes = 0;
+	}
+
 };
 
 /** Sketchfab Swarm Task. Responsible for communicating with the Server  */

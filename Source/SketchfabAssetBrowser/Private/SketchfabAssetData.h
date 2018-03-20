@@ -27,6 +27,7 @@ public:
 	FName AssetName;
 	FName ThumbUID;
 	FAssetDataTagMapSharedView TagsAndValues;
+	float DownloadProgress;
 
 public:
 	/** Default constructor */
@@ -40,6 +41,7 @@ public:
 		, ModelUID(InModelUID)
 		, ThumbUID(InThumbUID)
 		, TagsAndValues(MoveTemp(InTags))
+		, DownloadProgress(0)
 	{
 	}
 
