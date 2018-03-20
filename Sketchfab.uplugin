@@ -1,0 +1,47 @@
+{
+	"FileVersion" : 3,
+	"Version" : 2,
+	"VersionName" : "",
+	"FriendlyName" : "Sketchfab",
+	"Description" : "GLTF Importer and Sketchfab Asset Store Browser",
+	"Category" : "Importers",
+	"CreatedBy" : "Sketchfab, Inc.",
+	"CreatedByURL" : "https://sketchfab.com",
+	"DocsURL" : "",
+	"MarketplaceURL" : "https://sketchfab.com/store",
+	"SupportURL" : "https://forum.sketchfab.com/",
+	"EnabledByDefault" : true,
+	"CanContainContent" : false,
+	"IsBetaVersion" : true,
+	"Installed" : false,
+	"Modules" :
+	[
+		{
+			"Name" : "SketchfabGLTF",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Win32"
+			]
+		},
+		{
+			"Name": "SketchfabAssetBrowser",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Win32"
+			]
+		},
+		{
+			"Name": "ZipUtility",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Win32"
+			]
+		}
+	]                                                  
+}

@@ -22,7 +22,7 @@ public:
 	 */
 	static inline IGLTFImporter& Get()
 	{
-		return FModuleManager::LoadModuleChecked< IGLTFImporter >( "UGLTFPlugin" );
+		return FModuleManager::LoadModuleChecked< IGLTFImporter >( "SketchfabGLTF" );
 	}
 
 	/**
@@ -32,7 +32,7 @@ public:
 	 */
 	static inline bool IsAvailable()
 	{
-		return FModuleManager::Get().IsModuleLoaded("UGLTFPlugin");
+		return FModuleManager::Get().IsModuleLoaded("SketchfabGLTF");
 	}
 };
 
