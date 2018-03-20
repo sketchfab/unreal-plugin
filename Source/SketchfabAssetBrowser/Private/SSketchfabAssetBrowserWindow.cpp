@@ -398,7 +398,7 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 
 	NextURL = InTask.TaskData.NextURL;
 
-	while ((--g_pageCount) > 0)
+	if ((--g_pageCount) > 0)
 	{
 		Search(NextURL);
 	}
