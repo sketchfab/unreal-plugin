@@ -160,7 +160,7 @@ void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAsse
 {
 	if (LoggedInUser.IsEmpty())
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("Sketchfab", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
+		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("SSketchfabAssetBrowserWindow_ModelDoubleClick", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
 		if (Window.IsValid())
 		{
 			Window.Pin()->BringToFront(true);
@@ -227,7 +227,7 @@ FReply SSketchfabAssetBrowserWindow::OnLogin()
 	}
 
 	TSharedRef<SWindow> OAuthWindow = SNew(SWindow)
-		.Title(LOCTEXT("SketchfabAssetBrowser", "Sketchfab Login Window"))
+		.Title(LOCTEXT("SketchfabAssetBrowser_LoginWindow", "Sketchfab Login Window"))
 		.SizingRule(ESizingRule::FixedSize)
 		.ClientSize(FVector2D(400, 600));
 

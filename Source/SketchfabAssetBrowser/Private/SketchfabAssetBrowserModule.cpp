@@ -62,10 +62,10 @@ public:
 private:
 	void AddMenuEntry(FMenuBuilder& MenuBuilder)
 	{
-		MenuBuilder.BeginSection("Sketchfab", LOCTEXT("Sketchfab", "Sketchfab"));
+		MenuBuilder.BeginSection("Sketchfab", LOCTEXT("SketchfabMenu", "Sketchfab"));
 		MenuBuilder.AddMenuEntry(
-			LOCTEXT("AssetBrowser", "Asset Browser"),
-			LOCTEXT("Tooltip", "Launch the Sketchfab Asset Browser."),
+			LOCTEXT("SketchfabMenu_AssetBrowser", "Asset Browser"),
+			LOCTEXT("SketchfabMenu_Tooltip", "Launch the Sketchfab Asset Browser."),
 			FSlateIcon(),//FSlateIcon(FEditorStyle::GetStyleSetName(), "AutomationTools.MenuIcon"),
 			FUIAction(FExecuteAction::CreateRaw(this, &FSketchfabAssetBrowserModule::MenuCallbackOpenBrowser)));
 		MenuBuilder.EndSection();
