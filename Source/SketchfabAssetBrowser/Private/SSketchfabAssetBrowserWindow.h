@@ -39,57 +39,32 @@ public:
 	TSharedPtr<SWidget> OnGetAssetContextMenu(const TArray<FSketchfabAssetData>& SelectedAssets);
 
 public:
-	void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
-	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID);
-	//void NewAssetRequested(const FString& SelectedPath, TWeakObjectPtr<UClass> FactoryClass);
-
-public:
-	/* The actual HTTP call */
-	void GetModels(const FString &url);
-	void GetThumbnail(const FString &url, const FString &uid);
+	void Search();
 	void GetUserData();
 
-	void GetModelLink(const FString &uid);
-	void GetModel(const FString &url, const FString &uid);
+public:
+	void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
+	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID);
+
 
 private:
 	FString Token;
-	FHttpModule* Http;
 
-	/*Assign this function to call when the GET request processes sucessfully*/
-	void OnModelsReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-	void OnThumbnailReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-	void OnUserDataReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-	void OnModelLinkReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-
-	void OnModelReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-	void OnModelProgress(FHttpRequestPtr HttpRequest, int32 BytesSent, int32 BytesReceived);
-
-	void AddAuthorization(TSharedRef<IHttpRequest> Request);
-
-private:
 	//SketchfabRESTClient callbacks
-	void OnModelList(const FSketchfabTask& InSwarmTask);
-	void OnDownloadThumbnail(const FSketchfabTask& InSwarmTask);
-	void OnSketchfabTaskFailed(const FSketchfabTask& InSwarmTask);
+	void OnSearch(const FSketchfabTask& InTask);
+	void OnThumbnailDownloaded(const FSketchfabTask& InTask);
+	void OnTaskFailed(const FSketchfabTask& InTask);
+	void OnModelLink(const FSketchfabTask& InTask);
+	void OnModelDownloaded(const FSketchfabTask& InTask);
+	void OnModelDownloadProgress(const FSketchfabTask& InTask);
+	void OnUserData(const FSketchfabTask& InTask);
 
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;
 
 	TWeakPtr< SWindow > Window;
 
-	/** The asset view widget */
 	TSharedPtr<SSketchfabAssetView> AssetViewPtr;
-
-
-	/** List of pending Http requests model files being downloaded */
-	TMap<FHttpRequestPtr, FString> ModelRequests;
-
-	//UUID of thumbnail and asset data to create then thumbnail downloaded
-	TMap<FString, FSketchfabAssetData> AssetsToCreate;
-
-
-	TQueue<TWeakPtr<class IHttpRequest>> AllRequests;
 
 	FString CacheFolder;
 };

@@ -647,6 +647,7 @@ void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double I
 	if (bNeedsRefresh)
 	{
 		UpdateAssetList();
+		UpdateThumbnails();
 		bNeedsRefresh = false;
 	}
 

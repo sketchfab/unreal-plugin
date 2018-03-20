@@ -23,36 +23,8 @@ FSketchfabRESTClient::FSketchfabRESTClient()
 {
 	bEnableDebugging = false;
 	HostName = "";
-	JobLimit = 20;
-	DelayBetweenRuns = 5;
-	DelayBetweenRuns = DelayBetweenRuns <= 5 ? 5 : DelayBetweenRuns;
-	/*
-	FString IP = GetDefault<UEditorPerProjectUserSettings>()->SketchfabServerIP;
-	bEnableDebugging = GetDefault<UEditorPerProjectUserSettings>()->bEnableSketchfabDebugging;
-	if (IP != "")
-	{
-		if (!IP.Contains("http://"))
-		{
-			HostName = "http://" + IP;
-		}
-		else
-		{
-			HostName = IP;
-		}
-	}
-	else
-	{
-		HostName = TEXT(HOSTNAME);
-	}
-
-	HostName += TEXT(PORT);
-	JobLimit = GetDefault<UEditorPerProjectUserSettings>()->SketchfabNumOfConcurrentJobs;
-
-
-	DelayBetweenRuns = GetDefault<UEditorPerProjectUserSettings>()->SketchfabDelay / 1000;
-	DelayBetweenRuns = DelayBetweenRuns <= 5 ? 5 : DelayBetweenRuns;
-	*/
-
+	JobLimit = 24; //Same number of thumbs on a page
+	DelayBetweenRuns = 0.1; //Time in seconds before next batch is handled. We don't need to wait much for this.
 	Thread = FRunnableThread::Create(this, TEXT("SketchfabRESTClient"));
 }
 
@@ -85,7 +57,6 @@ void FSketchfabRESTClient::Wait(const float InSeconds, const float InSleepTime /
 uint32 FSketchfabRESTClient::Run()
 {
 	Wait(5);
-	//float SleepDelay = DelayBetweenRuns;
 	do
 	{
 
@@ -115,37 +86,48 @@ void FSketchfabRESTClient::UpdateTaskStates()
 		switch (SketchfabTask->GetState())
 		{
 		case SRS_UNKNOWN:
-		case SRS_ASSETUPLOADED_PENDING:
-			SketchfabTask->UploadAsset();
 			break;
 		case SRS_FAILED:
 			TasksMarkedForRemoval.Add(SketchfabTask);
 			break;
-		case SRS_ASSETUPLOADED:
-			SketchfabTask->CreateJob();
+		case SRS_SEARCH:
+			SketchfabTask->Search();
 			break;
-		case SRS_JOBCREATED:
-			SketchfabTask->UploadJobSettings();
+		case SRS_SEARCH_PROCESSING:
 			break;
-		case SRS_JOBSETTINGSUPLOADED:
-			SketchfabTask->ProcessJob();
-			break;
-		case SRS_JOBPROCESSING:
-			SketchfabTask->GetJob();
-			break;
-		case SRS_JOBPROCESSED:
-			SketchfabTask->DownloadAsset();
-			break;
-		case SRS_ASSETDOWNLOADED:
+		case SRS_SEARCH_DONE:
 			TasksMarkedForRemoval.Add(SketchfabTask);
 			break;
-		case SRS_GETMODELS:
-			SketchfabTask->GetModels();
+		case SRS_GETTHUMBNAIL:
+			SketchfabTask->GetThumbnail();
 			break;
-		case SRS_GETMODELS_PROCESSING:
-			SketchfabTask->GetModels();
+		case SRS_GETTHUMBNAIL_PROCESSING:
 			break;
-		case SRS_GETMODELS_DONE:
+		case SRS_GETTHUMBNAIL_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
+		case SRS_GETMODELLINK:
+			SketchfabTask->GetModelLink();
+			break;
+		case SRS_GETMODELLINK_PROCESSING:
+			break;
+		case SRS_GETMODELLINK_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
+		case SRS_DOWNLOADMODEL:
+			SketchfabTask->DownloadModel();
+			break;
+		case SRS_DOWNLOADMODEL_PROCESSING:
+			break;
+		case SRS_DOWNLOADMODEL_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
+		case SRS_GETUSERDATA:
+			SketchfabTask->GetUserData();
+			break;
+		case SRS_GETUSERDATA_PROCESSING:
+			break;
+		case SRS_GETUSERDATA_DONE:
 			TasksMarkedForRemoval.Add(SketchfabTask);
 			break;
 		}
@@ -184,7 +166,6 @@ void FSketchfabRESTClient::MoveItemsToBoundedArray()
 				TSharedPtr<FSketchfabTask> OutItem;
 				if (PendingJobs.Dequeue(OutItem))
 				{
-					OutItem->CreateUploadParts(MaxUploadSizeInBytes);
 					JobsBuffer.Add(OutItem);
 				}
 
@@ -227,7 +208,6 @@ void FSketchfabRESTClient::EnusureCompletion()
 void FSketchfabRESTClient::AddTask(TSharedPtr<FSketchfabTask>& InTask)
 {
 	//FScopeLock Lock(&CriticalSectionData);
-	InTask->SetHost(HostName);
 	PendingJobs.Enqueue(InTask);
 }
 
