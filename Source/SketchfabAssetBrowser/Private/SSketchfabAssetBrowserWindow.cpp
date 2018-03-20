@@ -92,7 +92,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			[
 				SNew(SButton)
 				.HAlign(HAlign_Center)
-			.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Login", "Login"))
+			.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
 			.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
 			]
 			+ SUniformGridPanel::Slot(1, 0)
@@ -111,6 +111,8 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		[
 			SNew(SUniformGridPanel)
 			.SlotPadding(2)
+
+			
 			+ SUniformGridPanel::Slot(0, 0)
 			[
 				SNew(SButton)
@@ -118,6 +120,17 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
 			.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
 			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(2)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("Login to your Sketchfab account. Double click on a model to download it. Import by dragging it into the content browser."))
+			.Justification(ETextJustify::Center)
+			.AutoWrapText(true)
+			.MinDesiredWidth(400.0f)
 		]
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
@@ -145,6 +158,16 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
 {
+	if (LoggedInUser.IsEmpty())
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("Sketchfab", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
+		if (Window.IsValid())
+		{
+			Window.Pin()->BringToFront(true);
+		}
+		return;
+	}
+
 	if (!Token.IsEmpty())
 	{
 		for (auto AssetIt = ActivatedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
@@ -178,6 +201,19 @@ TSharedPtr<SWidget> SSketchfabAssetBrowserWindow::OnGetAssetContextMenu(const TA
 	}
 
 	return NULL;
+}
+
+FText SSketchfabAssetBrowserWindow::GetLoginButtonText() const
+{
+	if (!LoggedInUser.IsEmpty())
+	{
+		FString text = LoggedInUser + " Logged In";
+		return FText::FromString(text);
+	}
+	else
+	{
+		return LOCTEXT("SSketchfabAssetBrowserWindow_OnLogin", "Login");
+	}
 }
 
 FReply SSketchfabAssetBrowserWindow::OnLogin()
@@ -363,6 +399,7 @@ void SSketchfabAssetBrowserWindow::OnTaskFailed(const FSketchfabTask& InTask)
 
 void SSketchfabAssetBrowserWindow::OnUserData(const FSketchfabTask& InTask)
 {
+	LoggedInUser = InTask.TaskData.UserName;
 }
 
 void SSketchfabAssetBrowserWindow::OnThumbnailDownloaded(const FSketchfabTask& InTask)
