@@ -92,7 +92,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			[
 				SNew(SButton)
 				.HAlign(HAlign_Center)
-			.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Login", "Login"))
+			.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
 			.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
 			]
 			+ SUniformGridPanel::Slot(1, 0)
@@ -178,6 +178,19 @@ TSharedPtr<SWidget> SSketchfabAssetBrowserWindow::OnGetAssetContextMenu(const TA
 	}
 
 	return NULL;
+}
+
+FText SSketchfabAssetBrowserWindow::GetLoginButtonText() const
+{
+	if (!LoggedInUser.IsEmpty())
+	{
+		FString text = LoggedInUser + " Logged In";
+		return FText::FromString(text);
+	}
+	else
+	{
+		return LOCTEXT("SSketchfabAssetBrowserWindow_OnLogin", "Login");
+	}
 }
 
 FReply SSketchfabAssetBrowserWindow::OnLogin()
@@ -363,6 +376,7 @@ void SSketchfabAssetBrowserWindow::OnTaskFailed(const FSketchfabTask& InTask)
 
 void SSketchfabAssetBrowserWindow::OnUserData(const FSketchfabTask& InTask)
 {
+	LoggedInUser = InTask.TaskData.UserName;
 }
 
 void SSketchfabAssetBrowserWindow::OnThumbnailDownloaded(const FSketchfabTask& InTask)

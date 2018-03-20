@@ -34,12 +34,15 @@ public:
 	FReply OnCancel();
 	FReply OnNext();
 
+	FText GetLoginButtonText() const;
+
 	//Browser Window
 	void OnUrlChanged(const FText &url);
 
 	//AssetView 
 	void OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod);
 	TSharedPtr<SWidget> OnGetAssetContextMenu(const TArray<FSketchfabAssetData>& SelectedAssets);
+
 
 public:
 	void Search();
@@ -74,5 +77,7 @@ private:
 	FString CacheFolder;
 
 	FString NextURL;
+
+	FString LoggedInUser;
 };
 

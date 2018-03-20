@@ -597,7 +597,7 @@ void FSketchfabTask::GetUserData()
 	{
 		DebugHttpRequestCounter.Increment();
 		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_GETUSERDATA);
+		SetState(SRS_GETUSERDATA_PROCESSING);
 	}
 }
 
