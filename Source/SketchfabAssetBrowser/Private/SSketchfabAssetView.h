@@ -194,8 +194,8 @@ public:
 		if (AssetItem.IsValid())
 		{
 			TSharedPtr<FAssetViewAsset> Asset = StaticCastSharedPtr<FAssetViewAsset>(AssetItem);
-			const FName &AssetUID = Asset->Data.ObjectUID;
-			const FName &PackagePath = Asset->Data.PackagePath;
+			const FName &AssetUID = Asset->Data.ModelUID;
+			const FName &PackagePath = Asset->Data.ContentFolder;
 
 			FString path = PackagePath.ToString() / AssetUID.ToString();
 			path += ".zip";
@@ -212,7 +212,7 @@ public:
 		{
 			TSharedPtr<FAssetViewAsset> Asset = StaticCastSharedPtr<FAssetViewAsset>(AssetItem);
 			const FName &ThumbUID = Asset->Data.ThumbUID;
-			const FName &PackagePath = Asset->Data.PackagePath;
+			const FName &PackagePath = Asset->Data.ContentFolder;
 
 			FString path = PackagePath.ToString() / ThumbUID.ToString();
 			path += ".jpg";

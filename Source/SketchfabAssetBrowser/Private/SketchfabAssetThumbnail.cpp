@@ -792,9 +792,9 @@ FSlateDynamicImageBrush* FSketchfabAssetThumbnail::GetImageBrush() const
 
 UObject* FSketchfabAssetThumbnail::GetAsset() const
 {
-	if ( AssetData.ObjectPath != NAME_None )
+	if ( AssetData.ModelUID != NAME_None )
 	{
-		return FindObject<UObject>(NULL, *AssetData.ObjectPath.ToString());
+		return FindObject<UObject>(NULL, *AssetData.ModelUID.ToString());
 	}
 	else
 	{
@@ -965,7 +965,7 @@ void FSketchfabAssetThumbnailPool::ReleaseResources()
 		const TSharedRef<FThumbnailInfo>& Thumb = *ThumbIt;
 		if ( !Thumb.IsUnique() )
 		{
-			ensureMsgf(0, TEXT("Thumbnail info for '%s' is still referenced by '%d' other objects"), *Thumb->AssetData.ObjectPath.ToString(), Thumb.GetSharedReferenceCount());
+			ensureMsgf(0, TEXT("Thumbnail info for '%s' is still referenced by '%d' other objects"), *Thumb->AssetData.ModelUID.ToString(), Thumb.GetSharedReferenceCount());
 		}
 	}
 }
@@ -1179,7 +1179,7 @@ void FSketchfabAssetThumbnailPool::Tick( float DeltaTime )
 FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketchfabAssetData& AssetData, uint32 Width, uint32 Height, FSlateDynamicImageBrush **Image)
 {
 	const FName &ThumbUID = AssetData.ThumbUID;
-	const FName &PackagePath = AssetData.PackagePath;
+	const FName &PackagePath = AssetData.ContentFolder;
 
 	FString path = PackagePath.ToString() / ThumbUID.ToString();
 	path += ".jpg";
@@ -1190,13 +1190,13 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 		return NULL;
 	}
 
-	if(AssetData.ObjectPath == NAME_None || Width == 0 || Height == 0)
+	if(AssetData.ModelUID == NAME_None || Width == 0 || Height == 0)
 	{
 		return NULL;
 	}
 	else
 	{
-		FThumbId ThumbId( AssetData.ObjectPath, Width, Height ) ;
+		FThumbId ThumbId( AssetData.ModelUID, Width, Height ) ;
 		// Check to see if a thumbnail for this asset exists.  If so we don't need to render it
 		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find( ThumbId );
 		TSharedPtr<FThumbnailInfo> ThumbnailInfo;
@@ -1296,14 +1296,14 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 void FSketchfabAssetThumbnailPool::AddReferencer( const FSketchfabAssetThumbnail& AssetThumbnail )
 {
 	FIntPoint Size = AssetThumbnail.GetSize();
-	if ( AssetThumbnail.GetAssetData().ObjectPath == NAME_None || Size.X == 0 || Size.Y == 0 )
+	if ( AssetThumbnail.GetAssetData().ModelUID == NAME_None || Size.X == 0 || Size.Y == 0 )
 	{
 		// Invalid referencer
 		return;
 	}
 
 	// Generate a key and look up the number of references in the RefCountMap
-	FThumbId ThumbId( AssetThumbnail.GetAssetData().ObjectPath, Size.X, Size.Y ) ;
+	FThumbId ThumbId( AssetThumbnail.GetAssetData().ModelUID, Size.X, Size.Y ) ;
 	int32* RefCountPtr = RefCountMap.Find(ThumbId);
 
 	if ( RefCountPtr )
@@ -1321,7 +1321,7 @@ void FSketchfabAssetThumbnailPool::AddReferencer( const FSketchfabAssetThumbnail
 void FSketchfabAssetThumbnailPool::RemoveReferencer( const FSketchfabAssetThumbnail& AssetThumbnail )
 {
 	FIntPoint Size = AssetThumbnail.GetSize();
-	const FName ObjectPath = AssetThumbnail.GetAssetData().ObjectPath;
+	const FName ObjectPath = AssetThumbnail.GetAssetData().ModelUID;
 	if ( ObjectPath == NAME_None || Size.X == 0 || Size.Y == 0 )
 	{
 		// Invalid referencer
@@ -1357,9 +1357,9 @@ bool FSketchfabAssetThumbnailPool::IsInRenderStack( const TSharedPtr<FSketchfabA
 	const uint32 Width = Thumbnail->GetSize().X;
 	const uint32 Height = Thumbnail->GetSize().Y;
 
-	if ( ensure(AssetData.ObjectPath != NAME_None) && ensure(Width > 0) && ensure(Height > 0) )
+	if ( ensure(AssetData.ModelUID != NAME_None) && ensure(Width > 0) && ensure(Height > 0) )
 	{
-		FThumbId ThumbId( AssetData.ObjectPath, Width, Height ) ;
+		FThumbId ThumbId( AssetData.ModelUID, Width, Height ) ;
 		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find( ThumbId );
 		if ( ThumbnailInfoPtr )
 		{
@@ -1376,9 +1376,9 @@ bool FSketchfabAssetThumbnailPool::IsRendered(const TSharedPtr<FSketchfabAssetTh
 	const uint32 Width = Thumbnail->GetSize().X;
 	const uint32 Height = Thumbnail->GetSize().Y;
 
-	if (ensure(AssetData.ObjectPath != NAME_None) && ensure(Width > 0) && ensure(Height > 0))
+	if (ensure(AssetData.ModelUID != NAME_None) && ensure(Width > 0) && ensure(Height > 0))
 	{
-		FThumbId ThumbId(AssetData.ObjectPath, Width, Height);
+		FThumbId ThumbId(AssetData.ModelUID, Width, Height);
 		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find(ThumbId);
 		if (ThumbnailInfoPtr)
 		{
@@ -1396,14 +1396,14 @@ void FSketchfabAssetThumbnailPool::PrioritizeThumbnails( const TArray< TSharedPt
 		TSet<FName> ObjectPathList;
 		for ( int32 ThumbIdx = 0; ThumbIdx < ThumbnailsToPrioritize.Num(); ++ThumbIdx )
 		{
-			ObjectPathList.Add(ThumbnailsToPrioritize[ThumbIdx]->GetAssetData().ObjectPath);
+			ObjectPathList.Add(ThumbnailsToPrioritize[ThumbIdx]->GetAssetData().ModelUID);
 		}
 
 		TArray< TSharedRef<FThumbnailInfo> > FoundThumbnails;
 		for ( int32 ThumbIdx = ThumbnailsToRenderStack.Num() - 1; ThumbIdx >= 0; --ThumbIdx )
 		{
 			const TSharedRef<FThumbnailInfo>& ThumbnailInfo = ThumbnailsToRenderStack[ThumbIdx];
-			if ( ThumbnailInfo->Width == Width && ThumbnailInfo->Height == Height && ObjectPathList.Contains(ThumbnailInfo->AssetData.ObjectPath) )
+			if ( ThumbnailInfo->Width == Width && ThumbnailInfo->Height == Height && ObjectPathList.Contains(ThumbnailInfo->AssetData.ModelUID) )
 			{
 				FoundThumbnails.Add(ThumbnailInfo);
 				ThumbnailsToRenderStack.RemoveAt(ThumbIdx);
@@ -1423,9 +1423,9 @@ void FSketchfabAssetThumbnailPool::RefreshThumbnail( const TSharedPtr<FSketchfab
 	const uint32 Width = ThumbnailToRefresh->GetSize().X;
 	const uint32 Height = ThumbnailToRefresh->GetSize().Y;
 
-	if ( ensure(AssetData.ObjectPath != NAME_None) && ensure(Width > 0) && ensure(Height > 0) )
+	if ( ensure(AssetData.ModelUID != NAME_None) && ensure(Width > 0) && ensure(Height > 0) )
 	{
-		FThumbId ThumbId( AssetData.ObjectPath, Width, Height ) ;
+		FThumbId ThumbId( AssetData.ModelUID, Width, Height ) ;
 		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find( ThumbId );
 		if ( ThumbnailInfoPtr )
 		{

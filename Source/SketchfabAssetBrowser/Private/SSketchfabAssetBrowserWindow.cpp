@@ -126,7 +126,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
 {
 	const FText LoadingTemplate = LOCTEXT("LoadingAssetName", "Loading {0}...");
-	const FText DefaultText = ActivatedAssets.Num() == 1 ? FText::Format(LoadingTemplate, FText::FromName(ActivatedAssets[0].ObjectUID)) : LOCTEXT("DownloadingModels", "Downloading Models...");
+	const FText DefaultText = ActivatedAssets.Num() == 1 ? FText::Format(LoadingTemplate, FText::FromName(ActivatedAssets[0].ModelUID)) : LOCTEXT("DownloadingModels", "Downloading Models...");
 	FScopedSlowTask SlowTask(100, DefaultText);
 
 	for (auto AssetIt = ActivatedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
@@ -136,7 +136,7 @@ void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAsse
 		FSketchfabTaskData TaskData;
 		TaskData.Token = Token;
 		TaskData.CacheFolder = CacheFolder;
-		TaskData.ModelUID = AssetData.ObjectUID.ToString();
+		TaskData.ModelUID = AssetData.ModelUID.ToString();
 		TaskData.StateLock = new FCriticalSection();
 
 		TSharedPtr<FSketchfabTask> SwarmTask = MakeShareable(new FSketchfabTask(TaskData));

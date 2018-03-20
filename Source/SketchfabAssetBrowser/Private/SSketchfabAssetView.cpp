@@ -52,7 +52,7 @@ FString GetSketchfabCacheDir()
 FString GetSketchfabAssetZipPath(const FSketchfabAssetData &AssetData)
 {
 	FString CacheFolder = GetSketchfabCacheDir();
-	FString zipFile = CacheFolder / AssetData.ObjectUID.ToString() + TEXT(".zip");
+	FString zipFile = CacheFolder / AssetData.ModelUID.ToString() + TEXT(".zip");
 	return zipFile;
 }
 
@@ -1001,7 +1001,7 @@ void SAssetTileItem::Construct( const FArguments& InArgs )
 		SNew(SBorder)
 		.BorderImage(this, &SAssetViewItem::GetBorderImage)
 		.Padding(0)
-		.AddMetaData<FTagMetaData>(FTagMetaData(AssetItem->GetType() == EAssetItemType::Normal ? StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data.ObjectPath : NAME_None))
+		.AddMetaData<FTagMetaData>(FTagMetaData(AssetItem->GetType() == EAssetItemType::Normal ? StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data.ModelUID : NAME_None))
 		[
 			SNew(SVerticalBox)
 

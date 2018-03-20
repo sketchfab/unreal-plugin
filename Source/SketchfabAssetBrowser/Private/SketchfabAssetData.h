@@ -24,11 +24,11 @@ struct FSketchfabAssetData
 public:
 
 	/** The object path for the asset in the form PackageName.AssetName. Only top level objects in a package can have AssetData */
-	FName ObjectPath;
+	FName ModelUID;
 	/** The name of the package in which the asset is found, this is the full long package name such as /Game/Path/Package */
 	FName PackageName;
 	/** The path to the package in which the asset is found, this is /Game/Path with the Package stripped off */
-	FName PackagePath;
+	FName ContentFolder;
 	/** The name of the asset without the package */
 	FName AssetName;
 	/** The name of the asset's class */
@@ -39,8 +39,7 @@ public:
 	TArray<int32> ChunkIDs;
 	/** Asset package flags */
 	uint32 PackageFlags;
-
-	FName ObjectUID;
+	/** Unique ID of the Thumbnail Image */
 	FName ThumbUID;
 
 public:
@@ -51,13 +50,13 @@ public:
 	/** Constructor */
 	FSketchfabAssetData(FName InPackageName, FName InPackagePath, FName InAssetName, FName InAssetClass, FName InObjectUID, FName InThumbUID, FAssetDataTagMap InTags = FAssetDataTagMap(), TArray<int32> InChunkIDs = TArray<int32>(), uint32 InPackageFlags = 0)
 		: PackageName(InPackageName)
-		, PackagePath(InPackagePath)
+		, ContentFolder(InPackagePath)
 		, AssetName(InAssetName)
 		, AssetClass(InAssetClass)
 		, TagsAndValues(MoveTemp(InTags))
 		, ChunkIDs(MoveTemp(InChunkIDs))
 		, PackageFlags(InPackageFlags)
-		, ObjectUID(InObjectUID)
+		, ModelUID(InObjectUID)
 		, ThumbUID(InThumbUID)
 	{
 		/*
@@ -68,7 +67,7 @@ public:
 
 		//In UE the ObjectPath is used as a unique identifier in the package. Since this class does not use packages I am reusing this value 
 		//by just setting it to the unique id for the Sketchfab asset.
-		ObjectPath = ObjectUID; 
+		ModelUID = ModelUID; 
 	}
 
 	/** Constructor taking a UObject. By default trying to create one for a blueprint class will create one for the UBlueprint instead, but this can be overridden */
@@ -116,28 +115,28 @@ public:
 	/** FAssetDatas are equal if their object paths match */
 	bool operator==(const FSketchfabAssetData& Other) const
 	{
-		return ObjectPath == Other.ObjectPath;
+		return ModelUID == Other.ModelUID;
 	}
 
 	bool operator!=(const FSketchfabAssetData& Other) const
 	{
-		return ObjectPath != Other.ObjectPath;
+		return ModelUID != Other.ModelUID;
 	}
 
 	bool operator>(const FSketchfabAssetData& Other) const
 	{
-		return ObjectPath > Other.ObjectPath;
+		return ModelUID > Other.ModelUID;
 	}
 
 	bool operator<(const FSketchfabAssetData& Other) const
 	{
-		return ObjectPath < Other.ObjectPath;
+		return ModelUID < Other.ModelUID;
 	}
 
 	/** Checks to see if this AssetData refers to an asset or is NULL */
 	bool IsValid() const
 	{
-		return ObjectPath != NAME_None;
+		return ModelUID != NAME_None;
 	}
 
 	/** Returns true if this asset was found in a UAsset file */
@@ -160,7 +159,7 @@ public:
 		OutFullName.Reset();
 		AssetClass.AppendString(OutFullName);
 		OutFullName.AppendChar(' ');
-		ObjectPath.AppendString(OutFullName);
+		ModelUID.AppendString(OutFullName);
 	}
 
 	/** Returns the name for the asset in the form: Class'ObjectPath' */
@@ -177,7 +176,7 @@ public:
 		OutExportTextName.Reset();
 		AssetClass.AppendString(OutExportTextName);
 		OutExportTextName.AppendChar('\'');
-		ObjectPath.AppendString(OutExportTextName);
+		ModelUID.AppendString(OutExportTextName);
 		OutExportTextName.AppendChar('\'');
 	}
 
@@ -219,7 +218,7 @@ public:
 	/** Convert to a SoftObjectPath for loading */
 	FSoftObjectPath ToSoftObjectPath() const
 	{
-		return FSoftObjectPath(ObjectPath.ToString());
+		return FSoftObjectPath(ModelUID.ToString());
 	}
 
 	DEPRECATED(4.18, "ToStringReference was renamed to ToSoftObjectPath")
@@ -252,10 +251,10 @@ public:
 			return NULL;
 		}
 
-		UObject* Asset = FindObject<UObject>(NULL, *ObjectPath.ToString());
+		UObject* Asset = FindObject<UObject>(NULL, *ModelUID.ToString());
 		if ( Asset == NULL )
 		{
-			Asset = LoadObject<UObject>(NULL, *ObjectPath.ToString());
+			Asset = LoadObject<UObject>(NULL, *ModelUID.ToString());
 		}
 
 		return Asset;
@@ -292,16 +291,16 @@ public:
 	/** Returns true if the asset is loaded */
 	bool IsAssetLoaded() const
 	{
-		return IsValid() && FindObject<UObject>(NULL, *ObjectPath.ToString()) != NULL;
+		return IsValid() && FindObject<UObject>(NULL, *ModelUID.ToString()) != NULL;
 	}
 
 	/** Prints the details of the asset to the log */
 	void PrintAssetData() const
 	{
-		UE_LOG(LogSketchfabAssetData, Log, TEXT("    FSketchfabAssetData for %s"), *ObjectPath.ToString());
+		UE_LOG(LogSketchfabAssetData, Log, TEXT("    FSketchfabAssetData for %s"), *ModelUID.ToString());
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("    ============================="));
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("        PackageName: %s"), *PackageName.ToString());
-		UE_LOG(LogSketchfabAssetData, Log, TEXT("        PackagePath: %s"), *PackagePath.ToString());
+		UE_LOG(LogSketchfabAssetData, Log, TEXT("        PackagePath: %s"), *ContentFolder.ToString());
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("        AssetName: %s"), *AssetName.ToString());
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("        AssetClass: %s"), *AssetClass.ToString());
 		UE_LOG(LogSketchfabAssetData, Log, TEXT("        TagsAndValues: %d"), TagsAndValues.Num());
@@ -353,8 +352,8 @@ public:
 	void SerializeForCache(FArchive& Ar)
 	{
 		// Serialize out the asset info
-		Ar << ObjectPath;
-		Ar << PackagePath;
+		Ar << ModelUID;
+		Ar << ContentFolder;
 		Ar << AssetClass;
 
 		// These are derived from ObjectPath, we manually serialize them because they get pooled
