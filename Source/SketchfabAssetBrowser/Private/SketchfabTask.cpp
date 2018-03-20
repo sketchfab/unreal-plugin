@@ -21,6 +21,7 @@ bool IsCompleteState(SketchfabRESTState state)
 	case SRS_GETMODELLINK_DONE:
 	case SRS_DOWNLOADMODEL_DONE:
 	case SRS_GETUSERDATA_DONE:
+	case SRS_GETUSERTHUMB_DONE:
 		return true;
 	}
 	return false;
@@ -58,6 +59,7 @@ FSketchfabTask::~FSketchfabTask()
 	OnModelDownloaded().Unbind();
 	OnModelDownloadProgress().Unbind();
 	OnUserData().Unbind();
+	OnUserThumbnailDelegate.Unbind();
 }
 
 SketchfabRESTState FSketchfabTask::GetState() const
@@ -175,7 +177,7 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 	{
 		if (this == nullptr)
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed or job id was empty"));
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
 			SetState(SRS_FAILED);
 			return;
 		}
@@ -277,7 +279,6 @@ void FSketchfabTask::GetThumbnail()
 	request->SetVerb(TEXT("GET"));
 	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
 	request->SetHeader("Content-Type", "image/jpeg");
-	request->SetHeader("UID", TaskData.ThumbnailUID);
 	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetThumbnail_Response);
 
 	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
@@ -315,18 +316,14 @@ void FSketchfabTask::GetThumbnail_Response(FHttpRequestPtr Request, FHttpRespons
 	{
 		if (this == nullptr)
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed or job id was empty"));
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
 			SetState(SRS_FAILED);
 			return;
 		}
 
-		if (!bWasSuccessful)
-			return;
-
-		FString uid = Request->GetHeader("UID");
-
 		if (Response->GetContentType() != "image/jpeg")
 		{
+			SetState(SRS_FAILED);
 			return;
 		}
 
@@ -335,7 +332,7 @@ void FSketchfabTask::GetThumbnail_Response(FHttpRequestPtr Request, FHttpRespons
 		{
 			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 
-			FString jpg = uid + ".jpg";
+			FString jpg = TaskData.ThumbnailUID + ".jpg";
 			FString FileName = TaskData.CacheFolder / jpg;
 			IFileHandle* FileHandle = PlatformFile.OpenWrite(*FileName);
 			if (FileHandle)
@@ -414,16 +411,14 @@ void FSketchfabTask::GetModelLink_Response(FHttpRequestPtr Request, FHttpRespons
 	{
 		if (this == nullptr)
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed or job id was empty"));
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
 			SetState(SRS_FAILED);
 			return;
 		}
 
-		if (!bWasSuccessful)
-			return;
-
 		if (Response->GetContentType() != "application/json")
 		{
+			SetState(SRS_FAILED);
 			return;
 		}
 
@@ -506,13 +501,10 @@ void FSketchfabTask::DownloadModel_Response(FHttpRequestPtr Request, FHttpRespon
 	{
 		if (this == nullptr)
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed or job id was empty"));
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
 			SetState(SRS_FAILED);
 			return;
 		}
-
-		if (!bWasSuccessful)
-			return;
 
 		FString contentType = Response->GetContentType();
 		if (contentType == "application/xml")
@@ -526,6 +518,7 @@ void FSketchfabTask::DownloadModel_Response(FHttpRequestPtr Request, FHttpRespon
 				Fixed.AppendChar(c);
 			}
 
+			SetState(SRS_FAILED);
 			return;
 		}
 
@@ -621,13 +614,10 @@ void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponse
 	{
 		if (this == nullptr)
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed or job id was empty"));
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
 			SetState(SRS_FAILED);
 			return;
 		}
-
-		if (!bWasSuccessful)
-			return;
 
 		//Create a pointer to hold the json serialized data
 		TSharedPtr<FJsonObject> JsonObject;
@@ -638,8 +628,36 @@ void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponse
 		//Deserialize the json data given Reader and the actual object to deserialize
 		if (FJsonSerializer::Deserialize(Reader, JsonObject))
 		{
-			FString name = JsonObject->GetStringField("displayName");
-			TaskData.UserName = name;
+			if (JsonObject->HasField("displayName"))
+			{
+				TaskData.UserName = JsonObject->GetStringField("displayName");
+			}
+
+			if (JsonObject->HasField("uid"))
+			{
+				TaskData.UserUID = JsonObject->GetStringField("uid");
+			}
+
+			if (JsonObject->HasField("avatar"))
+			{
+				TSharedPtr<FJsonObject> AvatarObj = JsonObject->GetObjectField("avatar");
+				if (AvatarObj->HasField("images"))
+				{
+					TArray<TSharedPtr<FJsonValue>> ImagesArray = AvatarObj->GetArrayField("images");
+					if (ImagesArray.Num() > 0)
+					{
+						TSharedPtr<FJsonObject> ImageObj = ImagesArray[0]->AsObject();
+						if (ImageObj->HasField("url"))
+						{
+							TaskData.UserThumbnaillURL = ImageObj->GetStringField("url");
+						}
+						if (ImageObj->HasField("uid"))
+						{
+							TaskData.UserThumbnaillUID = ImageObj->GetStringField("uid");
+						}
+					}
+				}
+			}
 		}
 
 		if (!this->IsCompleted &&  OnUserData().IsBound())
@@ -648,6 +666,104 @@ void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponse
 		}
 
 		SetState(SRS_GETUSERDATA_DONE);
+	}
+	else
+	{
+		SetState(SRS_FAILED);
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
+	}
+}
+
+void FSketchfabTask::GetUserThumbnail()
+{
+	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+
+	AddAuthorization(request);
+
+	request->SetURL(TaskData.UserThumbnaillURL);
+	request->SetVerb(TEXT("GET"));
+	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
+	request->SetHeader("Content-Type", "image/jpeg");
+	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetUserThumbnail_Response);
+
+	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
+
+	if (!request->ProcessRequest())
+	{
+		SetState(SRS_FAILED);
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
+	}
+	else
+	{
+		DebugHttpRequestCounter.Increment();
+		PendingRequests.Add(request, request->GetURL());
+		SetState(SRS_GETUSERTHUMB_PROCESSING);
+	}
+}
+
+void FSketchfabTask::GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	DebugHttpRequestCounter.Decrement();
+
+	FString OutUrl = PendingRequests.FindRef(Request);
+
+	if (!OutUrl.IsEmpty())
+	{
+		PendingRequests.Remove(Request);
+	}
+
+	if (!Response.IsValid())
+	{
+		return;
+	}
+
+	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+	{
+		if (this == nullptr)
+		{
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
+			SetState(SRS_FAILED);
+			return;
+		}
+
+		if (Response->GetContentType() != "image/jpeg")
+		{
+			SetState(SRS_FAILED);
+			return;
+		}
+
+		const TArray<uint8> &data = Response->GetContent();
+		if (data.Num() > 0)
+		{
+			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+			FString uid = TaskData.UserThumbnaillUID;
+			if (uid.IsEmpty())
+			{
+				//The json file currently does not contain the uid of the thumbnail, so for now I will use the users uid
+				uid = TaskData.UserUID;
+			}
+
+			FString jpg = uid + ".jpg";
+			FString FileName = TaskData.CacheFolder / jpg;
+			IFileHandle* FileHandle = PlatformFile.OpenWrite(*FileName);
+			if (FileHandle)
+			{
+				// Write the bytes to the file
+				FileHandle->Write(data.GetData(), data.Num());
+
+				// Close the file again
+				delete FileHandle;
+			}
+		}
+
+		if (!this->IsCompleted &&  OnUserThumbnail().IsBound())
+		{
+			//UE_LOG(LogSketchfabRESTClient, Display, TEXT("Thumbnail downloaded"));
+			OnUserThumbnail().Execute(*this);
+		}
+
+		SetState(SRS_GETUSERTHUMB_DONE);
 	}
 	else
 	{

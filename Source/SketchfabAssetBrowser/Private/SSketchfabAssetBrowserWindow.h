@@ -66,6 +66,7 @@ private:
 	void OnModelDownloaded(const FSketchfabTask& InTask);
 	void OnModelDownloadProgress(const FSketchfabTask& InTask);
 	void OnUserData(const FSketchfabTask& InTask);
+	void OnUserThumbnailDownloaded(const FSketchfabTask& InTask);
 
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;

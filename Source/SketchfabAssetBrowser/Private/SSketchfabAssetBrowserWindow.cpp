@@ -400,6 +400,22 @@ void SSketchfabAssetBrowserWindow::OnTaskFailed(const FSketchfabTask& InTask)
 void SSketchfabAssetBrowserWindow::OnUserData(const FSketchfabTask& InTask)
 {
 	LoggedInUser = InTask.TaskData.UserName;
+
+	//Download the users thumbnail
+
+	FSketchfabTaskData TaskData = InTask.TaskData;
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETUSERTHUMB);
+	Task->OnUserThumbnail().BindRaw(this, &SSketchfabAssetBrowserWindow::OnUserThumbnailDownloaded);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
+}
+
+void SSketchfabAssetBrowserWindow::OnUserThumbnailDownloaded(const FSketchfabTask& InTask)
+{
+	AssetViewPtr->NeedRefresh();
 }
 
 void SSketchfabAssetBrowserWindow::OnThumbnailDownloaded(const FSketchfabTask& InTask)
@@ -450,6 +466,7 @@ void SSketchfabAssetBrowserWindow::OnModelLink(const FSketchfabTask& InTask)
 	Task->SetState(SRS_DOWNLOADMODEL);
 	Task->OnModelDownloaded().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelDownloaded);
 	Task->OnModelDownloadProgress().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelDownloadProgress);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
 	FSketchfabRESTClient::Get()->AddTask(Task);
 }
 
