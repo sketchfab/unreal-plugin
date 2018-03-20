@@ -158,6 +158,16 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
 {
+	if (LoggedInUser.IsEmpty())
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("Sketchfab", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
+		if (Window.IsValid())
+		{
+			Window.Pin()->BringToFront(true);
+		}
+		return;
+	}
+
 	if (!Token.IsEmpty())
 	{
 		for (auto AssetIt = ActivatedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
