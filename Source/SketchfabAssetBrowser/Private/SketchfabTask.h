@@ -36,6 +36,9 @@ enum SketchfabRESTState
 	SRS_GETUSERDATA,
 	SRS_GETUSERDATA_PROCESSING,
 	SRS_GETUSERDATA_DONE,
+	SRS_GETUSERTHUMB,
+	SRS_GETUSERTHUMB_PROCESSING,
+	SRS_GETUSERTHUMB_DONE,
 };
 
 bool IsCompleteState(SketchfabRESTState state);
@@ -89,8 +92,17 @@ struct FSketchfabTaskData
 	/** The Cache folder for downloaded content */
 	FString CacheFolder;
 
-	/** The Cache folder for downloaded content */
+	/** The Logged in user name */
 	FString UserName;
+
+	/** The Logged in user id */
+	FString UserUID;
+
+	/** The Logged in user Thumbnail download URL */
+	FString UserThumbnaillURL;
+
+	/** The Logged in user Thumbnail download UID */
+	FString UserThumbnaillUID;
 
 	/** The Next Page URL to get */
 	FString NextURL;
@@ -127,6 +139,7 @@ public:
 	FSketchfabTaskDelegate& OnModelDownloaded() { return OnModelDownloadedDelegate; }
 	FSketchfabTaskDelegate& OnModelDownloadProgress() { return OnModelDownloadProgressDelegate; }
 	FSketchfabTaskDelegate& OnUserData() { return OnUserDataDelegate; }
+	FSketchfabTaskDelegate& OnUserThumbnail() { return OnUserThumbnailDelegate; }
 
 	void EnableDebugLogging();	
 
@@ -136,7 +149,7 @@ public:
 	void GetModelLink();
 	void DownloadModel();
 	void GetUserData();
-
+	void GetUserThumbnail();
 	//
 	void AddAuthorization(TSharedRef<IHttpRequest> Request);
 	void DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 BytesSent, int32 BytesReceived);
@@ -147,6 +160,7 @@ public:
 	void GetModelLink_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void DownloadModel_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetUserData_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
 	//~End Rest methods
 
@@ -181,6 +195,7 @@ private:
 	FSketchfabTaskDelegate OnModelDownloadedDelegate;
 	FSketchfabTaskDelegate OnModelDownloadProgressDelegate;
 	FSketchfabTaskDelegate OnUserDataDelegate;
+	FSketchfabTaskDelegate OnUserThumbnailDelegate;
 	//~ Delegates End
 
 	/** Map that stores pending request. They need to be cleaned up when destroying the instance. Especially if job has completed*/

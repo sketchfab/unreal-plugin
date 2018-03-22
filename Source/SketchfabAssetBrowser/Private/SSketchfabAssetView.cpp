@@ -639,9 +639,8 @@ void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double I
 	if (bNeedsRefresh)
 	{
 		bNeedsRefresh = false;
-		UpdateAssetList();
-		UpdateThumbnails();
-
+		//UpdateAssetList();
+		
 		//This is a hack for now. Just refresh all the widgets.
 		TileView->RebuildList();
 	}

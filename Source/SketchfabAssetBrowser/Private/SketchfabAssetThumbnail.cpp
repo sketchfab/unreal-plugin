@@ -425,8 +425,8 @@ private:
 
 	float GetAssetColorStripHeight() const
 	{
-		// The strip is 2.5% the height of the thumbnail, but at least 3 units tall
-		return FMath::Max(FMath::CeilToFloat(WidthLastFrame*0.025f), 3.0f);
+		// The strip is 2.5% the height of the thumbnail, but at least 4 units tall
+		return FMath::Max(FMath::CeilToFloat(WidthLastFrame*0.025f), 4.0f);
 	}
 
 	FMargin GetAssetColorStripPadding() const
@@ -437,9 +437,15 @@ private:
 
 	FMargin GetDownloadProgressColorStripPadding() const
 	{
+		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
 		const float Height = GetAssetColorStripHeight();
-		float progress = AssetThumbnail->GetAssetData().DownloadProgress;
-		float Width = WidthLastFrame * progress;
+		float progress = AssetData.DownloadProgress;
+
+		//This is a hack for now. Since I am currently refreshing all the widgets the WidthLastFrame
+		//value can't be used since it goes to 0 when rebuilt. But since I know the size of the widgets is
+		//hard coded to 128 I can safely use this value.
+		float Width = FMath::Max(FMath::CeilToFloat(WidthLastFrame*0.025f), 128.0f);
+		Width = Width * progress;
 		return FMargin(Width, Height, 0, 0);
 	}
 

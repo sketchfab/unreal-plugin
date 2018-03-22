@@ -130,6 +130,14 @@ void FSketchfabRESTClient::UpdateTaskStates()
 		case SRS_GETUSERDATA_DONE:
 			TasksMarkedForRemoval.Add(SketchfabTask);
 			break;
+		case SRS_GETUSERTHUMB:
+			SketchfabTask->GetUserThumbnail();
+			break;
+		case SRS_GETUSERTHUMB_PROCESSING:
+			break;
+		case SRS_GETUSERTHUMB_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
 		}
 	}
 
