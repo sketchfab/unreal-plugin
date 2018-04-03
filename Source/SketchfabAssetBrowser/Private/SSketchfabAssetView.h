@@ -99,19 +99,6 @@ struct FAssetViewAsset : public FAssetViewItem
 		OnAssetDataChanged.Broadcast();
 	}
 
-	bool GetTagValue(FName Tag, FString& OutString) const
-	{
-		const FString* FoundString = CustomColumnData.Find(Tag);
-
-		if (FoundString)
-		{
-			OutString = *FoundString;
-			return true;
-		}
-
-		return Data.GetTagValue(Tag, OutString);
-	}
-
 	// FAssetViewItem interface
 	virtual EAssetItemType::Type GetType() const override
 	{
