@@ -75,73 +75,166 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(2)
+		.Padding(0, 0, 0, 2)
 		[
-			SAssignNew(DetailsViewBox, SBox)
-			.MaxDesiredHeight(450.0f)
-		.MinDesiredWidth(550.0f)
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.HAlign(HAlign_Right)
-		.Padding(2)
-		[
-			SNew(SUniformGridPanel)
-			.SlotPadding(2)
-			+ SUniformGridPanel::Slot(0, 0)
+			SNew(SBorder)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-			.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
-			.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
-			]
-			+ SUniformGridPanel::Slot(1, 0)
-			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-				.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Cancel", "Cancel"))
-				//.ToolTipText(LOCTEXT("SSketchfabAssetBrowserWindow_Cancel_ToolTip", "Close the window"))
-				.OnClicked(this, &SSketchfabAssetBrowserWindow::OnCancel)
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.HAlign(HAlign_Right)
-		.Padding(2)
-		[
-			SNew(SUniformGridPanel)
-			.SlotPadding(2)
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(2)
+				[
+					SAssignNew(DetailsViewBox, SBox)
+					.MaxDesiredHeight(450.0f)
+				.MinDesiredWidth(550.0f)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Right)
+				.Padding(2)
+				[
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+					.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
+					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
+					]
+					+ SUniformGridPanel::Slot(1, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Cancel", "Cancel"))
+						//.ToolTipText(LOCTEXT("SSketchfabAssetBrowserWindow_Cancel_ToolTip", "Close the window"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnCancel)
+					]
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Right)
+				.Padding(2)
+				[
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
 
 			
-			+ SUniformGridPanel::Slot(0, 0)
-			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-			.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
-			.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
+					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
+					]
+				]
 			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.HAlign(HAlign_Center)
-		.Padding(2)
+		.Padding(0, 0, 0, 2)
 		[
-			SNew(STextBlock)
-			.Text(FText::FromString("Login to your Sketchfab account. Double click on a model to download it. Import by dragging it into the content browser."))
-			.Justification(ETextJustify::Center)
-			.AutoWrapText(true)
-			.MinDesiredWidth(400.0f)
+			SNew(SBorder)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(2)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString("Login to your Sketchfab account. Double click on a model to download it. Import by dragging it into the content browser."))
+					.Justification(ETextJustify::Center)
+					.AutoWrapText(true)
+					.MinDesiredWidth(400.0f)
+				]
+			]
+		]
+
+		//Search Bar
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0, 0, 0, 2)
+		[
+			SNew(SHorizontalBox)
+
+			// Search Text 
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			[
+				SNew(SBorder)
+				.Padding(FMargin(3))
+				.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+				[
+					SNew(SHorizontalBox)
+
+					// Search Text 
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding( 0, 0, 4, 0 )
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("Search:"))
+						.Justification(ETextJustify::Left)
+					]
+
+					// Search
+					+SHorizontalBox::Slot()
+					.Padding(4, 1, 0, 0)
+					.FillWidth(1.0f)
+					[
+						SAssignNew(SearchBoxPtr, SSketchfabAssetSearchBox)
+						//.HintText( this, &SContentBrowser::GetSearchAssetsHintText )
+						.OnTextChanged( this, &SSketchfabAssetBrowserWindow::OnSearchBoxChanged )
+						.OnTextCommitted( this, &SSketchfabAssetBrowserWindow::OnSearchBoxCommitted )
+						//.PossibleSuggestions( this, &SContentBrowser::GetAssetSearchSuggestions )
+						.DelayChangeNotificationsWhileTyping( true )
+						//.Visibility( ( Config != nullptr ? Config->bCanShowAssetSearch : true ) ? EVisibility::Visible : EVisibility::Collapsed )
+						//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserSearchAssets")))
+					]
+
+					// Search Button
+					+SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding(2.0f, 0.0f, 0.0f, 0.0f)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Right)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_SearchButton", "Search"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnSearchPressed)
+						//.ButtonStyle(FEditorStyle::Get(), "FlatButton")
+						//.ToolTipText(LOCTEXT("SaveSearchButtonTooltip", "Save the current search as a dynamic collection."))
+						//.IsEnabled(this, &SContentBrowser::IsSaveSearchButtonEnabled)
+						.ContentPadding( FMargin(1, 1) )
+					]
+				]
+			]
 		]
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
 		.Padding(0)
 		[
-			SAssignNew(AssetViewPtr, SSketchfabAssetView)
-			.ThumbnailLabel(ESketchfabThumbnailLabel::AssetName)
-			.ThumbnailScale(0.4f)
-			.OnAssetsActivated(this, &SSketchfabAssetBrowserWindow::OnAssetsActivated)
-			.OnGetAssetContextMenu(this, &SSketchfabAssetBrowserWindow::OnGetAssetContextMenu)
-			.AllowDragging(true)
+			SNew(SBorder)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				[
+					SAssignNew(AssetViewPtr, SSketchfabAssetView)
+					.ThumbnailLabel(ESketchfabThumbnailLabel::AssetName)
+					.ThumbnailScale(0.4f)
+					.OnAssetsActivated(this, &SSketchfabAssetBrowserWindow::OnAssetsActivated)
+					.OnGetAssetContextMenu(this, &SSketchfabAssetBrowserWindow::OnGetAssetContextMenu)
+					.AllowDragging(true)
+				]
+			]
 		]
 	];
 		
@@ -213,6 +306,68 @@ FText SSketchfabAssetBrowserWindow::GetLoginButtonText() const
 	else
 	{
 		return LOCTEXT("SSketchfabAssetBrowserWindow_OnLogin", "Login");
+	}
+}
+
+FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
+{
+	g_pageCount = 10;
+	AssetViewPtr->FlushThumbnails();
+
+	FString url;
+	if (!TagSearchText.IsEmpty())
+	{
+		TArray<FString> Array;
+		TagSearchText.ParseIntoArray(Array, TEXT(" "), true);
+
+		url = "https://api.sketchfab.com/v3/search?type=models&downloadable=true&sort_by=-publishedAt&tags=";
+
+		int32 count = Array.Num();
+		for (int32 i = 0; i < Array.Num(); i++)
+		{
+			url += Array[i].ToLower();
+
+			if (i != (count - 1))
+			{
+				url += "%2C";
+			}
+		}
+	}
+
+	Search(url);
+	return FReply::Handled();
+}
+
+bool SSketchfabAssetBrowserWindow::SetSearchBoxText(const FText& InSearchText)
+{
+	// Has anything changed? (need to test case as the operators are case-sensitive)
+	if (!InSearchText.ToString().Equals(TagSearchText, ESearchCase::CaseSensitive))
+	{
+		TagSearchText = InSearchText.ToString();
+		if (InSearchText.IsEmpty())
+		{
+			g_pageCount = 10;
+			AssetViewPtr->FlushThumbnails();
+			Search();
+		}
+		else
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void SSketchfabAssetBrowserWindow::OnSearchBoxChanged(const FText& InSearchText)
+{
+	//SetSearchBoxText(InSearchText);
+}
+
+void SSketchfabAssetBrowserWindow::OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo)
+{
+	if (SetSearchBoxText(InSearchText))
+	{
+		OnSearchPressed();
 	}
 }
 

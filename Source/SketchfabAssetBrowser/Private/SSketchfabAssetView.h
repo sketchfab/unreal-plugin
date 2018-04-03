@@ -407,6 +407,7 @@ public:
 	void ForceCreateNewAsset(const FString& ModelName, const FString& ContentFolder, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 	void NeedRefresh();
 	void DownloadProgress(const FString& ModelUID, float progress);
+	void FlushThumbnails();
 
 private:
 	void CreateCurrentView();
@@ -574,8 +575,8 @@ private:
 	FOnSketchfabAssetToolTipClosing OnAssetToolTipClosing;
 
 	bool bBulkSelecting;
-
 	bool bNeedsRefresh;
+	bool bFlushThumbnails;
 
 	/** Progress information for ModelUID download. Gets set on the RelevantThumbnails */
 	TMap<FString, float> DownloadProgressData;

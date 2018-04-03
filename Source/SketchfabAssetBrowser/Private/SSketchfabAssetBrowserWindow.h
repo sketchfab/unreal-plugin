@@ -7,6 +7,7 @@
 
 #include "Runtime/Online/HTTP/Public/Http.h"
 #include "SketchfabTask.h"
+#include "SSketchfabAssetSearchBox.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowserWindow, Log, All);
 
@@ -33,7 +34,14 @@ public:
 	FReply OnLogin();
 	FReply OnCancel();
 	FReply OnNext();
+	
+	//Search Box
+	FReply OnSearchPressed();
+	bool SetSearchBoxText(const FText& InSearchText);
+	void OnSearchBoxChanged(const FText& InSearchText);
+	void OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo);
 
+	//Login Button 
 	FText GetLoginButtonText() const;
 
 	//Browser Window
@@ -74,6 +82,11 @@ private:
 	TWeakPtr< SWindow > Window;
 
 	TSharedPtr<SSketchfabAssetView> AssetViewPtr;
+
+	/** The text box used to search for assets */
+	TSharedPtr<SSketchfabAssetSearchBox> SearchBoxPtr;
+
+	FString TagSearchText;
 
 	FString CacheFolder;
 

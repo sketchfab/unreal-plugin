@@ -614,6 +614,11 @@ void SSketchfabAssetView::NeedRefresh()
 	bNeedsRefresh = true;
 }
 
+void SSketchfabAssetView::FlushThumbnails()
+{
+	bFlushThumbnails = true;
+}
+
 void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
 	/*
@@ -644,6 +649,15 @@ void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double I
 		//This is a hack for now. Just refresh all the widgets.
 		TileView->RebuildList();
 	}
+
+
+	if (bFlushThumbnails)
+	{
+		FilteredAssetItems.Empty();
+		bFlushThumbnails = false;
+		bNeedsRefresh = true;
+	}
+
 
 	/*
 	if (bSlowFullListRefreshRequested)
