@@ -35,7 +35,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 		ImportContext.MaterialMap.Empty();
 	}
 	
-	check(ImportedMesh);
+	ensure(ImportedMesh);
 
 
 	int32 LODIndex = 0;
@@ -74,7 +74,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 				{
 					NumFaces = accessor.count / 3;
 					RawTriangles.WedgeIndices.AddZeroed(accessor.count);
-					check(accessor.type == TINYGLTF_TYPE_SCALAR);
+					ensure(accessor.type == TINYGLTF_TYPE_SCALAR);
 					if (accessor.type == TINYGLTF_TYPE_SCALAR)
 					{
 						switch (accessor.componentType)
@@ -106,7 +106,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 							}
 						}
 						break;
-						default: check(false); break;
+						default: ensure(false); break;
 						}
 					}
 				}
@@ -126,7 +126,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 
 				{
 					RawTriangles.VertexPositions.AddZeroed(accessor.count);
-					check(accessor.type == TINYGLTF_TYPE_VEC3);
+					ensure(accessor.type == TINYGLTF_TYPE_VEC3);
 					if (accessor.type == TINYGLTF_TYPE_VEC3)
 					{
 						switch (accessor.componentType)
@@ -155,7 +155,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 							}
 						}
 						break;
-						default: check(false); break;
+						default: ensure(false); break;
 						}
 					}
 				}
@@ -176,7 +176,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 
 				{
 					RawTriangles.WedgeTangentZ.AddUninitialized(NumFaces * 3);
-					check(accessor.type == TINYGLTF_TYPE_VEC3);
+					ensure(accessor.type == TINYGLTF_TYPE_VEC3);
 					if (accessor.type == TINYGLTF_TYPE_VEC3)
 					{
 						switch (accessor.componentType)
@@ -215,7 +215,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 							}
 						}
 						break;
-						default: check(false); break;
+						default: ensure(false); break;
 						}
 					}
 				}
@@ -273,7 +273,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 							}
 						}
 						break;
-						default: check(false); break;
+						default: ensure(false); break;
 						}
 					}
 					break;
@@ -315,11 +315,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 							}
 						}
 						break;
-						default: check(false); break;
+						default: ensure(false); break;
 						}
 					}
 					break;
-					default: check(false); break;
+					default: ensure(false); break;
 					}
 				}
 			}
@@ -407,7 +407,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 
 		// Faces and UV/Normals
 		staticMaterialIndex = ImportContext.MaterialMap.Find(prim.material);
-		check(staticMaterialIndex);
+		ensure(staticMaterialIndex);
 		for (int faceIndex = 0; faceIndex < NumFaces; faceIndex++)
 		{
 			// Materials
@@ -453,7 +453,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 
 bool FGLTFStaticMeshImporter::AddUVs(const tinygltf::Model *model, const tinygltf::Primitive &prim, FRawMesh &RawTriangles, int32 NumFaces, int32 WedgeOffset, int32 VertexOffset, int32 uvIndex)
 {
-	bool uvsAdded = 0;
+	bool uvsAdded = false;
 	std::string name = "TEXCOORD_" + std::to_string(uvIndex);
 	const auto &texcoords = prim.attributes.find(name);
 	if (texcoords != prim.attributes.end())
@@ -471,19 +471,33 @@ bool FGLTFStaticMeshImporter::AddUVs(const tinygltf::Model *model, const tinyglt
 				//One uv per vertex on every polygon
 				RawTriangles.WedgeTexCoords[uvIndex].AddUninitialized(NumFaces * 3);
 				TArray<FVector2D>& TexCoords = RawTriangles.WedgeTexCoords[uvIndex];
-				check(accessor.type == TINYGLTF_TYPE_VEC2);
+				ensure(accessor.type == TINYGLTF_TYPE_VEC2);
 				if (accessor.type == TINYGLTF_TYPE_VEC2)
 				{
 					switch (accessor.componentType)
 					{
 					case TINYGLTF_COMPONENT_TYPE_FLOAT:
 					{
+						int32 WedgesCount = RawTriangles.WedgeIndices.Num();
+						int32 TexCoordsCount = TexCoords.Num();
 						float *data = (float*)&buffer.data[offset];
 						for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
 						{
 							const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
 							const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
 							const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
+
+							if (I0 >= WedgesCount || I1 >= WedgesCount || I2 >= WedgesCount)
+							{
+								ensure(false);
+								break;
+							}
+
+							if (I0 >= TexCoordsCount || I1 >= TexCoordsCount || I2 >= TexCoordsCount)
+							{
+								ensure(false);
+								break;
+							}
 
 							int32 index0 = RawTriangles.WedgeIndices[I0] - VertexOffset;
 							int32 index1 = RawTriangles.WedgeIndices[I1] - VertexOffset;
@@ -505,12 +519,26 @@ bool FGLTFStaticMeshImporter::AddUVs(const tinygltf::Model *model, const tinyglt
 					break;
 					case TINYGLTF_COMPONENT_TYPE_DOUBLE:
 					{
+						int32 WedgesCount = RawTriangles.WedgeIndices.Num();
+						int32 TexCoordsCount = TexCoords.Num();
 						double *data = (double*)&buffer.data[offset];
 						for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
 						{
 							const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
 							const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
 							const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
+
+							if (I0 >= WedgesCount || I1 >= WedgesCount || I2 >= WedgesCount)
+							{
+								ensure(false);
+								break;
+							}
+
+							if (I0 >= TexCoordsCount || I1 >= TexCoordsCount || I2 >= TexCoordsCount)
+							{
+								ensure(false);
+								break;
+							}
 
 							int32 index0 = RawTriangles.WedgeIndices[I0] - VertexOffset;
 							int32 index1 = RawTriangles.WedgeIndices[I1] - VertexOffset;
@@ -529,7 +557,7 @@ bool FGLTFStaticMeshImporter::AddUVs(const tinygltf::Model *model, const tinyglt
 						}
 					}
 					break;
-					default: check(false); break;
+					default: ensure(false); break;
 					}
 				}
 			}
