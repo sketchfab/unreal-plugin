@@ -63,9 +63,20 @@ public:
 	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 
-private:
- 	TSharedRef<SWidget> MakeFilterMenu();
+private: 	
+	//Search Filters
+
+	TSharedRef<SWidget> MakeFilterMenu();
 	static void MakeCategoriesMenu(FMenuBuilder& MenuBuilder, TArray<FString> Categories);
+
+	ECheckBoxState IsSearchAnimatedChecked() const;
+	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
+
+	ECheckBoxState IsSearchStaffPickedChecked() const;
+	void OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState);
+
+	bool bSearchAnimated;
+	bool bSearchStaffPicked;
 
 private:
 	FString Token;

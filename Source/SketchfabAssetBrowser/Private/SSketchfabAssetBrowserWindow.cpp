@@ -49,8 +49,6 @@
 
 DEFINE_LOG_CATEGORY(LogSketchfabAssetBrowserWindow);
 
-int32 g_pageCount = 0;
-
 SSketchfabAssetBrowserWindow::~SSketchfabAssetBrowserWindow()
 {
 	FSketchfabRESTClient::Get()->Shutdown();
@@ -58,8 +56,6 @@ SSketchfabAssetBrowserWindow::~SSketchfabAssetBrowserWindow()
 
 void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 {
-	g_pageCount = 10;
-
 	//IE C:/Users/user/AppData/Local/UnrealEngine/4.18/SketchfabCache/
 	CacheFolder = GetSketchfabCacheDir();
 
@@ -286,6 +282,10 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 	DetailsViewBox->SetContent(DetailsView.ToSharedRef());
 
+
+	bSearchAnimated = false;
+	bSearchStaffPicked = false;
+
 	Search();
 }
 
@@ -351,17 +351,16 @@ FText SSketchfabAssetBrowserWindow::GetLoginButtonText() const
 
 FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 {
-	g_pageCount = 10;
 	AssetViewPtr->FlushThumbnails();
 
-	FString url;
+	FString url = "https://api.sketchfab.com/v3/search?type=models&downloadable=true";
 	if (!TagSearchText.IsEmpty())
 	{
 		TArray<FString> Array;
 		TagSearchText.ParseIntoArray(Array, TEXT(" "), true);
 
-		url = "https://api.sketchfab.com/v3/search?type=models&downloadable=true&sort_by=-publishedAt&tags=";
-
+		/*
+		url += "&tags=";
 		int32 count = Array.Num();
 		for (int32 i = 0; i < Array.Num(); i++)
 		{
@@ -372,7 +371,37 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 				url += "%2C";
 			}
 		}
+		*/
+
+		url += "&q=";
+		int32 count = Array.Num();
+		for (int32 i = 0; i < Array.Num(); i++)
+		{
+			url += Array[i].ToLower();
+
+			if (i != (count - 1))
+			{
+				url += "+";
+			}
+		}
 	}
+
+	if (bSearchAnimated)
+	{
+		url += "&animated=true";
+	}
+
+	if (bSearchStaffPicked)
+	{
+		url += "&staffpicked=true";
+	}
+
+	//Sort By
+	if (true)
+	{
+		url += "&sort_by=-publishedAt";
+	}
+
 
 	Search(url);
 	return FReply::Handled();
@@ -386,7 +415,6 @@ bool SSketchfabAssetBrowserWindow::SetSearchBoxText(const FText& InSearchText)
 		TagSearchText = InSearchText.ToString();
 		if (InSearchText.IsEmpty())
 		{
-			g_pageCount = 10;
 			AssetViewPtr->FlushThumbnails();
 			Search();
 		}
@@ -456,7 +484,6 @@ FReply SSketchfabAssetBrowserWindow::OnCancel()
 
 FReply SSketchfabAssetBrowserWindow::OnNext()
 {
-	g_pageCount = 5;
 	Search(NextURL);
 	return FReply::Handled();
 }
@@ -607,8 +634,8 @@ TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFilterMenu()
 			.AutoHeight()
 			[
 				SNew(SCheckBox)
-				//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
-				//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
+				.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked)
+				.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::OnSearchAnimatedCheckStateChanged)
 				[
 					SNew(STextBlock)
 					.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Animated", "Animated" ) )
@@ -618,8 +645,8 @@ TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFilterMenu()
 			.AutoHeight()
 			[
 				SNew(SCheckBox)
-				//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
-				//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
+				.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchStaffPickedChecked)
+				.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::OnSearchStaffPickedCheckStateChanged)
 				[
 					SNew(STextBlock)
 					.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Staff Picked", "Staff Picked" ) )
@@ -637,6 +664,26 @@ TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFilterMenu()
 	}
 
 	return MenuBuilder.MakeWidget();
+}
+
+ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked() const
+{
+	return bSearchAnimated ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+}
+
+void SSketchfabAssetBrowserWindow::OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState)
+{
+	bSearchAnimated = (NewState == ECheckBoxState::Checked);
+}
+
+ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchStaffPickedChecked() const
+{
+	return bSearchStaffPicked ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+}
+
+void SSketchfabAssetBrowserWindow::OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState)
+{
+	bSearchStaffPicked = (NewState == ECheckBoxState::Checked);
 }
 
 
@@ -737,13 +784,7 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 	}
 
 	AssetViewPtr->NeedRefresh();
-
 	NextURL = InTask.TaskData.NextURL;
-
-	if ((--g_pageCount) > 0)
-	{
-		Search(NextURL);
-	}
 }
 
 void SSketchfabAssetBrowserWindow::OnModelLink(const FSketchfabTask& InTask)
