@@ -42,6 +42,7 @@
 #include "SSketchfabAssetView.h"
 #include "SOAuthWebBrowser.h"
 #include "SketchfabRESTClient.h"
+#include "SComboButton.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
@@ -162,7 +163,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		[
 			SNew(SHorizontalBox)
 
-			// Search Text 
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.0f)
 			[
@@ -171,6 +171,45 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 				[
 					SNew(SHorizontalBox)
+
+					// Filter
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.Padding(0, 0, 4, 0)
+					[
+						SNew( SComboButton )
+						.ComboButtonStyle( FEditorStyle::Get(), "GenericFilters.ComboButtonStyle" )
+						.ForegroundColor(FLinearColor::White)
+						.ContentPadding(0)
+						.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
+						//.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeAddFilterMenu )
+						.HasDownArrow( true )
+						.ContentPadding( FMargin( 1, 0 ) )
+						//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
+						//.Visibility( ( Config != nullptr ? Config->bCanShowFilters : true ) ? EVisibility::Visible : EVisibility::Collapsed )
+						.ButtonContent()
+						[
+							SNew(SHorizontalBox)
+
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							[
+								SNew(STextBlock)
+								.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
+								.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.9"))
+								.Text(FText::FromString(FString(TEXT("\xf0b0"))) /*fa-filter*/)
+							]
+
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.Padding(2,0,0,0)
+							[
+								SNew(STextBlock)
+								.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
+								.Text(LOCTEXT("Filters", "Filters"))
+							]
+						]
+					]
 
 					// Search Text 
 					+ SHorizontalBox::Slot()
@@ -505,6 +544,7 @@ void SSketchfabAssetBrowserWindow::ForceCreateNewAsset(const FString& DefaultAss
 {
 	AssetViewPtr->ForceCreateNewAsset(DefaultAssetName, PackagePath, ModelAssetUID, ThumbAssetUID);
 }
+
 
 //=====================================================
 // Direct REST API Calls

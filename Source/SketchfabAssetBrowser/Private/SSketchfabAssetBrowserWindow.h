@@ -64,6 +64,10 @@ public:
 	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 
 private:
+// 	TSharedRef<SWidget> MakeAddFilterMenu();
+// 	TSharedPtr<SWidget> GetFilterContextMenu();
+
+private:
 	FString Token;
 
 	//SketchfabRESTClient callbacks
@@ -93,5 +97,8 @@ private:
 	FString NextURL;
 
 	FString LoggedInUser;
+
+	/** The filter list */
+	//TSharedPtr<SFilterList> FilterListPtr;
 };
 
