@@ -64,8 +64,8 @@ public:
 	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 
 private:
-// 	TSharedRef<SWidget> MakeAddFilterMenu();
-// 	TSharedPtr<SWidget> GetFilterContextMenu();
+ 	TSharedRef<SWidget> MakeFilterMenu();
+	static void MakeCategoriesMenu(FMenuBuilder& MenuBuilder, TArray<FString> Categories);
 
 private:
 	FString Token;
@@ -97,8 +97,5 @@ private:
 	FString NextURL;
 
 	FString LoggedInUser;
-
-	/** The filter list */
-	//TSharedPtr<SFilterList> FilterListPtr;
 };
 

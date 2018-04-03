@@ -43,6 +43,7 @@
 #include "SOAuthWebBrowser.h"
 #include "SketchfabRESTClient.h"
 #include "SComboButton.h"
+#include "MultiBoxBuilder.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
@@ -89,7 +90,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				[
 					SAssignNew(DetailsViewBox, SBox)
 					.MaxDesiredHeight(450.0f)
-				.MinDesiredWidth(550.0f)
+					.MinDesiredWidth(550.0f)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
@@ -127,8 +128,8 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center)
-					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
-					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
 					]
 				]
 			]
@@ -182,7 +183,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						.ForegroundColor(FLinearColor::White)
 						.ContentPadding(0)
 						.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
-						//.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeAddFilterMenu )
+						.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeFilterMenu )
 						.HasDownArrow( true )
 						.ContentPadding( FMargin( 1, 0 ) )
 						//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
@@ -543,6 +544,99 @@ void SSketchfabAssetBrowserWindow::CreateNewAsset(const FString& DefaultAssetNam
 void SSketchfabAssetBrowserWindow::ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID)
 {
 	AssetViewPtr->ForceCreateNewAsset(DefaultAssetName, PackagePath, ModelAssetUID, ThumbAssetUID);
+}
+
+
+void SSketchfabAssetBrowserWindow::MakeCategoriesMenu(FMenuBuilder& MenuBuilder, TArray<FString> Categories)
+{
+	// create packing mode menu
+	for (int32 i = 0; i < Categories.Num(); i++)
+	{
+		MenuBuilder.AddWidget(
+				SNew(SCheckBox)
+				//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
+				//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(Categories[i]))
+			]
+		, FText::GetEmpty());
+	}
+
+	/*
+	MenuBuilder.AddWidget(
+
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			SNew(SCheckBox)
+			//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
+			//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("Test A"))
+		]
+		]
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			SNew(SCheckBox)
+			//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
+			//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("Test B"))
+		]
+		]
+
+	, FText::GetEmpty());
+
+	*/
+}
+
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFilterMenu()
+{
+	// create packing mode menu
+	FMenuBuilder MenuBuilder(true, NULL);
+	{
+		MenuBuilder.AddWidget(
+
+			SNew(SVerticalBox)
+			+SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SCheckBox)
+				//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
+				//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
+				[
+					SNew(STextBlock)
+					.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Animated", "Animated" ) )
+				]
+			]
+			+SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SCheckBox)
+				//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
+				//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
+				[
+					SNew(STextBlock)
+					.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Staff Picked", "Staff Picked" ) )
+				]
+			]
+			, FText::GetEmpty());
+
+
+
+		TArray<FString> Categories;
+		Categories.Add("Test A");
+		Categories.Add("Test B");
+		Categories.Add("Test C");
+		MenuBuilder.AddSubMenu(FText::FromString("Sub Menu"), FText::FromString("Opens a submenu"), FNewMenuDelegate::CreateStatic(&SSketchfabAssetBrowserWindow::MakeCategoriesMenu, Categories));
+	}
+
+	return MenuBuilder.MakeWidget();
 }
 
 
