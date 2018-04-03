@@ -221,14 +221,14 @@ private:
 	/**
 	 * Frees the rendering resources and clears a slot in the pool for an asset thumbnail at the specified width and height
 	 *
-	 * @param ObjectPath	The path to the asset whose thumbnail should be free
+	 * @param ModelUID		The unique model id to the asset whose thumbnail should be free
 	 * @param Width 		The width of the thumbnail to free
 	 * @param Height		The height of the thumbnail to free
 	 */
-	void FreeThumbnail( const FName& ObjectPath, uint32 Width, uint32 Height );
+	void FreeThumbnail( const FName& ModelUID, uint32 Width, uint32 Height );
 
 	/** Adds the thumbnails associated with the object found at ObjectPath to the render stack */
-	void RefreshThumbnailsFor( FName ObjectPath );
+	void RefreshThumbnailsFor( FName ModelUID);
 
 	/** Handler for when an asset is loaded */
 	void OnAssetLoaded( UObject* Asset );
@@ -290,24 +290,24 @@ private:
 	/** Key for looking up thumbnails in a map */
 	struct FThumbId
 	{
-		FName ObjectPath;
+		FName ModelUID;
 		uint32 Width;
 		uint32 Height;
 
-		FThumbId( const FName& InObjectPath, uint32 InWidth, uint32 InHeight )
-			: ObjectPath( InObjectPath )
+		FThumbId( const FName& InModelUID, uint32 InWidth, uint32 InHeight )
+			: ModelUID(InModelUID)
 			, Width( InWidth )
 			, Height( InHeight )
 		{}
 
 		bool operator==( const FThumbId& Other ) const
 		{
-			return ObjectPath == Other.ObjectPath && Width == Other.Width && Height == Other.Height;
+			return ModelUID == Other.ModelUID && Width == Other.Width && Height == Other.Height;
 		}
 
 		friend uint32 GetTypeHash( const FThumbId& Id )
 		{
-			return GetTypeHash( Id.ObjectPath ) ^ GetTypeHash( Id.Width ) ^ GetTypeHash( Id.Height );
+			return GetTypeHash( Id.ModelUID) ^ GetTypeHash( Id.Width ) ^ GetTypeHash( Id.Height );
 		}
 	};
 	/** The delegate to execute when a thumbnail is rendered */

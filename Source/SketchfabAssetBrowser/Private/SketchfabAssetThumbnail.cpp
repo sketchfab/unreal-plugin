@@ -1301,15 +1301,15 @@ void FSketchfabAssetThumbnailPool::AddReferencer( const FSketchfabAssetThumbnail
 void FSketchfabAssetThumbnailPool::RemoveReferencer( const FSketchfabAssetThumbnail& AssetThumbnail )
 {
 	FIntPoint Size = AssetThumbnail.GetSize();
-	const FName ObjectPath = AssetThumbnail.GetAssetData().ModelUID;
-	if ( ObjectPath == NAME_None || Size.X == 0 || Size.Y == 0 )
+	const FName ModelUID = AssetThumbnail.GetAssetData().ModelUID;
+	if (ModelUID == NAME_None || Size.X == 0 || Size.Y == 0 )
 	{
 		// Invalid referencer
 		return;
 	}
 
 	// Generate a key and look up the number of references in the RefCountMap
-	FThumbId ThumbId( ObjectPath, Size.X, Size.Y ) ;
+	FThumbId ThumbId(ModelUID, Size.X, Size.Y ) ;
 	int32* RefCountPtr = RefCountMap.Find(ThumbId);
 
 	// This should complement an AddReferencer so this entry should be in the map
@@ -1322,7 +1322,7 @@ void FSketchfabAssetThumbnailPool::RemoveReferencer( const FSketchfabAssetThumbn
 		if ( (*RefCountPtr) <= 0 )
 		{
 			RefCountMap.Remove(ThumbId);
-			FreeThumbnail(ObjectPath, Size.X, Size.Y);
+			FreeThumbnail(ModelUID, Size.X, Size.Y);
 		}
 	}
 	else
@@ -1414,11 +1414,11 @@ void FSketchfabAssetThumbnailPool::RefreshThumbnail( const TSharedPtr<FSketchfab
 	}
 }
 
-void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ObjectPath, uint32 Width, uint32 Height )
+void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ModelUID, uint32 Width, uint32 Height )
 {
-	if(ObjectPath != NAME_None && Width != 0 && Height != 0)
+	if(ModelUID != NAME_None && Width != 0 && Height != 0)
 	{
-		FThumbId ThumbId( ObjectPath, Width, Height ) ;
+		FThumbId ThumbId(ModelUID, Width, Height ) ;
 
 		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find(ThumbId);
 		if( ThumbnailInfoPtr )
@@ -1442,11 +1442,11 @@ void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ObjectPath, uint3
 			
 }
 
-void FSketchfabAssetThumbnailPool::RefreshThumbnailsFor( FName ObjectPath )
+void FSketchfabAssetThumbnailPool::RefreshThumbnailsFor( FName ModelUID)
 {
 	for ( auto ThumbIt = ThumbnailToTextureMap.CreateIterator(); ThumbIt; ++ThumbIt)
 	{
-		if ( ThumbIt.Key().ObjectPath == ObjectPath )
+		if ( ThumbIt.Key().ModelUID == ModelUID)
 		{
 			ThumbnailsToRenderStack.Push( ThumbIt.Value() );
 		}
