@@ -311,12 +311,6 @@ private:
 	/** List of thumbnails to render when possible */
 	TArray< TSharedRef<FThumbnailInfo> > ThumbnailsToRenderStack;
 
-	/** List of thumbnails that can be rendered in real-time */
-	TArray< TSharedRef<FThumbnailInfo> > RealTimeThumbnails;
-
-	/** List of real-time thumbnails that are queued to be rendered */
-	TArray< TSharedRef<FThumbnailInfo> > RealTimeThumbnailsToRender;
-
 	/** List of free thumbnails that can be reused */
 	TArray< TSharedRef<FThumbnailInfo> > FreeThumbnails;
 

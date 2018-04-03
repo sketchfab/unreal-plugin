@@ -891,8 +891,6 @@ void FSketchfabAssetThumbnailPool::ReleaseResources()
 {
 	// Clear all pending render requests
 	ThumbnailsToRenderStack.Empty();
-	RealTimeThumbnails.Empty();
-	RealTimeThumbnailsToRender.Empty();
 
 	TArray< TSharedRef<FThumbnailInfo> > ThumbnailsToRelease;
 
@@ -944,203 +942,11 @@ TStatId FSketchfabAssetThumbnailPool::GetStatId() const
 
 bool FSketchfabAssetThumbnailPool::IsTickable() const
 {
-	return RecentlyLoadedAssets.Num() > 0 || ThumbnailsToRenderStack.Num() > 0 || RealTimeThumbnails.Num() > 0;
+	return false;
 }
 
 void FSketchfabAssetThumbnailPool::Tick( float DeltaTime )
 {
-	//Skip all this code. We are not rendering any thumbnails in the background at all.
-	return; 
-
-
-	// If there were any assets loaded since last frame that we are currently displaying thumbnails for, push them on the render stack now.
-	/*
-	if ( RecentlyLoadedAssets.Num() > 0 )
-	{
-		for ( int32 LoadedAssetIdx = 0; LoadedAssetIdx < RecentlyLoadedAssets.Num(); ++LoadedAssetIdx )
-		{
-			RefreshThumbnailsFor(RecentlyLoadedAssets[LoadedAssetIdx]);
-		}
-
-		RecentlyLoadedAssets.Empty();
-	}
-
-	// If we have dynamic thumbnails are we are done rendering the last batch of dynamic thumbnails, start a new batch as long as real-time thumbnails are enabled
-	const bool bIsInPIEOrSimulate = GEditor->PlayWorld != NULL || GEditor->bIsSimulatingInEditor;
-	const bool bShouldUseRealtimeThumbnails = AreRealTimeThumbnailsAllowed.Get() && GetDefault<UContentBrowserSettings>()->RealTimeThumbnails && !bIsInPIEOrSimulate;
-	if ( bShouldUseRealtimeThumbnails && RealTimeThumbnails.Num() > 0 && RealTimeThumbnailsToRender.Num() == 0 )
-	{
-		double CurrentTime = FPlatformTime::Seconds();
-		for ( int32 ThumbIdx = RealTimeThumbnails.Num() - 1; ThumbIdx >= 0; --ThumbIdx )
-		{
-			const TSharedRef<FThumbnailInfo>& Thumb = RealTimeThumbnails[ThumbIdx];
-			if ( Thumb->AssetData.IsAssetLoaded() )
-			{
-				// Only render thumbnails that have been requested recently
-				if ( (CurrentTime - Thumb->LastAccessTime) < 1.f )
-				{
-					RealTimeThumbnailsToRender.Add(Thumb);
-				}
-			}
-			else
-			{
-				RealTimeThumbnails.RemoveAt(ThumbIdx);
-			}
-		}
-	}
-
-	uint32 NumRealTimeThumbnailsRenderedThisFrame = 0;
-	// If there are any thumbnails to render, pop one off the stack and render it.
-	if( ThumbnailsToRenderStack.Num() + RealTimeThumbnailsToRender.Num() > 0 )
-	{
-		double FrameStartTime = FPlatformTime::Seconds();
-		// Render as many thumbnails as we are allowed to
-		while( ThumbnailsToRenderStack.Num() + RealTimeThumbnailsToRender.Num() > 0 && FPlatformTime::Seconds() - FrameStartTime < MaxFrameTimeAllowance )
-		{
-			TSharedPtr<FThumbnailInfo> Info;
-			if ( ThumbnailsToRenderStack.Num() > 0 )
-			{
-				Info = ThumbnailsToRenderStack.Pop();
-			}
-			else if ( FSlateThrottleManager::Get().IsAllowingExpensiveTasks() && RealTimeThumbnailsToRender.Num() > 0 && NumRealTimeThumbnailsRenderedThisFrame < MaxRealTimeThumbnailsPerFrame )
-			{
-				Info = RealTimeThumbnailsToRender.Pop();
-				NumRealTimeThumbnailsRenderedThisFrame++;
-			}
-			else
-			{
-				// No thumbnails left to render or we don't want to render any more
-				break;
-			}
-
-			if( Info.IsValid() )
-			{
-				TSharedRef<FThumbnailInfo> InfoRef = Info.ToSharedRef();
-
-				if ( InfoRef->AssetData.IsValid() )
-				{
-					const FObjectThumbnail* ObjectThumbnail = NULL;
-					bool bLoadedThumbnail = false;
-
-					// If this is a loaded asset and we have a rendering info for it, render a fresh thumbnail here
-					if( InfoRef->AssetData.IsAssetLoaded() )
-					{
-						UObject* Asset = InfoRef->AssetData.GetAsset();
-						FThumbnailRenderingInfo* RenderInfo = GUnrealEd->GetThumbnailManager()->GetRenderingInfo( Asset );
-						if ( RenderInfo != NULL && RenderInfo->Renderer != NULL )
-						{
-							ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(
-								SyncSlateTextureCommand,
-								FThumbnailInfo_RenderThread, ThumbInfo, InfoRef.Get(),
-							{
-								if ( ThumbInfo.ThumbnailTexture->GetTypedResource() != ThumbInfo.ThumbnailRenderTarget->GetTextureRHI() )
-								{
-									ThumbInfo.ThumbnailTexture->ClearTextureData();
-									ThumbInfo.ThumbnailTexture->ReleaseDynamicRHI();
-									ThumbInfo.ThumbnailTexture->SetRHIRef(ThumbInfo.ThumbnailRenderTarget->GetTextureRHI(), ThumbInfo.Width, ThumbInfo.Height);
-								}
-							});
-
-							if (InfoRef->LastUpdateTime <= 0.0f || RenderInfo->Renderer->AllowsRealtimeThumbnails(Asset))
-							{
-								//@todo: this should be done on the GPU only but it is not supported by thumbnail tools yet
-								ThumbnailTools::RenderThumbnail(
-									Asset,
-									InfoRef->Width,
-									InfoRef->Height,
-									ThumbnailTools::EThumbnailTextureFlushMode::NeverFlush,
-									InfoRef->ThumbnailRenderTarget
-									);
-							}
-
-							bLoadedThumbnail = true;
-
-							// Since this was rendered, add it to the list of thumbnails that can be rendered in real-time
-							RealTimeThumbnails.AddUnique(InfoRef);
-						}
-					}
-	
-					FThumbnailMap ThumbnailMap;
-					// If we could not render a fresh thumbnail, see if we already have a cached one to load
-					if ( !bLoadedThumbnail )
-					{
-						// Unloaded asset
-						const FObjectThumbnail* FoundThumbnail = ThumbnailTools::FindCachedThumbnail(InfoRef->AssetData.GetFullName());
-						if ( FoundThumbnail )
-						{
-							ObjectThumbnail = FoundThumbnail;
-						}
-						else
-						{
-							// If we don't have a cached thumbnail, try to find it on disk
-							FString PackageFilename;
-							if ( FPackageName::DoesPackageExist(InfoRef->AssetData.PackageName.ToString(), NULL, &PackageFilename) )
-							{
-								TSet<FName> ObjectFullNames;
-								
- 
-								FName ObjectFullName = FName(*InfoRef->AssetData.GetFullName());
-								ObjectFullNames.Add(ObjectFullName);
- 
-								ThumbnailTools::LoadThumbnailsFromPackage(PackageFilename, ObjectFullNames, ThumbnailMap);
- 
-								const FObjectThumbnail* ThumbnailPtr = ThumbnailMap.Find(ObjectFullName);
-								if (ThumbnailPtr)
-								{
-									ObjectThumbnail = ThumbnailPtr;
-								}
-							}
-						}
-					}
-
-					if ( ObjectThumbnail )
-					{
-						if ( ObjectThumbnail->GetImageWidth() > 0 && ObjectThumbnail->GetImageHeight() > 0 && ObjectThumbnail->GetUncompressedImageData().Num() > 0 )
-						{
-							// Make bulk data for updating the texture memory later
-							FSlateTextureData* BulkData = new FSlateTextureData(ObjectThumbnail->GetImageWidth(),ObjectThumbnail->GetImageHeight(),GPixelFormats[PF_B8G8R8A8].BlockBytes, ObjectThumbnail->AccessImageData() );
-
-							// Update the texture RHI
-							ENQUEUE_UNIQUE_RENDER_COMMAND_TWOPARAMETER(
-								ClearSlateTextureCommand,
-								FThumbnailInfo_RenderThread, ThumbInfo, InfoRef.Get(),
-								FSlateTextureData*, BulkData, BulkData,
-							{
-								if ( ThumbInfo.ThumbnailTexture->GetTypedResource() == ThumbInfo.ThumbnailRenderTarget->GetTextureRHI() )
-								{
-									ThumbInfo.ThumbnailTexture->SetRHIRef(NULL, ThumbInfo.Width, ThumbInfo.Height);
-								}
-
-								ThumbInfo.ThumbnailTexture->SetTextureData( MakeShareable(BulkData) );
-								ThumbInfo.ThumbnailTexture->UpdateRHI();
-							});
-
-							bLoadedThumbnail = true;
-						}
-						else
-						{
-							bLoadedThumbnail = false;
-						}
-					}
-
-					if ( bLoadedThumbnail )
-					{
-						// Mark it as updated
-						InfoRef->LastUpdateTime = FPlatformTime::Seconds();
-
-						// Notify listeners that a thumbnail has been rendered
-						ThumbnailRenderedEvent.Broadcast(InfoRef->AssetData);
-					}
-					else
-					{
-						// Notify listeners that a thumbnail has been rendered
-						ThumbnailRenderFailedEvent.Broadcast(InfoRef->AssetData);
-					}
-				}
-			}
-		}
-	}
-	*/
 }
 
 FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketchfabAssetData& AssetData, uint32 Width, uint32 Height, FSlateDynamicImageBrush **Image)
@@ -1413,8 +1219,6 @@ void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ModelUID, uint32 
 			TSharedRef<FThumbnailInfo> ThumbnailInfo = *ThumbnailInfoPtr;
 			ThumbnailToTextureMap.Remove(ThumbId);
 			ThumbnailsToRenderStack.Remove(ThumbnailInfo);
-			RealTimeThumbnails.Remove(ThumbnailInfo);
-			RealTimeThumbnailsToRender.Remove(ThumbnailInfo);
 
 			ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER( 
 				ReleaseThumbnailTextureData,

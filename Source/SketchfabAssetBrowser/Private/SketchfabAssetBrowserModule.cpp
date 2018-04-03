@@ -37,8 +37,6 @@ public:
 		FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(Extender);
 
-		//FModuleManager::Get().OnModulesChanged().AddRaw(this, &FFunctionalTestingEditorModule::OnModulesChanged);
-
 		FSketchfabRESTClient::Get(); //Initialize
 	}
 
@@ -66,7 +64,7 @@ private:
 		MenuBuilder.AddMenuEntry(
 			LOCTEXT("SketchfabMenu_AssetBrowser", "Asset Browser"),
 			LOCTEXT("SketchfabMenu_Tooltip", "Launch the Sketchfab Asset Browser."),
-			FSlateIcon(),//FSlateIcon(FEditorStyle::GetStyleSetName(), "AutomationTools.MenuIcon"),
+			FSlateIcon(),
 			FUIAction(FExecuteAction::CreateRaw(this, &FSketchfabAssetBrowserModule::MenuCallbackOpenBrowser)));
 		MenuBuilder.EndSection();
 	}
