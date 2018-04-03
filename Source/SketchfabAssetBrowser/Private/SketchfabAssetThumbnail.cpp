@@ -848,23 +848,10 @@ FSketchfabAssetThumbnailPool::FSketchfabAssetThumbnailPool( uint32 InNumInPool, 
 	, MaxRealTimeThumbnailsPerFrame( InMaxRealTimeThumbnailsPerFrame )
 	, MaxFrameTimeAllowance( InMaxFrameTimeAllowance )
 {
-	FCoreUObjectDelegates::OnObjectPropertyChanged.AddRaw(this, &FSketchfabAssetThumbnailPool::OnObjectPropertyChanged);
-	FCoreUObjectDelegates::OnAssetLoaded.AddRaw(this, &FSketchfabAssetThumbnailPool::OnAssetLoaded);
-	if ( GEditor )
-	{
-		GEditor->OnActorMoved().AddRaw( this, &FSketchfabAssetThumbnailPool::OnActorPostEditMove );
-	}
 }
 
 FSketchfabAssetThumbnailPool::~FSketchfabAssetThumbnailPool()
 {
-	FCoreUObjectDelegates::OnObjectPropertyChanged.RemoveAll(this);
-	FCoreUObjectDelegates::OnAssetLoaded.RemoveAll(this);
-	if ( GEditor )
-	{
-		GEditor->OnActorMoved().RemoveAll(this);
-	}
-
 	// Release all the texture resources
 	ReleaseResources();
 }
@@ -1452,78 +1439,3 @@ void FSketchfabAssetThumbnailPool::RefreshThumbnailsFor( FName ModelUID)
 		}
 	}
 }
-
-void FSketchfabAssetThumbnailPool::OnAssetLoaded( UObject* Asset )
-{
-	if ( Asset != NULL )
-	{
-		RecentlyLoadedAssets.Add( FName(*Asset->GetPathName()) );
-	}
-}
-
-void FSketchfabAssetThumbnailPool::OnActorPostEditMove( AActor* Actor )
-{
-	DirtyThumbnailForObject(Actor);
-}
-
-void FSketchfabAssetThumbnailPool::OnObjectPropertyChanged( UObject* ObjectBeingModified, FPropertyChangedEvent& PropertyChangedEvent )
-{
-	DirtyThumbnailForObject(ObjectBeingModified);
-}
-
-void FSketchfabAssetThumbnailPool::DirtyThumbnailForObject(UObject* ObjectBeingModified)
-{
-	if (!ObjectBeingModified)
-	{
-		return;
-	}
-
-	if (ObjectBeingModified->HasAnyFlags(RF_ClassDefaultObject))
-	{
-		if (ObjectBeingModified->GetClass()->ClassGeneratedBy != NULL)
-		{
-			// This is a blueprint modification. Check to see if this thumbnail is the blueprint of the modified CDO
-			ObjectBeingModified = ObjectBeingModified->GetClass()->ClassGeneratedBy;
-		}
-	}
-	else if (AActor* ActorBeingModified = Cast<AActor>(ObjectBeingModified))
-	{
-		// This is a non CDO actor getting modified. Update the actor's world's thumbnail.
-		ObjectBeingModified = ActorBeingModified->GetWorld();
-	}
-
-	if (ObjectBeingModified && ObjectBeingModified->IsAsset())
-	{
-		// An object in memory was modified.  We'll mark it's thumbnail as dirty so that it'll be
-		// regenerated on demand later. (Before being displayed in the browser, or package saves, etc.)
-		FObjectThumbnail* Thumbnail = ThumbnailTools::GetThumbnailForObject(ObjectBeingModified);
-
-		if (Thumbnail == NULL && !IsGarbageCollecting())
-		{
-			// If we don't yet have a thumbnail map, load one from disk if possible
-			// Don't attempt to do this while garbage collecting since loading or finding objects during GC is illegal
-			FName ObjectFullName = FName(*ObjectBeingModified->GetFullName());
-			TArray<FName> ObjectFullNames;
-			FThumbnailMap LoadedThumbnails;
-			ObjectFullNames.Add(ObjectFullName);
-			if (ThumbnailTools::ConditionallyLoadThumbnailsForObjects(ObjectFullNames, LoadedThumbnails))
-			{
-				Thumbnail = LoadedThumbnails.Find(ObjectFullName);
-
-				if (Thumbnail != NULL)
-				{
-					Thumbnail = ThumbnailTools::CacheThumbnail(ObjectBeingModified->GetFullName(), Thumbnail, ObjectBeingModified->GetOutermost());
-				}
-			}
-		}
-
-		if (Thumbnail != NULL)
-		{
-			// Mark the thumbnail as dirty
-			Thumbnail->MarkAsDirty();
-		}
-
-		RefreshThumbnailsFor( FName(*ObjectBeingModified->GetPathName()) );
-	}
-}
-

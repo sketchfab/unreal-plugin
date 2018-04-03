@@ -230,17 +230,6 @@ private:
 	/** Adds the thumbnails associated with the object found at ObjectPath to the render stack */
 	void RefreshThumbnailsFor( FName ModelUID);
 
-	/** Handler for when an asset is loaded */
-	void OnAssetLoaded( UObject* Asset );
-
-	/** Handler for when an actor is moved in a level. Used to update world asset thumbnails. */
-	void OnActorPostEditMove( AActor* Actor );
-
-	/** Handler for when an asset is loaded */
-	void OnObjectPropertyChanged( UObject* Asset, FPropertyChangedEvent& PropertyChangedEvent );
-
-	/** Handler to dirty cached thumbnails in packages to make sure they are re-rendered later */
-	void DirtyThumbnailForObject( UObject* ObjectBeingModified );
 
 private:
 	/** Information about a thumbnail */
