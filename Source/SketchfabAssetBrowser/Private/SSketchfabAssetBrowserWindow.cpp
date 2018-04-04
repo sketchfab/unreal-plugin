@@ -206,24 +206,8 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
 				SNew(SUniformGridPanel)
-				.SlotPadding(2)
+				
 				+ SUniformGridPanel::Slot(0, 0)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Download", "Download Selected"))
-					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnDownloadSelected)
-				]
-
-				+ SUniformGridPanel::Slot(1, 0)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_ClearCache", "Clear Cache"))
-					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnClearCache)
-				]
-
-				+ SUniformGridPanel::Slot(2, 0)
 				[
 					SNew( SComboButton )
 					.HAlign(HAlign_Center)
@@ -260,7 +244,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					]
 				]
 
-				+ SUniformGridPanel::Slot(3, 0)
+				+ SUniformGridPanel::Slot(1, 0)
 				[
 					SNew(SCheckBox)
 					.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked)
@@ -271,7 +255,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					]
 				]
 
-				+ SUniformGridPanel::Slot(4, 0)
+				+ SUniformGridPanel::Slot(2, 0)
 				[
 					SNew(SCheckBox)
 					.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchStaffPickedChecked)
@@ -282,7 +266,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					]
 				]
 
-				+ SUniformGridPanel::Slot(5, 0)
+				+ SUniformGridPanel::Slot(3, 0)
 				[
 					SNew( SComboButton )
 					.HAlign(HAlign_Center)
@@ -314,7 +298,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(GetSortByText()) //LOCTEXT("SSketchfabAssetBrowserWindow_Search_SortBy", "Sort By"))
+							.Text(GetSortByText())
 						]
 					]
 				]
@@ -330,6 +314,29 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
 				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.Padding(2)
+				[
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Download", "Download Selected"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnDownloadSelected)
+					]
+
+					+ SUniformGridPanel::Slot(1, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_ClearCache", "Clear Cache"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnClearCache)
+					]
+				]
+
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
 				.Padding(2)
