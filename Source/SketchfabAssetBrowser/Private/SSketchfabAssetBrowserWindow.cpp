@@ -274,6 +274,43 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					.ForegroundColor(FLinearColor::White)
 					.ContentPadding(0)
 					//.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
+					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeMaxPolyCountMenu)
+					.HasDownArrow( true )
+					.ContentPadding( FMargin( 1, 0 ) )
+					//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
+					//.Visibility( ( Config != nullptr ? Config->bCanShowFilters : true ) ? EVisibility::Visible : EVisibility::Collapsed )
+					.ButtonContent()
+					[
+						SNew(SHorizontalBox)
+
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(STextBlock)
+							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
+							.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.9"))
+							.Text(FText::FromString(FString(TEXT("\xf0b0"))) /*fa-filter*/)
+						]
+
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.Padding(2,0,0,0)
+						[
+							SNew(STextBlock)
+							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
+							.Text(GetMaxPolyCountText())
+						]
+					]
+				]
+
+				+ SUniformGridPanel::Slot(4, 0)
+				[
+					SNew( SComboButton )
+					.HAlign(HAlign_Center)
+					.ComboButtonStyle( FEditorStyle::Get(), "GenericFilters.ComboButtonStyle" )
+					.ForegroundColor(FLinearColor::White)
+					.ContentPadding(0)
+					//.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
 					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeSortByMenu)
 					.HasDownArrow( true )
 					.ContentPadding( FMargin( 1, 0 ) )
@@ -383,6 +420,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	bSearchAnimated = false;
 	bSearchStaffPicked = false;
 	SortByType = SORTBY_Relevance;
+	MaxPolyCount = MAXPOLYCOUNT_ALL;
 
 	GetCategories();
 	Search();
@@ -564,6 +602,41 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	case SORTBY_MostRecent:
 	{
 		url += "&sort_by=-publishedAt";
+	}
+	break;
+	}
+
+	//Sort By
+	switch (MaxPolyCount)
+	{
+	case MAXPOLYCOUNT_ALL:
+	{
+		//Add Nothing
+	}
+	break;
+	case MAXPOLYCOUNT_100:
+	{
+		url += "&max_face_count=100";
+	}
+	break;
+	case MAXPOLYCOUNT_1000:
+	{
+		url += "&max_face_count=1000";
+	}
+	break;
+	case MAXPOLYCOUNT_10000:
+	{
+		url += "&max_face_count=10000";
+	}
+	break;
+	case MAXPOLYCOUNT_100000:
+	{
+		url += "&max_face_count=100000";
+	}
+	break;
+	case MAXPOLYCOUNT_1000000:
+	{
+		url += "&max_face_count=1000000";
 	}
 	break;
 	}
@@ -877,6 +950,81 @@ TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeSortByMenu()
 	return MenuBuilder.MakeWidget();
 }
 
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeMaxPolyCountMenu()
+{
+	// create packing mode menu
+	FMenuBuilder MenuBuilder(true, NULL);
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_ALL)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_ALL)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("All Models"))
+		], FText::GetEmpty()
+	);
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_100)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_100)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("100"))
+		], FText::GetEmpty()
+	);
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_1000)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_1000)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("1,000"))
+		], FText::GetEmpty()
+	);
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_10000)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_10000)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("10,000"))
+		], FText::GetEmpty()
+	);
+
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_100000)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_100000)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("100,000"))
+		], FText::GetEmpty()
+	);
+
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_1000000)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_1000000)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("1,000,000"))
+		], FText::GetEmpty()
+	);
+
+	return MenuBuilder.MakeWidget();
+}
 
 ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked() const
 {

@@ -68,16 +68,26 @@ public:
 
 private: 	
 
-	enum SORTBY {
+	enum ESortBy {
 		SORTBY_Relevance,
 		SORTBY_MostLiked,
 		SORTBY_MostViewed,
 		SORTBY_MostRecent
 	};
 
+	enum EMaxPolyCount {
+		MAXPOLYCOUNT_ALL,
+		MAXPOLYCOUNT_100,
+		MAXPOLYCOUNT_1000,
+		MAXPOLYCOUNT_10000,
+		MAXPOLYCOUNT_100000,
+		MAXPOLYCOUNT_1000000,
+	};
+
 	//Search Options
 	TSharedRef<SWidget> MakeCategoriesMenu();
 	TSharedRef<SWidget> MakeSortByMenu();
+	TSharedRef<SWidget> MakeMaxPolyCountMenu();
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -94,7 +104,7 @@ private:
 	// Callback for determining whether a check box is checked.
 	ECheckBoxState HandleCategoryCheckBoxIsChecked(bool* CheckBox) const;
 
-	void HandleSortByTypeStateChanged(ECheckBoxState NewRadioState, SORTBY NewSortByType)
+	void HandleSortByTypeStateChanged(ECheckBoxState NewRadioState, ESortBy NewSortByType)
 	{
 		if (NewRadioState == ECheckBoxState::Checked)
 		{
@@ -102,7 +112,7 @@ private:
 		}
 	}
 
-	ECheckBoxState HandleSortByTypeIsChecked(SORTBY NewSortByType) const
+	ECheckBoxState HandleSortByTypeIsChecked(ESortBy NewSortByType) const
 	{
 		return (SortByType == NewSortByType)
 			? ECheckBoxState::Checked
@@ -137,11 +147,64 @@ private:
 		return FText::FromString("Sort By");
 	}
 
+	void HandleMaxPolyCountStateChanged(ECheckBoxState NewRadioState, EMaxPolyCount NewMaxPolyCount)
+	{
+		if (NewRadioState == ECheckBoxState::Checked)
+		{
+			MaxPolyCount = NewMaxPolyCount;
+		}
+	}
+
+	ECheckBoxState HandleMaxPolyCountIsChecked(EMaxPolyCount NewMaxPolyCount) const
+	{
+		return (MaxPolyCount == NewMaxPolyCount)
+			? ECheckBoxState::Checked
+			: ECheckBoxState::Unchecked;
+	}
+
+	FText GetMaxPolyCountText() const
+	{
+		switch (MaxPolyCount)
+		{
+		case MAXPOLYCOUNT_ALL:
+		{
+			return FText::FromString("All Models Sizes");
+		}
+		break;
+		case MAXPOLYCOUNT_100:
+		{
+			return FText::FromString("100");
+		}
+		break;
+		case MAXPOLYCOUNT_1000:
+		{
+			return FText::FromString("1,000");
+		}
+		break;
+		case MAXPOLYCOUNT_10000:
+		{
+			return FText::FromString("10,000");
+		}
+		break;
+		case MAXPOLYCOUNT_100000:
+		{
+			return FText::FromString("100,000");
+		}
+		break;
+		case MAXPOLYCOUNT_1000000:
+		{
+			return FText::FromString("1,000,000");
+		}
+		break;
+		}
+		return FText::FromString("Max Poly Count");
+	}
 
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
 	TArray<TSharedPtr< struct FSketchfabCategory>> Categories;
-	SORTBY SortByType;
+	ESortBy SortByType;
+	EMaxPolyCount MaxPolyCount;
 
 private:
 	FString Token;
