@@ -22,6 +22,7 @@ bool IsCompleteState(SketchfabRESTState state)
 	case SRS_DOWNLOADMODEL_DONE:
 	case SRS_GETUSERDATA_DONE:
 	case SRS_GETUSERTHUMB_DONE:
+	case SRS_GETCATEGORIES_DONE:
 		return true;
 	}
 	return false;
@@ -764,6 +765,114 @@ void FSketchfabTask::GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpRes
 		}
 
 		SetState(SRS_GETUSERTHUMB_DONE);
+	}
+	else
+	{
+		SetState(SRS_FAILED);
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
+	}
+}
+
+
+void FSketchfabTask::GetCategories()
+{
+	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+
+	AddAuthorization(request);
+
+
+	FString url = "https://api.sketchfab.com/v3/categories";
+	request->SetURL(url);
+	request->SetVerb(TEXT("GET"));
+	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
+	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetCategories_Response);
+
+	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
+
+	if (!request->ProcessRequest())
+	{
+		SetState(SRS_FAILED);
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
+	}
+	else
+	{
+		DebugHttpRequestCounter.Increment();
+		PendingRequests.Add(request, request->GetURL());
+		SetState(SRS_GETCATEGORIES_PROCESSING);
+	}
+}
+
+void FSketchfabTask::GetCategories_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	DebugHttpRequestCounter.Decrement();
+
+	FString OutUrl = PendingRequests.FindRef(Request);
+
+	if (!OutUrl.IsEmpty())
+	{
+		PendingRequests.Remove(Request);
+	}
+
+	if (!Response.IsValid())
+	{
+		return;
+	}
+
+	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+	{
+		if (this == nullptr)
+		{
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
+			SetState(SRS_FAILED);
+			return;
+		}
+
+		if (Response->GetContentType() != "application/json")
+		{
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetCategories_Response content type is not json"));
+			SetState(SRS_FAILED);
+			return;
+		}
+
+		FString data = Response->GetContentAsString();
+		if (data.IsEmpty())
+		{
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetCategories_Response content was empty"));
+			SetState(SRS_FAILED);
+		}
+		else
+		{
+			//Create a pointer to hold the json serialized data
+			TSharedPtr<FJsonObject> JsonObject;
+
+			//Create a reader pointer to read the json data
+			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+
+			//Deserialize the json data given Reader and the actual object to deserialize
+			if (FJsonSerializer::Deserialize(Reader, JsonObject))
+			{
+				TArray<TSharedPtr<FJsonValue>> results = JsonObject->GetArrayField("results");
+				TaskData.NextURL = JsonObject->GetStringField("next");
+
+				for (int r = 0; r < results.Num(); r++)
+				{
+					TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
+
+					TSharedPtr<FSketchfabCategory> cat = MakeShareable(new FSketchfabCategory());
+
+					cat->uid = resultObj->GetStringField("uid");
+					cat->uri = resultObj->GetStringField("uri");
+					cat->name = resultObj->GetStringField("name");
+					cat->slug = resultObj->GetStringField("slug");
+
+					Categories.Add(cat);
+				}
+			}
+			OnCategories().Execute(*this);
+			SetState(SRS_GETCATEGORIES_DONE);
+			return;
+		}
+		SetState(SRS_FAILED);
 	}
 	else
 	{

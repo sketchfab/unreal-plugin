@@ -137,6 +137,14 @@ void FSketchfabRESTClient::UpdateTaskStates()
 		case SRS_GETUSERTHUMB_DONE:
 			TasksMarkedForRemoval.Add(SketchfabTask);
 			break;
+		case SRS_GETCATEGORIES:
+			SketchfabTask->GetCategories();
+			break;
+		case SRS_GETCATEGORIES_PROCESSING:
+			break;
+		case SRS_GETCATEGORIES_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
 		}
 	}
 

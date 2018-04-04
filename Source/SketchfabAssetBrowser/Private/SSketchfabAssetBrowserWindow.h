@@ -51,10 +51,10 @@ public:
 	void OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod);
 	TSharedPtr<SWidget> OnGetAssetContextMenu(const TArray<FSketchfabAssetData>& SelectedAssets);
 
-
 public:
 	void Search();
 	void GetUserData();
+	void GetCategories();
 
 private:
 	void Search(const FString &url);
@@ -67,7 +67,7 @@ private:
 	//Search Filters
 
 	TSharedRef<SWidget> MakeFilterMenu();
-	static void MakeCategoriesMenu(FMenuBuilder& MenuBuilder, TArray<FString> Categories);
+	void MakeCategoriesMenu(FMenuBuilder& MenuBuilder);
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -75,8 +75,18 @@ private:
 	ECheckBoxState IsSearchStaffPickedChecked() const;
 	void OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState);
 
+
+	TSharedRef<SWidget> CreateCheckBox(const FText& CheckBoxText, bool* CheckBoxChoice);
+
+	// Callback for changing the checked state of a check box.
+	void HandleCategoryCheckBoxCheckedStateChanged(ECheckBoxState NewState, bool* CheckBoxThatChanged);
+
+	// Callback for determining whether a check box is checked.
+	ECheckBoxState HandleCategoryCheckBoxIsChecked(bool* CheckBox) const;
+
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
+	TArray<TSharedPtr< struct FSketchfabCategory>> Categories;
 
 private:
 	FString Token;
@@ -90,6 +100,7 @@ private:
 	void OnModelDownloadProgress(const FSketchfabTask& InTask);
 	void OnUserData(const FSketchfabTask& InTask);
 	void OnUserThumbnailDownloaded(const FSketchfabTask& InTask);
+	void OnCategories(const FSketchfabTask& InTask);
 
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;

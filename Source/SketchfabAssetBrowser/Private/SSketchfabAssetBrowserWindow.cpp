@@ -286,6 +286,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	bSearchAnimated = false;
 	bSearchStaffPicked = false;
 
+	GetCategories();
 	Search();
 }
 
@@ -402,6 +403,26 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 		url += "&sort_by=-publishedAt";
 	}
 
+	int32 categoryCount = Categories.Num();
+	bool firstCategory = false;
+	for (int32 i = 0; i < categoryCount; i++)
+	{
+		if (Categories[i]->active)
+		{
+			if (!firstCategory)
+			{
+				url += "&categories=";
+				firstCategory = true;
+			}
+			else
+			{
+				url += "%2C";
+			}
+			url += Categories[i]->slug.ToLower();
+
+			break; //You can only have one at a time.
+		}
+	}
 
 	Search(url);
 	return FReply::Handled();
@@ -573,53 +594,40 @@ void SSketchfabAssetBrowserWindow::ForceCreateNewAsset(const FString& DefaultAss
 	AssetViewPtr->ForceCreateNewAsset(DefaultAssetName, PackagePath, ModelAssetUID, ThumbAssetUID);
 }
 
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::CreateCheckBox(const FText& CheckBoxText, bool* CheckBoxChoice)
+{
+	return SNew(SCheckBox)
+		//.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxIsChecked, CheckBoxChoice)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxCheckedStateChanged, CheckBoxChoice)
+		[
+			SNew(STextBlock)
+			.Text(CheckBoxText)
+		];
+}
 
-void SSketchfabAssetBrowserWindow::MakeCategoriesMenu(FMenuBuilder& MenuBuilder, TArray<FString> Categories)
+// Callback for changing the checked state of a check box.
+void SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxCheckedStateChanged(ECheckBoxState NewState, bool* CheckBoxThatChanged)
+{
+	*CheckBoxThatChanged = (NewState == ECheckBoxState::Checked);
+}
+
+// Callback for determining whether a check box is checked.
+ECheckBoxState SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxIsChecked(bool* CheckBox) const
+{
+	return (*CheckBox)
+		? ECheckBoxState::Checked
+		: ECheckBoxState::Unchecked;
+}
+
+
+void SSketchfabAssetBrowserWindow::MakeCategoriesMenu(FMenuBuilder& MenuBuilder)
 {
 	// create packing mode menu
 	for (int32 i = 0; i < Categories.Num(); i++)
 	{
-		MenuBuilder.AddWidget(
-				SNew(SCheckBox)
-				//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
-				//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(Categories[i]))
-			]
-		, FText::GetEmpty());
+		MenuBuilder.AddWidget(CreateCheckBox(FText::FromString(Categories[i]->name), &Categories[i]->active), FText::GetEmpty());
 	}
-
-	/*
-	MenuBuilder.AddWidget(
-
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		[
-			SNew(SCheckBox)
-			//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
-			//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("Test A"))
-		]
-		]
-	+ SVerticalBox::Slot()
-		.AutoHeight()
-		[
-			SNew(SCheckBox)
-			//.IsChecked(this, &SNotificationListTest::IsUseLargeFontChecked)
-			//.OnCheckStateChanged(this, &SNotificationListTest::OnUseLargeFontCheckStateChanged)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("Test B"))
-		]
-		]
-
-	, FText::GetEmpty());
-
-	*/
 }
 
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFilterMenu()
@@ -655,12 +663,13 @@ TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFilterMenu()
 			, FText::GetEmpty());
 
 
-
-		TArray<FString> Categories;
-		Categories.Add("Test A");
-		Categories.Add("Test B");
-		Categories.Add("Test C");
-		MenuBuilder.AddSubMenu(FText::FromString("Sub Menu"), FText::FromString("Opens a submenu"), FNewMenuDelegate::CreateStatic(&SSketchfabAssetBrowserWindow::MakeCategoriesMenu, Categories));
+		MenuBuilder.AddSubMenu(
+			FText::FromString("Categories"), 
+			FText::FromString("Choose A Category"), 
+			FNewMenuDelegate::CreateRaw(this, &SSketchfabAssetBrowserWindow::MakeCategoriesMenu),
+			false,
+			FSlateIcon()
+		);
 	}
 
 	return MenuBuilder.MakeWidget();
@@ -721,6 +730,20 @@ void SSketchfabAssetBrowserWindow::GetUserData()
 	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
 	Task->SetState(SRS_GETUSERDATA);
 	Task->OnUserData().BindRaw(this, &SSketchfabAssetBrowserWindow::OnUserData);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
+}
+
+void SSketchfabAssetBrowserWindow::GetCategories()
+{
+	FSketchfabTaskData TaskData;
+	TaskData.Token = Token;
+	TaskData.CacheFolder = CacheFolder;
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETCATEGORIES);
+	Task->OnCategories().BindRaw(this, &SSketchfabAssetBrowserWindow::OnCategories);
 	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
 	FSketchfabRESTClient::Get()->AddTask(Task);
 }
@@ -815,6 +838,11 @@ void SSketchfabAssetBrowserWindow::OnModelDownloadProgress(const FSketchfabTask&
 	}
 	AssetViewPtr->DownloadProgress(InTask.TaskData.ModelUID, progress);
 	AssetViewPtr->NeedRefresh();
+}
+
+void SSketchfabAssetBrowserWindow::OnCategories(const FSketchfabTask& InTask)
+{
+	Categories = InTask.Categories;
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -39,9 +39,26 @@ enum SketchfabRESTState
 	SRS_GETUSERTHUMB,
 	SRS_GETUSERTHUMB_PROCESSING,
 	SRS_GETUSERTHUMB_DONE,
+	SRS_GETCATEGORIES,
+	SRS_GETCATEGORIES_PROCESSING,
+	SRS_GETCATEGORIES_DONE,
 };
 
 bool IsCompleteState(SketchfabRESTState state);
+
+struct FSketchfabCategory
+{
+	FString uid;
+	FString uri;
+	FString name;
+	FString slug;
+	bool active;
+
+	FSketchfabCategory() 
+	{
+		active = false;
+	}
+};
 
 /** Struct holding essential task data for task management. */
 struct FSketchfabTaskData
@@ -140,6 +157,7 @@ public:
 	FSketchfabTaskDelegate& OnModelDownloadProgress() { return OnModelDownloadProgressDelegate; }
 	FSketchfabTaskDelegate& OnUserData() { return OnUserDataDelegate; }
 	FSketchfabTaskDelegate& OnUserThumbnail() { return OnUserThumbnailDelegate; }
+	FSketchfabTaskDelegate& OnCategories() { return OnCategoriesDelegate; }
 
 	void EnableDebugLogging();	
 
@@ -150,6 +168,7 @@ public:
 	void DownloadModel();
 	void GetUserData();
 	void GetUserThumbnail();
+	void GetCategories();
 	//
 	void AddAuthorization(TSharedRef<IHttpRequest> Request);
 	void DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 BytesSent, int32 BytesReceived);
@@ -161,6 +180,7 @@ public:
 	void DownloadModel_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetUserData_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void GetCategories_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
 	//~End Rest methods
 
@@ -170,6 +190,8 @@ public:
 	/** All the data for every model found in a search call */
 	TArray<TSharedPtr< struct FSketchfabTaskData>> SearchData;
 
+	TArray<TSharedPtr< struct FSketchfabCategory>> Categories;
+	
 private:
 	/** Task State */
 	SketchfabRESTState State;
@@ -196,6 +218,7 @@ private:
 	FSketchfabTaskDelegate OnModelDownloadProgressDelegate;
 	FSketchfabTaskDelegate OnUserDataDelegate;
 	FSketchfabTaskDelegate OnUserThumbnailDelegate;
+	FSketchfabTaskDelegate OnCategoriesDelegate;
 	//~ Delegates End
 
 	/** Map that stores pending request. They need to be cleaned up when destroying the instance. Especially if job has completed*/
