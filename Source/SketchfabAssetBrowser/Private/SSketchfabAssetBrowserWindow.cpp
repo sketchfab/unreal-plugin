@@ -599,6 +599,11 @@ FReply SSketchfabAssetBrowserWindow::OnClearCache()
 		}
 	}
 
+	if (Window.IsValid())
+	{
+		Window.Pin()->BringToFront(true);
+	}
+
 	return FReply::Handled();
 }
 
