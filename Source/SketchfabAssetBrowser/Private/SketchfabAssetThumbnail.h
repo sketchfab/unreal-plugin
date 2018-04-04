@@ -197,12 +197,6 @@ public:
 	 */
 	void RemoveReferencer( const FSketchfabAssetThumbnail& AssetThumbnail );
 
-	/** Returns true if the thumbnail for the specified asset in the specified size is in the stack of thumbnails to render */
-	bool IsInRenderStack( const TSharedPtr<FSketchfabAssetThumbnail>& Thumbnail ) const;
-
-	/** Returns true if the thumbnail for the specified asset in the specified size has been rendered */
-	bool IsRendered( const TSharedPtr<FSketchfabAssetThumbnail>& Thumbnail ) const;
-
 	/** Brings all items in ThumbnailsToPrioritize to the front of the render stack if they are actually in the stack */
 	void PrioritizeThumbnails( const TArray< TSharedPtr<FSketchfabAssetThumbnail> >& ThumbnailsToPrioritize, uint32 Width, uint32 Height );
 
@@ -238,11 +232,6 @@ private:
 		/** The object whose thumbnail is rendered */
 		FSketchfabAssetData AssetData;
 
-		/** Rendering resource for slate */
-		FSlateTexture2DRHIRef* ThumbnailTexture;
-		/** Render target for slate */
-		FSlateTextureRenderTarget2DResource* ThumbnailRenderTarget;
-
 		UTexture2D* ModelTexture;
 		FSlateDynamicImageBrush* ModelImageBrush;
 
@@ -255,25 +244,6 @@ private:
 		/** Height of the thumbnail */
 		uint32 Height;
 		~FThumbnailInfo();
-	};
-
-	struct FThumbnailInfo_RenderThread
-	{
-		/** Rendering resource for slate */
-		FSlateTexture2DRHIRef* ThumbnailTexture;
-		/** Render target for slate */
-		FSlateTextureRenderTarget2DResource* ThumbnailRenderTarget;
-		/** Width of the thumbnail */
-		uint32 Width;
-		/** Height of the thumbnail */
-		uint32 Height;
-
-		FThumbnailInfo_RenderThread(const FThumbnailInfo& Info)
-			: ThumbnailTexture(Info.ThumbnailTexture)
-			, ThumbnailRenderTarget(Info.ThumbnailRenderTarget)
-			, Width(Info.Width)
-			, Height(Info.Height)
-		{}
 	};
 	
 	/** Key for looking up thumbnails in a map */
@@ -307,9 +277,6 @@ private:
 
 	/** A mapping of objects to their thumbnails */
 	TMap< FThumbId, TSharedRef<FThumbnailInfo> > ThumbnailToTextureMap;
-
-	/** List of thumbnails to render when possible */
-	TArray< TSharedRef<FThumbnailInfo> > ThumbnailsToRenderStack;
 
 	/** List of free thumbnails that can be reused */
 	TArray< TSharedRef<FThumbnailInfo> > FreeThumbnails;
