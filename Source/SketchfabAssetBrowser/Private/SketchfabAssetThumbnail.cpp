@@ -946,6 +946,9 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 				{
 					ThumbnailRenderTarget->SetSize(Width, Height);
 				});
+
+				ThumbnailInfo->ModelTexture = UImageLoader::LoadImageFromDisk(NULL, path);
+				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), ThumbUID);
 			}
 			else
 			{
@@ -1155,6 +1158,14 @@ void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ModelUID, uint32 
 			TSharedRef<FThumbnailInfo> ThumbnailInfo = *ThumbnailInfoPtr;
 			ThumbnailToTextureMap.Remove(ThumbId);
 			ThumbnailsToRenderStack.Remove(ThumbnailInfo);
+
+			if (ThumbnailInfo->ModelImageBrush)
+			{
+				delete ThumbnailInfo->ModelImageBrush;
+				ThumbnailInfo->ModelImageBrush = NULL;
+			}
+
+			ThumbnailInfo->ModelTexture = NULL;
 
 			ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER( 
 				ReleaseThumbnailTextureData,
