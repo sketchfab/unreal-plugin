@@ -111,23 +111,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnCancel)
 					]
 				]
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.HAlign(HAlign_Right)
-				.Padding(2)
-				[
-					SNew(SUniformGridPanel)
-					.SlotPadding(2)
-
-			
-					+ SUniformGridPanel::Slot(0, 0)
-					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
-					]
-				]
 			]
 		]
 		+ SVerticalBox::Slot()
@@ -252,6 +235,28 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				]
 			]
 		]
+
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0, 0, 0, 2)
+		[
+			SNew(SBorder)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Right)
+				.Padding(2)
+				[
+					SNew(SButton)
+					.HAlign(HAlign_Center)
+					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
+					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
+				]
+			]
+		]
+
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
 		.Padding(0)
