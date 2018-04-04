@@ -396,6 +396,9 @@ public:
 	void DownloadProgress(const FString& ModelUID, float progress);
 	void FlushThumbnails();
 
+	/** Returns all the asset data objects in items currently selected in the view */
+	TArray<FSketchfabAssetData> GetSelectedAssets() const;
+
 private:
 	void CreateCurrentView();
 	TSharedRef<SAssetTileView> CreateTileView();
@@ -438,9 +441,6 @@ private:
 private:
 	/** Returns all the items currently selected in the view */
 	TArray<TSharedPtr<FAssetViewItem>> GetSelectedItems() const;
-
-	/** Returns all the asset data objects in items currently selected in the view */
-	TArray<FSketchfabAssetData> GetSelectedAssets() const;
 
 private:
 	// SWidget inherited

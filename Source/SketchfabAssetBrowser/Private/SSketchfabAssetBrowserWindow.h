@@ -34,6 +34,8 @@ public:
 	FReply OnLogin();
 	FReply OnCancel();
 	FReply OnNext();
+	FReply OnDownloadSelected();
+	FReply OnClearCache();
 	
 	//Search Box
 	FReply OnSearchPressed();
@@ -58,6 +60,7 @@ public:
 
 private:
 	void Search(const FString &url);
+	void DownloadModel(const FString &ModelUID);
 
 public:
 	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
@@ -94,13 +97,15 @@ private:
 	//SketchfabRESTClient callbacks
 	void OnSearch(const FSketchfabTask& InTask);
 	void OnThumbnailDownloaded(const FSketchfabTask& InTask);
-	void OnTaskFailed(const FSketchfabTask& InTask);
 	void OnModelLink(const FSketchfabTask& InTask);
 	void OnModelDownloaded(const FSketchfabTask& InTask);
 	void OnModelDownloadProgress(const FSketchfabTask& InTask);
 	void OnUserData(const FSketchfabTask& InTask);
 	void OnUserThumbnailDownloaded(const FSketchfabTask& InTask);
 	void OnCategories(const FSketchfabTask& InTask);
+
+	void OnTaskFailed(const FSketchfabTask& InTask);
+	void OnDownloadFailed(const FSketchfabTask& InTask);
 
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;
@@ -119,5 +124,7 @@ private:
 	FString NextURL;
 
 	FString LoggedInUser;
+
+	TSet<FString> ModelsDownloading;
 };
 

@@ -246,6 +246,28 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.Padding(2)
+				[
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Download", "Download Selected"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnDownloadSelected)
+					]
+					+ SUniformGridPanel::Slot(1, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_ClearCache", "Clear Cache"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnClearCache)
+					]
+				]
+
+				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
 				.Padding(2)
 				[
@@ -295,6 +317,41 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	Search();
 }
 
+void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID)
+{
+	if (LoggedInUser.IsEmpty() || Token.IsEmpty() || ModelUID.IsEmpty())
+	{
+		return;
+	}
+
+	FString fileName = CacheFolder + ModelUID + ".zip";
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	if (PlatformFile.FileExists(*fileName))
+	{
+		return;
+	}
+
+	//TODO: Check to see if its already scheduled to be downloaded, or is already downloading.
+	if (ModelsDownloading.Find(ModelUID))
+	{
+		return;
+	}
+
+	ModelsDownloading.Add(ModelUID);
+
+	FSketchfabTaskData TaskData;
+	TaskData.Token = Token;
+	TaskData.CacheFolder = CacheFolder;
+	TaskData.ModelUID = ModelUID;
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETMODELLINK);
+	Task->OnModelLink().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelLink);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnDownloadFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
+}
+
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
 {
 	if (LoggedInUser.IsEmpty())
@@ -312,20 +369,33 @@ void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAsse
 		for (auto AssetIt = ActivatedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
 		{
 			const FSketchfabAssetData& AssetData = *AssetIt;
-
-			FSketchfabTaskData TaskData;
-			TaskData.Token = Token;
-			TaskData.CacheFolder = CacheFolder;
-			TaskData.ModelUID = AssetData.ModelUID.ToString();
-			TaskData.StateLock = new FCriticalSection();
-
-			TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
-			Task->SetState(SRS_GETMODELLINK);
-			Task->OnModelLink().BindRaw(this, &SSketchfabAssetBrowserWindow::OnModelLink);
-			Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-			FSketchfabRESTClient::Get()->AddTask(Task);
+			DownloadModel(AssetData.ModelUID.ToString());
 		}
 	}
+}
+
+FReply SSketchfabAssetBrowserWindow::OnDownloadSelected()
+{
+	if (LoggedInUser.IsEmpty())
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("SSketchfabAssetBrowserWindow_ModelDoubleClick", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
+		if (Window.IsValid())
+		{
+			Window.Pin()->BringToFront(true);
+		}
+		return FReply::Handled();
+	}
+
+	if (!Token.IsEmpty())
+	{
+		TArray<FSketchfabAssetData> data = AssetViewPtr->GetSelectedAssets();
+		for (int32 i = 0; i < data.Num(); i++)
+		{
+			const FSketchfabAssetData& AssetData = data[i];
+			DownloadModel(AssetData.ModelUID.ToString());
+		}
+	}
+	return FReply::Handled();
 }
 
 TSharedPtr<SWidget> SSketchfabAssetBrowserWindow::OnGetAssetContextMenu(const TArray<FSketchfabAssetData>& SelectedAssets)
@@ -513,6 +583,26 @@ FReply SSketchfabAssetBrowserWindow::OnNext()
 	Search(NextURL);
 	return FReply::Handled();
 }
+
+FReply SSketchfabAssetBrowserWindow::OnClearCache()
+{
+	FString Folder = GetSketchfabCacheDir();
+
+	FString msg = "Delete all files in the Sketchfab cache folder '" + Folder + "' ?";
+	if (FMessageDialog::Open(EAppMsgType::OkCancel, FText::FromString(msg)) == EAppReturnType::Ok)
+	{
+		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+		if (PlatformFile.DirectoryExists(*Folder))
+		{
+			PlatformFile.DeleteDirectoryRecursively(*Folder);
+			PlatformFile.CreateDirectory(*Folder);
+		}
+	}
+
+	return FReply::Handled();
+}
+
+
 
 void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
 {
@@ -756,9 +846,13 @@ void SSketchfabAssetBrowserWindow::GetCategories()
 //=====================================================
 // Callback API calls
 //=====================================================
+void SSketchfabAssetBrowserWindow::OnDownloadFailed(const FSketchfabTask& InTask)
+{
+	ModelsDownloading.Remove(InTask.TaskData.ModelUID);
+}
+
 void SSketchfabAssetBrowserWindow::OnTaskFailed(const FSketchfabTask& InTask)
 {
-
 }
 
 void SSketchfabAssetBrowserWindow::OnUserData(const FSketchfabTask& InTask)
@@ -832,6 +926,7 @@ void SSketchfabAssetBrowserWindow::OnModelDownloaded(const FSketchfabTask& InTas
 {
 	AssetViewPtr->DownloadProgress(InTask.TaskData.ModelUID, 0.0);
 	AssetViewPtr->NeedRefresh();
+	ModelsDownloading.Remove(InTask.TaskData.ModelUID);
 }
 
 void SSketchfabAssetBrowserWindow::OnModelDownloadProgress(const FSketchfabTask& InTask)
