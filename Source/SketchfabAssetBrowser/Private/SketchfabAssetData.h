@@ -27,6 +27,8 @@ public:
 	FName AssetName;
 	FName ThumbUID;
 	float DownloadProgress;
+	int32 ThumbnailWidth;
+	int32 ThumbnailHeight;
 
 public:
 	/** Default constructor */
@@ -34,12 +36,14 @@ public:
 	{}
 
 	/** Constructor */
-	FSketchfabAssetData(FName InContentFolder, FName InAssetName, FName InModelUID, FName InThumbUID)
+	FSketchfabAssetData(FName InContentFolder, FName InAssetName, FName InModelUID, FName InThumbUID, int32 InThumbnailWidth, int32 InThumbnailHeight)
 		: ContentFolder(InContentFolder)
 		, AssetName(InAssetName)
 		, ModelUID(InModelUID)
 		, ThumbUID(InThumbUID)
 		, DownloadProgress(0)
+		, ThumbnailWidth(InThumbnailWidth)
+		, ThumbnailHeight(InThumbnailHeight)
 	{
 	}
 

@@ -250,6 +250,8 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 					TSharedPtr<FSketchfabTaskData> OutItem = MakeShareable(new FSketchfabTaskData());
 					OutItem->ThumbnailUID = thumbUID;
 					OutItem->ThumbnailURL = thumbURL;
+					OutItem->ThumbnailWidth = oldWidth;
+					OutItem->ThumbnailHeight = oldHeight;
 					OutItem->ModelName = modelName;
 					OutItem->ModelUID = modelUID;
 					OutItem->CacheFolder = TaskData.CacheFolder;

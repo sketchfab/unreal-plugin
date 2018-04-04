@@ -17,25 +17,10 @@
 #include "FileManager.h"
 
 #include "Misc/FileHelper.h"
-#include "Materials/MaterialInterface.h"
-#include "MaterialExpressionIO.h"
-#include "Materials/Material.h"
-#include "Factories/MaterialFactoryNew.h"
 #include "Engine/Texture.h"
 #include "Factories/TextureFactory.h"
 #include "Engine/Texture2D.h"
 
-#include "Materials/MaterialExpressionTextureSample.h"
-#include "Materials/MaterialExpressionTextureCoordinate.h"
-#include "Materials/MaterialExpressionVectorParameter.h"
-#include "Materials/MaterialExpressionScalarParameter.h"
-#include "Materials/MaterialInstanceConstant.h"
-#include "Materials/MaterialExpressionMultiply.h"
-#include "Materials/MaterialExpressionOneMinus.h"
-
-#include "Factories/MaterialInstanceConstantFactoryNew.h"
-#include "ARFilter.h"
-#include "Factories/MaterialImportHelpers.h"
 #include "EditorFramework/AssetImportData.h"
 
 #include "SSplitter.h"
@@ -44,6 +29,7 @@
 #include "SketchfabRESTClient.h"
 #include "SComboButton.h"
 #include "MultiBoxBuilder.h"
+#include "SSketchfabAssetWindow.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
@@ -128,7 +114,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				.Padding(2)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString("Login to your Sketchfab account. Double click on a model to download it. Import by dragging it into the content browser."))
+					.Text(FText::FromString("Login to your Sketchfab account. Select a model and click Download Selected to download. Double click to view model information. After downloading you can import by click+dragging it into the content browser."))
 					.Justification(ETextJustify::Center)
 					.AutoWrapText(true)
 					.MinDesiredWidth(400.0f)
@@ -408,15 +394,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		]
 	];
 		
-	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-	FDetailsViewArgs DetailsViewArgs;
-	DetailsViewArgs.bAllowSearch = false;
-	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
-	TSharedPtr<IDetailsView> DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
-
-	DetailsViewBox->SetContent(DetailsView.ToSharedRef());
-
-
 	bSearchAnimated = false;
 	bSearchStaffPicked = false;
 	SortByType = SORTBY_Relevance;
@@ -463,23 +440,9 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID)
 
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
 {
-	if (LoggedInUser.IsEmpty())
+	if (ActivatedAssets.Num() > 0)
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("SSketchfabAssetBrowserWindow_ModelDoubleClick", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
-		if (Window.IsValid())
-		{
-			Window.Pin()->BringToFront(true);
-		}
-		return;
-	}
-
-	if (!Token.IsEmpty())
-	{
-		for (auto AssetIt = ActivatedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
-		{
-			const FSketchfabAssetData& AssetData = *AssetIt;
-			DownloadModel(AssetData.ModelUID.ToString());
-		}
+		ShowModelWindow(ActivatedAssets[0]);
 	}
 }
 
@@ -852,9 +815,9 @@ void SSketchfabAssetBrowserWindow::CreateNewAsset(const FString& DefaultAssetNam
 }
 */
 
-void SSketchfabAssetBrowserWindow::ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID)
+void SSketchfabAssetBrowserWindow::ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID, int32 ThumbnailWidth, int32 ThumbnailHeight)
 {
-	AssetViewPtr->ForceCreateNewAsset(DefaultAssetName, PackagePath, ModelAssetUID, ThumbAssetUID);
+	AssetViewPtr->ForceCreateNewAsset(DefaultAssetName, PackagePath, ModelAssetUID, ThumbAssetUID, ThumbnailWidth, ThumbnailHeight);
 }
 
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::CreateCheckBox(const FText& CheckBoxText, bool* CheckBoxChoice)
@@ -1143,7 +1106,7 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 	{
 		const TSharedPtr<FSketchfabTaskData>& Data = InTask.SearchData[Index];
 
-		ForceCreateNewAsset(Data->ModelName, Data->CacheFolder, Data->ModelUID, Data->ThumbnailUID);
+		ForceCreateNewAsset(Data->ModelName, Data->CacheFolder, Data->ModelUID, Data->ThumbnailUID, Data->ThumbnailWidth, Data->ThumbnailHeight);
 
 		FString jpg = Data->ThumbnailUID + ".jpg";
 		FString FileName = Data->CacheFolder / jpg;
@@ -1199,6 +1162,28 @@ void SSketchfabAssetBrowserWindow::OnModelDownloadProgress(const FSketchfabTask&
 void SSketchfabAssetBrowserWindow::OnCategories(const FSketchfabTask& InTask)
 {
 	Categories = InTask.Categories;
+}
+
+void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& AssetData)
+{
+	TSharedRef<SWindow> ModelWindow = SNew(SWindow)
+		.Title(LOCTEXT("SketchfabAssetWindow", "Sketchfab Model Info"))
+		.SizingRule(ESizingRule::UserSized)
+		.ClientSize(FVector2D(600, 400));
+
+	TSharedPtr<SSketchfabAssetWindow> AssetWindow;
+	ModelWindow->SetContent
+	(
+		SAssignNew(AssetWindow, SSketchfabAssetWindow)
+		.WidgetWindow(ModelWindow)
+		.AssetData(AssetData)
+		.ThumbnailPool(AssetViewPtr->GetThumbnailPool())
+	);
+
+	FWidgetPath WidgetPath;
+	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
+	FSlateApplication::Get().AddModalWindow(ModelWindow, CurrentWindow, false);
+
 }
 
 #undef LOCTEXT_NAMESPACE

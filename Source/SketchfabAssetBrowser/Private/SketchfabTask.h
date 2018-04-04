@@ -106,6 +106,10 @@ struct FSketchfabTaskData
 	/** Thumbnail Download URL */
 	FString ThumbnailURL;
 
+	int32 ThumbnailWidth;
+
+	int32 ThumbnailHeight;
+
 	/** The Cache folder for downloaded content */
 	FString CacheFolder;
 
@@ -128,6 +132,8 @@ struct FSketchfabTaskData
 	{
 		ModelSize = 0;
 		DownloadedBytes = 0;
+		ThumbnailWidth = 0;
+		ThumbnailHeight = 0;
 	}
 
 };

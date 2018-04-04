@@ -391,13 +391,15 @@ public:
 public:
 	void Construct(const FArguments& InArgs);
 	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
-	void ForceCreateNewAsset(const FString& ModelName, const FString& ContentFolder, const FString& ModelAssetUID, const FString& ThumbAssetUID);
+	void ForceCreateNewAsset(const FString& ModelName, const FString& ContentFolder, const FString& ModelAssetUID, const FString& ThumbAssetUID, int32 ThumbnailWidth, int32 ThumbnailHeight);
 	void NeedRefresh();
 	void DownloadProgress(const FString& ModelUID, float progress);
 	void FlushThumbnails();
 
 	/** Returns all the asset data objects in items currently selected in the view */
 	TArray<FSketchfabAssetData> GetSelectedAssets() const;
+
+	TSharedPtr<FSketchfabAssetThumbnailPool> GetThumbnailPool() { return AssetThumbnailPool; }
 
 private:
 	void CreateCurrentView();
@@ -492,7 +494,7 @@ private:
 	TArray<TSharedPtr<FAssetViewItem>> FilteredAssetItems;
 
 	/** Pool for maintaining and rendering thumbnails */
-	TSharedPtr<class FSketchfabAssetThumbnailPool> AssetThumbnailPool;
+	TSharedPtr<FSketchfabAssetThumbnailPool> AssetThumbnailPool;
 
 	/** The number of thumbnails to keep for asset items that are not currently visible. Half of the thumbnails will be before the earliest item and half will be after the latest. */
 	int32 NumOffscreenThumbnails;

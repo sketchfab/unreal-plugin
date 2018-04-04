@@ -271,84 +271,50 @@ TSharedRef<ITableRow> SSketchfabAssetView::MakeTileViewWidget(TSharedPtr<FAssetV
 	bPendingUpdateThumbnails = true;
 
 
-	if (AssetItem->GetType() == EAssetItemType::Folder)
+	TSharedPtr<FAssetViewAsset> AssetItemAsAsset = StaticCastSharedPtr<FAssetViewAsset>(AssetItem);
+	TSharedPtr<FSketchfabAssetThumbnail>* AssetThumbnailPtr = RelevantThumbnails.Find(AssetItemAsAsset);
+	TSharedPtr<FSketchfabAssetThumbnail> AssetThumbnail;
+	if (AssetThumbnailPtr)
 	{
-		TSharedPtr< STableRow<TSharedPtr<FAssetViewItem>> > TableRowWidget;
-		/*
-		SAssignNew(TableRowWidget, STableRow<TSharedPtr<FAssetViewItem>>, OwnerTable)
-			.Style(FEditorStyle::Get(), "ContentBrowser.AssetListView.TableRow")
-			.Cursor(bAllowDragging ? EMouseCursor::GrabHand : EMouseCursor::Default)
-			.OnDragDetected(this, &SAssetView::OnDraggingAssetItem);
-
-		TSharedRef<SAssetTileItem> Item =
-			SNew(SAssetTileItem)
-			.AssetItem(AssetItem)
-			.ItemWidth(this, &SAssetView::GetTileViewItemWidth)
-			.OnRenameBegin(this, &SAssetView::AssetRenameBegin)
-			.OnRenameCommit(this, &SAssetView::AssetRenameCommit)
-			.OnVerifyRenameCommit(this, &SAssetView::AssetVerifyRenameCommit)
-			.OnItemDestroyed(this, &SAssetView::AssetItemWidgetDestroyed)
-			.ShouldAllowToolTip(this, &SAssetView::ShouldAllowToolTips)
-			.HighlightText(HighlightedText)
-			.IsSelected(FIsSelected::CreateSP(TableRowWidget.Get(), &STableRow<TSharedPtr<FAssetViewItem>>::IsSelectedExclusively))
-			.OnAssetsOrPathsDragDropped(this, &SAssetView::OnAssetsOrPathsDragDropped)
-			.OnFilesDragDropped(this, &SAssetView::OnFilesDragDropped);
-
-		TableRowWidget->SetContent(Item);
-		*/
-
-		return TableRowWidget.ToSharedRef();
+		AssetThumbnail = *AssetThumbnailPtr;
 	}
-	else 
+	else
 	{
-		TSharedPtr<FAssetViewAsset> AssetItemAsAsset = StaticCastSharedPtr<FAssetViewAsset>(AssetItem);
-
-		TSharedPtr<FSketchfabAssetThumbnail>* AssetThumbnailPtr = RelevantThumbnails.Find(AssetItemAsAsset);
-		TSharedPtr<FSketchfabAssetThumbnail> AssetThumbnail;
-		if (AssetThumbnailPtr)
-		{
-			AssetThumbnail = *AssetThumbnailPtr;
-		}
-		else
-		{
-			const float ThumbnailResolution = TileViewThumbnailResolution;
-			AssetThumbnail = MakeShareable(new FSketchfabAssetThumbnail(AssetItemAsAsset->Data, ThumbnailResolution, ThumbnailResolution, AssetThumbnailPool));
-			RelevantThumbnails.Add(AssetItemAsAsset, AssetThumbnail);
-			AssetThumbnail->GetViewportRenderTargetTexture(); // Access the texture once to trigger it to render
-		}
-
-		TSharedPtr< STableRow<TSharedPtr<FAssetViewItem>> > TableRowWidget;
-		SAssignNew(TableRowWidget, STableRow<TSharedPtr<FAssetViewItem>>, OwnerTable)
-			.Style(FEditorStyle::Get(), "ContentBrowser.AssetListView.TableRow")
-			.Cursor(bAllowDragging ? EMouseCursor::GrabHand : EMouseCursor::Default)
-			.OnDragDetected(this, &SSketchfabAssetView::OnDraggingAssetItem);
-
-		TSharedRef<SAssetTileItem> Item =
-			SNew(SAssetTileItem)
-			.AssetThumbnail(AssetThumbnail)
-			.AssetItem(AssetItem)
-			.ThumbnailPadding(TileViewThumbnailPadding)
-			.ItemWidth(this, &SSketchfabAssetView::GetTileViewItemWidth)
-			//.OnRenameBegin(this, &SAssetView::AssetRenameBegin)
-			//.OnRenameCommit(this, &SAssetView::AssetRenameCommit)
-			//.OnVerifyRenameCommit(this, &SAssetView::AssetVerifyRenameCommit)
-			//.OnItemDestroyed(this, &SAssetView::AssetItemWidgetDestroyed)
-			//.ShouldAllowToolTip(this, &SAssetView::ShouldAllowToolTips)
-			//.HighlightText(HighlightedText)
-			//.ThumbnailEditMode(this, &SAssetView::IsThumbnailEditMode)
-			.ThumbnailLabel(ThumbnailLabel)
-			//.ThumbnailHintColorAndOpacity(this, &SAssetView::GetThumbnailHintColorAndOpacity)
-			//.AllowThumbnailHintLabel(AllowThumbnailHintLabel)
-			.IsSelected(FIsSelected::CreateSP(TableRowWidget.Get(), &STableRow<TSharedPtr<FAssetViewItem>>::IsSelectedExclusively))
-			//.OnGetCustomAssetToolTip(OnGetCustomAssetToolTip)
-			//.OnVisualizeAssetToolTip(OnVisualizeAssetToolTip)
-			//.OnAssetToolTipClosing(OnAssetToolTipClosing);
-			;
-
-		TableRowWidget->SetContent(Item);
-
-		return TableRowWidget.ToSharedRef();
+		const float ThumbnailResolution = TileViewThumbnailResolution;
+		AssetThumbnail = MakeShareable(new FSketchfabAssetThumbnail(AssetItemAsAsset->Data, ThumbnailResolution, ThumbnailResolution, AssetThumbnailPool));
+		RelevantThumbnails.Add(AssetItemAsAsset, AssetThumbnail);
+		AssetThumbnail->GetViewportRenderTargetTexture(); // Access the texture once to trigger it to render
 	}
+
+	TSharedPtr< STableRow<TSharedPtr<FAssetViewItem>> > TableRowWidget;
+	SAssignNew(TableRowWidget, STableRow<TSharedPtr<FAssetViewItem>>, OwnerTable)
+		.Style(FEditorStyle::Get(), "ContentBrowser.AssetListView.TableRow")
+		.Cursor(bAllowDragging ? EMouseCursor::GrabHand : EMouseCursor::Default)
+		.OnDragDetected(this, &SSketchfabAssetView::OnDraggingAssetItem);
+
+	TSharedRef<SAssetTileItem> Item =
+		SNew(SAssetTileItem)
+		.AssetThumbnail(AssetThumbnail)
+		.AssetItem(AssetItem)
+		.ThumbnailPadding(TileViewThumbnailPadding)
+		.ItemWidth(this, &SSketchfabAssetView::GetTileViewItemWidth)
+		//.OnRenameBegin(this, &SAssetView::AssetRenameBegin)
+		//.OnRenameCommit(this, &SAssetView::AssetRenameCommit)
+		//.OnVerifyRenameCommit(this, &SAssetView::AssetVerifyRenameCommit)
+		//.OnItemDestroyed(this, &SAssetView::AssetItemWidgetDestroyed)
+		//.ShouldAllowToolTip(this, &SSketchfabAssetView::ShouldAllowToolTips)
+		//.HighlightText(HighlightedText)
+		//.ThumbnailEditMode(this, &SAssetView::IsThumbnailEditMode)
+		.ThumbnailLabel(ThumbnailLabel)
+		//.ThumbnailHintColorAndOpacity(this, &SAssetView::GetThumbnailHintColorAndOpacity)
+		//.AllowThumbnailHintLabel(AllowThumbnailHintLabel)
+		.IsSelected(FIsSelected::CreateSP(TableRowWidget.Get(), &STableRow<TSharedPtr<FAssetViewItem>>::IsSelectedExclusively));
+		//.OnGetCustomAssetToolTip(OnGetCustomAssetToolTip)
+		//.OnVisualizeAssetToolTip(OnVisualizeAssetToolTip)
+		//.OnAssetToolTipClosing(OnAssetToolTipClosing);
+	TableRowWidget->SetContent(Item);
+
+	return TableRowWidget.ToSharedRef();
 }
 
 void SSketchfabAssetView::OnListMouseButtonDoubleClick(TSharedPtr<FAssetViewItem> AssetItem)
@@ -529,14 +495,14 @@ void SSketchfabAssetView::DownloadProgress(const FString& ModelUID, float progre
 	DownloadProgressData.Add(ModelUID, progress);
 }
 
-void SSketchfabAssetView::ForceCreateNewAsset(const FString& ModelNameStr, const FString& ContentFolderStr, const FString& ModelAssetUID, const FString& ThumbAssetUID)
+void SSketchfabAssetView::ForceCreateNewAsset(const FString& ModelNameStr, const FString& ContentFolderStr, const FString& ModelAssetUID, const FString& ThumbAssetUID, int32 ThumbnailWidth, int32 ThumbnailHeight)
 {
 	FName ContentFolder = FName(*ContentFolderStr);
 	FName ModelName = FName(*ModelNameStr);
 	FName ObjectUIDName = FName(*ModelAssetUID);
 	FName ThumbAssetUIDName = FName(*ThumbAssetUID);
 
-	FSketchfabAssetData NewAssetData(ContentFolder, ModelName, ObjectUIDName, ThumbAssetUIDName);
+	FSketchfabAssetData NewAssetData(ContentFolder, ModelName, ObjectUIDName, ThumbAssetUIDName, ThumbnailWidth, ThumbnailHeight);
 
 	TSharedPtr<FAssetViewItem> NewItem = MakeShareable(new FAssetViewAsset(NewAssetData));
 
@@ -899,22 +865,22 @@ SAssetTileItem::~SAssetTileItem()
 void SAssetTileItem::Construct( const FArguments& InArgs )
 {
 	SAssetViewItem::Construct(SAssetViewItem::FArguments()
-		.AssetItem(InArgs._AssetItem));
-	/*
+		.AssetItem(InArgs._AssetItem)
+		/*
 		.OnRenameBegin(InArgs._OnRenameBegin)
 		.OnRenameCommit(InArgs._OnRenameCommit)
 		.OnVerifyRenameCommit(InArgs._OnVerifyRenameCommit)
 		.OnItemDestroyed(InArgs._OnItemDestroyed)
-		.ShouldAllowToolTip(InArgs._ShouldAllowToolTip)
 		.ThumbnailEditMode(InArgs._ThumbnailEditMode)
 		.HighlightText(InArgs._HighlightText)
 		.OnAssetsOrPathsDragDropped(InArgs._OnAssetsOrPathsDragDropped)
 		.OnFilesDragDropped(InArgs._OnFilesDragDropped)
-		.OnGetCustomAssetToolTip(InArgs._OnGetCustomAssetToolTip)
-		.OnVisualizeAssetToolTip(InArgs._OnVisualizeAssetToolTip)
-		.OnAssetToolTipClosing( InArgs._OnAssetToolTipClosing )
-		);
 		*/
+		//.ShouldAllowToolTip(InArgs._ShouldAllowToolTip)
+		//.OnGetCustomAssetToolTip(InArgs._OnGetCustomAssetToolTip)
+		//.OnVisualizeAssetToolTip(InArgs._OnVisualizeAssetToolTip)
+		//.OnAssetToolTipClosing( InArgs._OnAssetToolTipClosing )
+		);
 
 	AssetThumbnail = InArgs._AssetThumbnail;
 	ItemWidth = InArgs._ItemWidth;
