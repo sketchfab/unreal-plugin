@@ -209,24 +209,6 @@ public:
 				];
 		}
 
-		/*
-		if( ThumbnailClass.Get() && bIsClassType )
-		{
-			OverlayWidget->AddSlot()
-			.VAlign(VAlign_Bottom)
-			.HAlign(HAlign_Right)
-			.Padding(TAttribute<FMargin>(this, &SSketchfabAssetThumbnail::GetClassIconPadding))
-			[
-				SAssignNew(ClassIconWidget, SBorder)
-				.BorderImage(FEditorStyle::GetNoBrush())
-				[
-					SNew(SImage)
-					.Image(this, &SSketchfabAssetThumbnail::GetClassIconBrush)
-				]
-			];
-		}
-		*/
-
 		if( bAllowHintText )
 		{
 			OverlayWidget->AddSlot()
@@ -452,22 +434,7 @@ private:
 
 	const FSlateBrush* GetClassThumbnailBrush() const
 	{
-		/*
-		if (ClassThumbnailBrushOverride.IsNone())
-		{
-			// For non-class types, use the default based upon the actual asset class
-			// This has the side effect of not showing a class icon for assets that don't have a proper thumbnail image available
-			const FName DefaultThumbnail = (bIsClassType) ? NAME_None : FName(*FString::Printf(TEXT("ClassThumbnail.%s"), *AssetThumbnail->GetAssetData().AssetClass.ToString()));
-			return FClassIconFinder::FindThumbnailForClass(ThumbnailClass.Get(), DefaultThumbnail);
-		}
-		else
-		*/
-		{
-			// Instead of getting the override thumbnail directly from the editor style here get it from the
-			// ClassIconFinder since it may have additional styles registered which can be searched by passing
-			// it as a default with no class to search for.
-			return FClassIconFinder::FindThumbnailForClass(nullptr, ClassThumbnailBrushOverride);
-		}
+		return FClassIconFinder::FindThumbnailForClass(nullptr, ClassThumbnailBrushOverride);
 	}
 
 	EVisibility GetClassThumbnailVisibility() const
@@ -475,7 +442,7 @@ private:
 		if(!bHasRenderedThumbnail)
 		{
 			const FSlateBrush* ClassThumbnailBrush = GetClassThumbnailBrush();
-			if( ClassThumbnailBrush && ThumbnailClass.Get() )
+			if( ClassThumbnailBrush)
 			{
 				return EVisibility::Visible;
 			}
@@ -487,11 +454,6 @@ private:
 	EVisibility GetGenericThumbnailVisibility() const
 	{
 		return (bHasRenderedThumbnail && ViewportFadeAnimation.IsAtEnd()) ? EVisibility::Collapsed : EVisibility::Visible;
-	}
-
-	const FSlateBrush* GetClassIconBrush() const
-	{
-		return FSlateIconFinder::FindIconBrushForClass(ThumbnailClass.Get());
 	}
 
 	FMargin GetClassIconPadding() const
@@ -692,26 +654,7 @@ private:
 
 	/** The name of the thumbnail which should be used instead of the class thumbnail. */
 	FName ClassThumbnailBrushOverride;
-	/** The class to use when finding the thumbnail. */
-	TWeakObjectPtr<UClass> ThumbnailClass;
-	/** Are we showing a class type? (UClass, UBlueprint) */
-	bool bIsClassType;
 };
-
-
-/*
-FSketchfabAssetThumbnail::FSketchfabAssetThumbnail( UObject* InAsset, uint32 InWidth, uint32 InHeight, const TSharedPtr<class FSketchfabAssetThumbnailPool>& InThumbnailPool )
-	: ThumbnailPool(InThumbnailPool)
-	, AssetData(InAsset ? FSketchfabAssetData(InAsset) : FSketchfabAssetData())
-	, Width( InWidth )
-	, Height( InHeight )
-{
-	if ( InThumbnailPool.IsValid() )
-	{
-		InThumbnailPool->AddReferencer(*this);
-	}
-}
-*/
 
 FSketchfabAssetThumbnail::FSketchfabAssetThumbnail( const FSketchfabAssetData& InAssetData , uint32 InWidth, uint32 InHeight, const TSharedPtr<class FSketchfabAssetThumbnailPool>& InThumbnailPool )
 	: ThumbnailPool( InThumbnailPool )
@@ -779,13 +722,6 @@ const FSketchfabAssetData& FSketchfabAssetThumbnail::GetAssetData() const
 {
 	return AssetData;
 }
-
-/*
-void FSketchfabAssetThumbnail::SetAsset( const UObject* InAsset )
-{
-	SetAsset( FSketchfabAssetData(InAsset) );
-}
-*/
 
 void FSketchfabAssetThumbnail::SetAsset( const FSketchfabAssetData& InAssetData )
 {

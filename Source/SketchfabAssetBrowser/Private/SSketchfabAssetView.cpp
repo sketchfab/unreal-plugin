@@ -357,27 +357,6 @@ void SSketchfabAssetView::OnListMouseButtonDoubleClick(TSharedPtr<FAssetViewItem
 	{
 		return;
 	}
-	/*
-	if (IsThumbnailEditMode())
-	{
-		// You can not activate assets when in thumbnail edit mode because double clicking may happen inadvertently while adjusting thumbnails.
-		return;
-	}
-
-	if (AssetItem->GetType() == EAssetItemType::Folder)
-	{
-		OnPathSelected.ExecuteIfBound(StaticCastSharedPtr<FAssetViewFolder>(AssetItem)->FolderPath);
-		return;
-	}
-	*/
-
-	/*
-	if (AssetItem->IsTemporaryItem())
-	{
-		// You may not activate temporary items, they are just for display.
-		return;
-	}
-	*/
 
 	TArray<FSketchfabAssetData> ActivatedAssets;
 	ActivatedAssets.Add(StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data);
@@ -472,15 +451,6 @@ bool SSketchfabAssetView::CanOpenContextMenu() const
 		return false;
 	}
 
-
-	/*
-	if (IsThumbnailEditMode())
-	{
-		// You can not summon a context menu for assets when in thumbnail edit mode because right clicking may happen inadvertently while adjusting thumbnails.
-		return false;
-	}
-	*/
-
 	TArray<FSketchfabAssetData> SelectedAssets = GetSelectedAssets();
 
 	// Detect if at least one temporary item was selected. If there were no valid assets selected and a temporary one was, then deny the context menu.
@@ -501,36 +471,7 @@ bool SSketchfabAssetView::CanOpenContextMenu() const
 		return false;
 	}
 
-	/*
-	if (SelectedAssets.Num() == 0 && SourcesData.HasCollections())
-	{
-		// Don't allow a context menu when we're viewing a collection and have no assets selected
-		return false;
-	}
-	*/
-
-	// Build a list of selected object paths
-	/*
-	TArray<FString> ObjectPaths;
-	for (auto AssetIt = SelectedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
-	{
-		ObjectPaths.Add(AssetIt->ObjectPath.ToString());
-	}
-	*/
-
-	bool bLoadSuccessful = true;
-
-	/*
-	if (bPreloadAssetsForContextMenu)
-	{
-		TArray<UObject*> LoadedObjects;
-		const bool bAllowedToPrompt = false;
-		bLoadSuccessful = ContentBrowserUtils::LoadAssetsIfNeeded(ObjectPaths, LoadedObjects, bAllowedToPrompt);
-	}
-	*/
-
-	// Do not show the context menu if the load failed
-	return bLoadSuccessful;
+	return true;
 }
 
 /*
@@ -621,20 +562,6 @@ void SSketchfabAssetView::FlushThumbnails()
 
 void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
-	/*
-	CalculateFillScale(AllottedGeometry);
-
-	CurrentTime = InCurrentTime;
-
-	// If there were any assets that were recently added via the asset registry, process them now
-	ProcessRecentlyAddedAssets();
-
-	// If there were any assets loaded since last frame that we are currently displaying thumbnails for, push them on the render stack now.
-	ProcessRecentlyLoadedOrChangedAssets();
-
-	CalculateThumbnailHintColorAndOpacity();
-	*/
-
 	if (bPendingUpdateThumbnails)
 	{
 		bPendingUpdateThumbnails = false;
@@ -1130,134 +1057,13 @@ TSharedRef<SWidget> FAssetViewItemHelper::CreateListTileItemContents(T* const In
 {
 	TSharedRef<SOverlay> ItemContentsOverlay = SNew(SOverlay);
 
-	/*
-	if (InTileOrListItem->IsFolder())
-	{
-		OutItemShadowBorder = FName("NoBorder");
+	OutItemShadowBorder = FName("ContentBrowser.ThumbnailShadow");
 
-		TSharedPtr<FAssetViewFolder> AssetFolderItem = StaticCastSharedPtr<FAssetViewFolder>(InTileOrListItem->AssetItem);
-
-		ECollectionShareType::Type CollectionFolderShareType = ECollectionShareType::CST_All;
-		if (AssetFolderItem->bCollectionFolder)
-		{
-			ContentBrowserUtils::IsCollectionPath(AssetFolderItem->FolderPath, nullptr, &CollectionFolderShareType);
-		}
-
-		const FSlateBrush* FolderBaseImage = AssetFolderItem->bDeveloperFolder
-			? FEditorStyle::GetBrush("ContentBrowser.ListViewDeveloperFolderIcon.Base")
-			: FEditorStyle::GetBrush("ContentBrowser.ListViewFolderIcon.Base");
-
-		const FSlateBrush* FolderTintImage = AssetFolderItem->bDeveloperFolder
-			? FEditorStyle::GetBrush("ContentBrowser.ListViewDeveloperFolderIcon.Mask")
-			: FEditorStyle::GetBrush("ContentBrowser.ListViewFolderIcon.Mask");
-
-		// Folder base
-		ItemContentsOverlay->AddSlot()
-			[
-				SNew(SImage)
-				.Image(FolderBaseImage)
-			.ColorAndOpacity(InTileOrListItem, &T::GetAssetColor)
-			];
-
-		if (AssetFolderItem->bCollectionFolder)
-		{
-			FLinearColor IconColor = FLinearColor::White;
-			switch (CollectionFolderShareType)
-			{
-			case ECollectionShareType::CST_Local:
-				IconColor = FColor(196, 15, 24);
-				break;
-			case ECollectionShareType::CST_Private:
-				IconColor = FColor(192, 196, 0);
-				break;
-			case ECollectionShareType::CST_Shared:
-				IconColor = FColor(0, 136, 0);
-				break;
-			default:
-				break;
-			}
-
-			auto GetCollectionIconBoxSize = [InTileOrListItem]() -> FOptionalSize
-			{
-				return FOptionalSize(InTileOrListItem->GetThumbnailBoxSize().Get() * 0.3f);
-			};
-
-			auto GetCollectionIconBrush = [=]() -> const FSlateBrush*
-			{
-				const TCHAR* IconSizeSuffix = (GetCollectionIconBoxSize().Get() <= 16.0f) ? TEXT(".Small") : TEXT(".Large");
-			return FEditorStyle::GetBrush(ECollectionShareType::GetIconStyleName(CollectionFolderShareType, IconSizeSuffix));
-			};
-
-			// Collection share type
-			ItemContentsOverlay->AddSlot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					SNew(SBox)
-					.WidthOverride_Lambda(GetCollectionIconBoxSize)
-				.HeightOverride_Lambda(GetCollectionIconBoxSize)
-				[
-					SNew(SImage)
-					.Image_Lambda(GetCollectionIconBrush)
-				.ColorAndOpacity(IconColor)
-				]
-				];
-		}
-
-		// Folder tint
-		ItemContentsOverlay->AddSlot()
-			[
-				SNew(SImage)
-				.Image(FolderTintImage)
-			];
-	}
-	else
-	*/
-	{
-		OutItemShadowBorder = FName("ContentBrowser.ThumbnailShadow");
-
-		// The actual thumbnail
-		ItemContentsOverlay->AddSlot()
-			[
-				InThumbnail
-			];
-
-
-		// Source control state
-		/*
-		ItemContentsOverlay->AddSlot()
-			.HAlign(HAlign_Right)
-			.VAlign(VAlign_Top)
-			[
-				SNew(SBox)
-				.WidthOverride(InTileOrListItem, &T::GetSCCImageSize)
-			.HeightOverride(InTileOrListItem, &T::GetSCCImageSize)
-			[
-				SNew(SImage)
-				.Image(InTileOrListItem, &T::GetSCCStateImage)
-			]
-			];
-
-		// Dirty state
-		ItemContentsOverlay->AddSlot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Bottom)
-			[
-				SNew(SImage)
-				.Image(InTileOrListItem, &T::GetDirtyImage)
-			];
-		*/
-
-		// Tools for thumbnail edit mode
-		/*
-		ItemContentsOverlay->AddSlot()
-			[
-				SNew(SThumbnailEditModeTools, InTileOrListItem->AssetThumbnail)
-				.SmallView(!InTileOrListItem->CanDisplayPrimitiveTools())
-			.Visibility(InTileOrListItem, &T::GetThumbnailEditModeUIVisibility)
-			];
-			*/
-	}
+	// The actual thumbnail
+	ItemContentsOverlay->AddSlot()
+	[
+		InThumbnail
+	];
 
 	return ItemContentsOverlay;
 }
