@@ -83,28 +83,12 @@ public:
 
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
 
-		/*
-		UClass* Class = FindObject<UClass>(ANY_PACKAGE, *AssetData.AssetClass.ToString());
-		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
-		TSharedPtr<IAssetTypeActions> AssetTypeActions;
-		if ( Class != NULL )
-		{
-			AssetTypeActions = AssetToolsModule.Get().GetAssetTypeActionsForClass(Class).Pin();
-		}
-		*/
-
 		AssetColor = FLinearColor::White;
 
 		if( InArgs._AssetTypeColorOverride.IsSet() )
 		{
 			AssetColor = InArgs._AssetTypeColorOverride.GetValue();
 		}
-		/*
-		else if ( AssetTypeActions.IsValid() )
-		{
-			AssetColor = AssetTypeActions->GetTypeColor();
-		}
-		*/
 
 		TSharedRef<SOverlay> OverlayWidget = SNew(SOverlay);
 
@@ -143,47 +127,6 @@ public:
 				]
 			]
 		];
-
-		//I am not using the SViewport method for rendering. So I have duplicated this code below this to just draw an imagebrush
-		/*
-		if ( InArgs._ThumbnailPool.IsValid() && !InArgs._ForceGenericThumbnail )
-		{
-			ViewportFadeAnimation = FCurveSequence();
-			ViewportFadeCurve = ViewportFadeAnimation.AddCurve(0.f, 0.25f, ECurveEaseFunction::QuadOut);
-
-			TSharedPtr<SViewport> Viewport = 
-				SNew( SViewport )
-				.EnableGammaCorrection(false)
-				// In VR editor every widget is in the world and gamma corrected by the scene renderer.  Thumbnails will have already been gamma
-				// corrected and so they need to be reversed
-				.ReverseGammaCorrection(IVREditorModule::Get().IsVREditorModeActive())
-				.EnableBlending(true);
-
-			Viewport->SetViewportInterface( AssetThumbnail.ToSharedRef() );
-			AssetThumbnail->GetViewportRenderTargetTexture(); // Access the render texture to push it on the stack if it isn't already rendered
-
-			InArgs._ThumbnailPool->OnThumbnailRendered().AddSP(this, &SSketchfabAssetThumbnail::OnThumbnailRendered);
-			InArgs._ThumbnailPool->OnThumbnailRenderFailed().AddSP(this, &SSketchfabAssetThumbnail::OnThumbnailRenderFailed);
-
-			if ( ShouldRender() && (!InArgs._AllowFadeIn || InArgs._ThumbnailPool->IsRendered(AssetThumbnail)) )
-			{
-				bHasRenderedThumbnail = true;
-				ViewportFadeAnimation.JumpToEnd();
-			}
-
-			// The viewport for the rendered thumbnail, if it exists
-			OverlayWidget->AddSlot()
-			[
-				SAssignNew(RenderedThumbnailWidget, SBorder)
-				.Padding(0)
-				.BorderImage(FEditorStyle::GetBrush("NoBrush"))
-				.ColorAndOpacity(this, &SSketchfabAssetThumbnail::GetViewportColorAndOpacity)
-				[
-					Viewport.ToSharedRef()
-				]
-			];
-		}
-		*/
 
 		if (InArgs._ThumbnailPool.IsValid() && !InArgs._ForceGenericThumbnail)
 		{
@@ -255,21 +198,6 @@ public:
 			.BorderBackgroundColor(FLinearColor::Green)
 			.Padding(this, &SSketchfabAssetThumbnail::GetDownloadProgressColorStripPadding)
 			];
-
-		/*
-		if( InArgs._AllowAssetSpecificThumbnailOverlay && AssetTypeActions.IsValid() )
-		{
-			// Does the asset provide an additional thumbnail overlay?
-			TSharedPtr<SWidget> AssetSpecificThumbnailOverlay = AssetTypeActions->GetThumbnailOverlay(AssetData);
-			if( AssetSpecificThumbnailOverlay.IsValid() )
-			{
-				OverlayWidget->AddSlot()
-				[
-					AssetSpecificThumbnailOverlay.ToSharedRef()
-				];
-			}
-		}
-		*/
 
 		ChildSlot
 		[
@@ -350,15 +278,7 @@ private:
 
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
 
-
 		AssetColor = FLinearColor(1.f, 1.f, 1.f, 1.f);
-
-		/*
-		if ( AssetTypeActions.IsValid() )
-		{
-			AssetColor = AssetTypeActions.Pin()->GetTypeColor();
-		}
-		*/
 
 		UpdateThumbnailVisibilities();
 	}
