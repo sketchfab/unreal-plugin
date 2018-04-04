@@ -56,7 +56,6 @@ void FSketchfabRESTClient::Wait(const float InSeconds, const float InSleepTime /
 
 uint32 FSketchfabRESTClient::Run()
 {
-	Wait(5);
 	do
 	{
 
