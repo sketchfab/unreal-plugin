@@ -67,10 +67,17 @@ public:
 	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID);
 
 private: 	
-	//Search Filters
 
-	TSharedRef<SWidget> MakeFilterMenu();
-	void MakeCategoriesMenu(FMenuBuilder& MenuBuilder);
+	enum SORTBY {
+		SORTBY_Relevance,
+		SORTBY_MostLiked,
+		SORTBY_MostViewed,
+		SORTBY_MostRecent
+	};
+
+	//Search Options
+	TSharedRef<SWidget> MakeCategoriesMenu();
+	TSharedRef<SWidget> MakeSortByMenu();
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -87,9 +94,54 @@ private:
 	// Callback for determining whether a check box is checked.
 	ECheckBoxState HandleCategoryCheckBoxIsChecked(bool* CheckBox) const;
 
+	void HandleSortByTypeStateChanged(ECheckBoxState NewRadioState, SORTBY NewSortByType)
+	{
+		if (NewRadioState == ECheckBoxState::Checked)
+		{
+			SortByType = NewSortByType;
+		}
+	}
+
+	ECheckBoxState HandleSortByTypeIsChecked(SORTBY NewSortByType) const
+	{
+		return (SortByType == NewSortByType)
+			? ECheckBoxState::Checked
+			: ECheckBoxState::Unchecked;
+	}
+
+	FText GetSortByText() const
+	{
+		switch (SortByType)
+		{
+		case SORTBY_Relevance:
+		{
+			return FText::FromString("Relevance");
+		}
+		break;
+		case SORTBY_MostLiked:
+		{
+			return FText::FromString("Most Liked");
+		}
+		break;
+		case SORTBY_MostViewed:
+		{
+			return FText::FromString("Most Viewed");
+		}
+		break;
+		case SORTBY_MostRecent:
+		{
+			return FText::FromString("Most Recent");
+		}
+		break;
+		}
+		return FText::FromString("Sort By");
+	}
+
+
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
 	TArray<TSharedPtr< struct FSketchfabCategory>> Categories;
+	SORTBY SortByType;
 
 private:
 	FString Token;

@@ -152,45 +152,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				[
 					SNew(SHorizontalBox)
 
-					// Filter
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.Padding(0, 0, 4, 0)
-					[
-						SNew( SComboButton )
-						.ComboButtonStyle( FEditorStyle::Get(), "GenericFilters.ComboButtonStyle" )
-						.ForegroundColor(FLinearColor::White)
-						.ContentPadding(0)
-						.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
-						.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeFilterMenu )
-						.HasDownArrow( true )
-						.ContentPadding( FMargin( 1, 0 ) )
-						//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
-						//.Visibility( ( Config != nullptr ? Config->bCanShowFilters : true ) ? EVisibility::Visible : EVisibility::Collapsed )
-						.ButtonContent()
-						[
-							SNew(SHorizontalBox)
-
-							+ SHorizontalBox::Slot()
-							.AutoWidth()
-							[
-								SNew(STextBlock)
-								.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-								.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.9"))
-								.Text(FText::FromString(FString(TEXT("\xf0b0"))) /*fa-filter*/)
-							]
-
-							+ SHorizontalBox::Slot()
-							.AutoWidth()
-							.Padding(2,0,0,0)
-							[
-								SNew(STextBlock)
-								.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-								.Text(LOCTEXT("Filters", "Filters"))
-							]
-						]
-					]
-
 					// Search Text 
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
@@ -244,29 +205,131 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			.Padding(FMargin(3))
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.HAlign(HAlign_Left)
-				.Padding(2)
+				SNew(SUniformGridPanel)
+				.SlotPadding(2)
+				+ SUniformGridPanel::Slot(0, 0)
 				[
-					SNew(SUniformGridPanel)
-					.SlotPadding(2)
-					+ SUniformGridPanel::Slot(0, 0)
+					SNew(SButton)
+					.HAlign(HAlign_Center)
+					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Download", "Download Selected"))
+					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnDownloadSelected)
+				]
+
+				+ SUniformGridPanel::Slot(1, 0)
+				[
+					SNew(SButton)
+					.HAlign(HAlign_Center)
+					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_ClearCache", "Clear Cache"))
+					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnClearCache)
+				]
+
+				+ SUniformGridPanel::Slot(2, 0)
+				[
+					SNew( SComboButton )
+					.HAlign(HAlign_Center)
+					.ComboButtonStyle( FEditorStyle::Get(), "GenericFilters.ComboButtonStyle" )
+					.ForegroundColor(FLinearColor::White)
+					.ContentPadding(0)
+					//.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
+					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeCategoriesMenu)
+					.HasDownArrow( true )
+					.ContentPadding( FMargin( 1, 0 ) )
+					//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
+					//.Visibility( ( Config != nullptr ? Config->bCanShowFilters : true ) ? EVisibility::Visible : EVisibility::Collapsed )
+					.ButtonContent()
 					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Download", "Download Selected"))
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnDownloadSelected)
-					]
-					+ SUniformGridPanel::Slot(1, 0)
-					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_ClearCache", "Clear Cache"))
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnClearCache)
+						SNew(SHorizontalBox)
+
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(STextBlock)
+							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
+							.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.9"))
+							.Text(FText::FromString(FString(TEXT("\xf0b0"))) /*fa-filter*/)
+						]
+
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.Padding(2,0,0,0)
+						[
+							SNew(STextBlock)
+							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
+							.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Search_Categories", "Categories"))
+						]
 					]
 				]
 
+				+ SUniformGridPanel::Slot(3, 0)
+				[
+					SNew(SCheckBox)
+					.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked)
+					.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::OnSearchAnimatedCheckStateChanged)
+					[
+						SNew(STextBlock)
+						.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Animated", "Animated" ) )
+					]
+				]
+
+				+ SUniformGridPanel::Slot(4, 0)
+				[
+					SNew(SCheckBox)
+					.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchStaffPickedChecked)
+					.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::OnSearchStaffPickedCheckStateChanged)
+					[
+						SNew(STextBlock)
+						.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Staff Picked", "Staff Picked" ) )
+					]
+				]
+
+				+ SUniformGridPanel::Slot(5, 0)
+				[
+					SNew( SComboButton )
+					.HAlign(HAlign_Center)
+					.ComboButtonStyle( FEditorStyle::Get(), "GenericFilters.ComboButtonStyle" )
+					.ForegroundColor(FLinearColor::White)
+					.ContentPadding(0)
+					//.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
+					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeSortByMenu)
+					.HasDownArrow( true )
+					.ContentPadding( FMargin( 1, 0 ) )
+					//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
+					//.Visibility( ( Config != nullptr ? Config->bCanShowFilters : true ) ? EVisibility::Visible : EVisibility::Collapsed )
+					.ButtonContent()
+					[
+						SNew(SHorizontalBox)
+
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(STextBlock)
+							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
+							.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.9"))
+							.Text(FText::FromString(FString(TEXT("\xf0b0"))) /*fa-filter*/)
+						]
+
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.Padding(2,0,0,0)
+						[
+							SNew(STextBlock)
+							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
+							.Text(GetSortByText()) //LOCTEXT("SSketchfabAssetBrowserWindow_Search_SortBy", "Sort By"))
+						]
+					]
+				]
+			]
+		]
+
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0, 0, 0, 2)
+		[
+			SNew(SBorder)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
 				.Padding(2)
@@ -312,6 +375,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 	bSearchAnimated = false;
 	bSearchStaffPicked = false;
+	SortByType = SORTBY_Relevance;
 
 	GetCategories();
 	Search();
@@ -473,9 +537,28 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	}
 
 	//Sort By
-	if (true)
+	switch (SortByType)
+	{
+	case SORTBY_Relevance:
+	{
+		url += "&sort_by=-pertinence";
+	}
+	break;
+	case SORTBY_MostLiked:
+	{
+		url += "&sort_by=-likeCount";
+	}
+	break;
+	case SORTBY_MostViewed:
+	{
+		url += "&sort_by=-viewCount";
+	}
+	break;
+	case SORTBY_MostRecent:
 	{
 		url += "&sort_by=-publishedAt";
+	}
+	break;
 	}
 
 	int32 categoryCount = Categories.Num();
@@ -720,60 +803,73 @@ ECheckBoxState SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxIsChecked(boo
 		: ECheckBoxState::Unchecked;
 }
 
-
-void SSketchfabAssetBrowserWindow::MakeCategoriesMenu(FMenuBuilder& MenuBuilder)
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeCategoriesMenu()
 {
 	// create packing mode menu
+	FMenuBuilder MenuBuilder(true, NULL);
+
 	for (int32 i = 0; i < Categories.Num(); i++)
 	{
 		MenuBuilder.AddWidget(CreateCheckBox(FText::FromString(Categories[i]->name), &Categories[i]->active), FText::GetEmpty());
 	}
-}
-
-TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFilterMenu()
-{
-	// create packing mode menu
-	FMenuBuilder MenuBuilder(true, NULL);
-	{
-		MenuBuilder.AddWidget(
-
-			SNew(SVerticalBox)
-			+SVerticalBox::Slot()
-			.AutoHeight()
-			[
-				SNew(SCheckBox)
-				.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked)
-				.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::OnSearchAnimatedCheckStateChanged)
-				[
-					SNew(STextBlock)
-					.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Animated", "Animated" ) )
-				]
-			]
-			+SVerticalBox::Slot()
-			.AutoHeight()
-			[
-				SNew(SCheckBox)
-				.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchStaffPickedChecked)
-				.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::OnSearchStaffPickedCheckStateChanged)
-				[
-					SNew(STextBlock)
-					.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Staff Picked", "Staff Picked" ) )
-				]
-			]
-			, FText::GetEmpty());
-
-
-		MenuBuilder.AddSubMenu(
-			FText::FromString("Categories"), 
-			FText::FromString("Choose A Category"), 
-			FNewMenuDelegate::CreateRaw(this, &SSketchfabAssetBrowserWindow::MakeCategoriesMenu),
-			false,
-			FSlateIcon()
-		);
-	}
 
 	return MenuBuilder.MakeWidget();
 }
+
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeSortByMenu()
+{
+	// create packing mode menu
+	FMenuBuilder MenuBuilder(true, NULL);
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, SORTBY_Relevance)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, SORTBY_Relevance)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("Relevance"))
+		], FText::GetEmpty()
+	);
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, SORTBY_MostLiked)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, SORTBY_MostLiked)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("Most Liked"))
+		], FText::GetEmpty()
+	);
+
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, SORTBY_MostViewed)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, SORTBY_MostViewed)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("Most Viewed"))
+		], FText::GetEmpty()
+	);
+
+
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, SORTBY_MostRecent)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, SORTBY_MostRecent)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString("Most Recent"))
+		], FText::GetEmpty()
+	);
+
+	return MenuBuilder.MakeWidget();
+}
+
 
 ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked() const
 {
