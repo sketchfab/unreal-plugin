@@ -72,19 +72,21 @@ private:
 		SORTBY_MostRecent
 	};
 
-	enum EMaxPolyCount {
-		MAXPOLYCOUNT_ALL,
-		MAXPOLYCOUNT_100,
-		MAXPOLYCOUNT_1000,
-		MAXPOLYCOUNT_10000,
-		MAXPOLYCOUNT_100000,
-		MAXPOLYCOUNT_1000000,
+	enum EFaceCount {
+		FACECOUNT_ALL,
+		FACECOUNT_0_10,
+		FACECOUNT_10_50,
+		FACECOUNT_50_100,
+		FACECOUNT_100_250,
+		FACECOUNT_250,
+		FACECOUNT_UNDEFINED,
 	};
 
 	//Search Options
 	TSharedRef<SWidget> MakeCategoriesMenu();
 	TSharedRef<SWidget> MakeSortByMenu();
-	TSharedRef<SWidget> MakeMaxPolyCountMenu();
+	TSharedRef<SWidget> MakeFaceCountMenu();
+	void AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc);
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -145,55 +147,61 @@ private:
 		return FText::FromString("");
 	}
 
-	void HandleMaxPolyCountStateChanged(ECheckBoxState NewRadioState, EMaxPolyCount NewMaxPolyCount)
+	void HandleFaceCountStateChanged(ECheckBoxState NewRadioState, EFaceCount NewFaceCount)
 	{
 		if (NewRadioState == ECheckBoxState::Checked)
 		{
-			MaxPolyCount = NewMaxPolyCount;
+			FaceCount = NewFaceCount;
 		}
 
-		MaxPolyCountText->SetText(GetMaxPolyCountText());
+		FaceCountText->SetText(GetFaceCountText());
 	}
 
-	ECheckBoxState HandleMaxPolyCountIsChecked(EMaxPolyCount NewMaxPolyCount) const
+	ECheckBoxState HandleFaceCountChecked(EFaceCount NewFaceCount) const
 	{
-		return (MaxPolyCount == NewMaxPolyCount)
+		return (FaceCount == NewFaceCount)
 			? ECheckBoxState::Checked
 			: ECheckBoxState::Unchecked;
 	}
 
-	FText GetMaxPolyCountText() const
+	FText GetFaceCountText(EFaceCount custom = FACECOUNT_UNDEFINED) const
 	{
-		switch (MaxPolyCount)
+		EFaceCount val = FaceCount;
+		if (custom != FACECOUNT_UNDEFINED)
 		{
-		case MAXPOLYCOUNT_ALL:
+			val = custom;
+		}
+
+		switch (val)
+		{
+		case FACECOUNT_ALL:
 		{
 			return FText::FromString("All");
 		}
 		break;
-		case MAXPOLYCOUNT_100:
+		case FACECOUNT_0_10:
 		{
-			return FText::FromString("100");
+			return FText::FromString("Up to 10k");
 		}
 		break;
-		case MAXPOLYCOUNT_1000:
+		case FACECOUNT_10_50:
 		{
-			return FText::FromString("1,000");
+			return FText::FromString("10k to 50k");
 		}
 		break;
-		case MAXPOLYCOUNT_10000:
+		case FACECOUNT_50_100:
 		{
-			return FText::FromString("10,000");
+			return FText::FromString("50k to 100k");
 		}
 		break;
-		case MAXPOLYCOUNT_100000:
+		case FACECOUNT_100_250:
 		{
-			return FText::FromString("100,000");
+			return FText::FromString("100k to 250k");
 		}
 		break;
-		case MAXPOLYCOUNT_1000000:
+		case FACECOUNT_250:
 		{
-			return FText::FromString("1,000,000");
+			return FText::FromString("250k+");
 		}
 		break;
 		}
@@ -204,7 +212,7 @@ private:
 	bool bSearchStaffPicked;
 	TArray<FSketchfabCategory> Categories;
 	ESortBy SortByType;
-	EMaxPolyCount MaxPolyCount;
+	EFaceCount FaceCount;
 
 private:
 	FString Token;
@@ -227,7 +235,7 @@ private:
 	TWeakPtr<SWindow> ModelWindowPtr;
 	TWeakPtr<SWindow> Window;
 
-	TSharedPtr<STextBlock> MaxPolyCountText;
+	TSharedPtr<STextBlock> FaceCountText;
 	TSharedPtr<STextBlock> SortByText;
 
 	TSharedPtr<SSketchfabAssetView> AssetViewPtr;
@@ -235,7 +243,7 @@ private:
 	/** The text box used to search for assets */
 	TSharedPtr<SSketchfabAssetSearchBox> SearchBoxPtr;
 
-	FString TagSearchText;
+	FString QuerySearchText;
 
 	FString CacheFolder;
 

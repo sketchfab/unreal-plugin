@@ -56,7 +56,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	bSearchAnimated = false;
 	bSearchStaffPicked = true;
 	SortByType = SORTBY_MostRecent;
-	MaxPolyCount = MAXPOLYCOUNT_ALL;
+	FaceCount = FACECOUNT_ALL;
 
 	TSharedPtr<SBox> DetailsViewBox;
 	ChildSlot
@@ -265,7 +265,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					.ForegroundColor(FLinearColor::White)
 					.ContentPadding(0)
 					//.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
-					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeMaxPolyCountMenu)
+					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeFaceCountMenu)
 					.HasDownArrow( true )
 					.ContentPadding( FMargin( 1, 0 ) )
 					.ButtonContent()
@@ -284,9 +284,9 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						.AutoWidth()
 						.Padding(2,0,0,0)
 						[
-							SAssignNew(MaxPolyCountText, STextBlock)
+							SAssignNew(FaceCountText, STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(GetMaxPolyCountText())
+							.Text(GetFaceCountText())
 						]
 					]
 				]
@@ -496,24 +496,10 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	AssetViewPtr->FlushThumbnails();
 
 	FString url = "https://api.sketchfab.com/v3/search?type=models&downloadable=true";
-	if (!TagSearchText.IsEmpty())
+	if (!QuerySearchText.IsEmpty())
 	{
 		TArray<FString> Array;
-		TagSearchText.ParseIntoArray(Array, TEXT(" "), true);
-
-		/*
-		url += "&tags=";
-		int32 count = Array.Num();
-		for (int32 i = 0; i < Array.Num(); i++)
-		{
-			url += Array[i].ToLower();
-
-			if (i != (count - 1))
-			{
-				url += "%2C";
-			}
-		}
-		*/
+		QuerySearchText.ParseIntoArray(Array, TEXT(" "), true);
 
 		url += "&q=";
 		int32 count = Array.Num();
@@ -564,36 +550,36 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	}
 
 	//Sort By
-	switch (MaxPolyCount)
+	switch (FaceCount)
 	{
-	case MAXPOLYCOUNT_ALL:
+	case FACECOUNT_ALL:
 	{
 		//Add Nothing
 	}
 	break;
-	case MAXPOLYCOUNT_100:
+	case FACECOUNT_0_10:
 	{
-		url += "&max_face_count=100";
+		url += "&min_face_count=0&max_face_count=10000";
 	}
 	break;
-	case MAXPOLYCOUNT_1000:
+	case FACECOUNT_10_50:
 	{
-		url += "&max_face_count=1000";
+		url += "&min_face_count=10000&max_face_count=50000";
 	}
 	break;
-	case MAXPOLYCOUNT_10000:
+	case FACECOUNT_50_100:
 	{
-		url += "&max_face_count=10000";
+		url += "&min_face_count=50000&max_face_count=100000";
 	}
 	break;
-	case MAXPOLYCOUNT_100000:
+	case FACECOUNT_100_250:
 	{
-		url += "&max_face_count=100000";
+		url += "&min_face_count=100000&max_face_count=250000";
 	}
 	break;
-	case MAXPOLYCOUNT_1000000:
+	case FACECOUNT_250:
 	{
-		url += "&max_face_count=1000000";
+		url += "&min_face_count=250000";
 	}
 	break;
 	}
@@ -626,9 +612,9 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 bool SSketchfabAssetBrowserWindow::SetSearchBoxText(const FText& InSearchText)
 {
 	// Has anything changed? (need to test case as the operators are case-sensitive)
-	if (!InSearchText.ToString().Equals(TagSearchText, ESearchCase::CaseSensitive))
+	if (!InSearchText.ToString().Equals(QuerySearchText, ESearchCase::CaseSensitive))
 	{
-		TagSearchText = InSearchText.ToString();
+		QuerySearchText = InSearchText.ToString();
 		if (InSearchText.IsEmpty())
 		{
 			AssetViewPtr->FlushThumbnails();
@@ -895,79 +881,30 @@ TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeSortByMenu()
 	return MenuBuilder.MakeWidget();
 }
 
-TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeMaxPolyCountMenu()
+
+void SSketchfabAssetBrowserWindow::AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc)
 {
-	// create packing mode menu
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleFaceCountChecked, fc)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleFaceCountStateChanged, fc)
+		[
+			SNew(STextBlock)
+			.Text(GetFaceCountText(fc))
+		], FText::GetEmpty()
+	);
+}
+
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFaceCountMenu()
+{
 	FMenuBuilder MenuBuilder(true, NULL);
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_ALL)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_ALL)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("All Models"))
-		], FText::GetEmpty()
-	);
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_100)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_100)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("100"))
-		], FText::GetEmpty()
-	);
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_1000)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_1000)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("1,000"))
-		], FText::GetEmpty()
-	);
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_10000)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_10000)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("10,000"))
-		], FText::GetEmpty()
-	);
-
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_100000)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_100000)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("100,000"))
-		], FText::GetEmpty()
-	);
-
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountIsChecked, MAXPOLYCOUNT_1000000)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleMaxPolyCountStateChanged, MAXPOLYCOUNT_1000000)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("1,000,000"))
-		], FText::GetEmpty()
-	);
-
+	AddFaceCountWidget(MenuBuilder, FACECOUNT_ALL);
+	AddFaceCountWidget(MenuBuilder, FACECOUNT_0_10);
+	AddFaceCountWidget(MenuBuilder, FACECOUNT_10_50);
+	AddFaceCountWidget(MenuBuilder, FACECOUNT_50_100);
+	AddFaceCountWidget(MenuBuilder, FACECOUNT_100_250);
+	AddFaceCountWidget(MenuBuilder, FACECOUNT_250);
 	return MenuBuilder.MakeWidget();
 }
 
