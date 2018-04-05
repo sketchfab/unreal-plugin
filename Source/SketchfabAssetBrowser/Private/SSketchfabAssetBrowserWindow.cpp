@@ -263,8 +263,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeMaxPolyCountMenu)
 					.HasDownArrow( true )
 					.ContentPadding( FMargin( 1, 0 ) )
-					//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
-					//.Visibility( ( Config != nullptr ? Config->bCanShowFilters : true ) ? EVisibility::Visible : EVisibility::Collapsed )
 					.ButtonContent()
 					[
 						SNew(SHorizontalBox)
@@ -299,8 +297,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeSortByMenu)
 					.HasDownArrow( true )
 					.ContentPadding( FMargin( 1, 0 ) )
-					//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
-					//.Visibility( ( Config != nullptr ? Config->bCanShowFilters : true ) ? EVisibility::Visible : EVisibility::Collapsed )
 					.ButtonContent()
 					[
 						SNew(SHorizontalBox)
@@ -310,15 +306,14 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.9"))
-							.Text(FText::FromString(FString(TEXT("\xf0b0"))) /*fa-filter*/)
+							.Text(FText::FromString(FString(TEXT("Sort By: "))))
 						]
 
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(2,0,0,0)
 						[
-							SNew(STextBlock)
+							SAssignNew(SortByText, STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
 							.Text(GetSortByText())
 						]

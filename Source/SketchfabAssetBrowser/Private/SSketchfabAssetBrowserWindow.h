@@ -107,6 +107,7 @@ private:
 		{
 			SortByType = NewSortByType;
 		}
+		SortByText->SetText(GetSortByText());
 	}
 
 	ECheckBoxState HandleSortByTypeIsChecked(ESortBy NewSortByType) const
@@ -141,7 +142,7 @@ private:
 		}
 		break;
 		}
-		return FText::FromString("Sort By");
+		return FText::FromString("");
 	}
 
 	void HandleMaxPolyCountStateChanged(ECheckBoxState NewRadioState, EMaxPolyCount NewMaxPolyCount)
@@ -196,7 +197,7 @@ private:
 		}
 		break;
 		}
-		return FText::FromString("Max Poly Count");
+		return FText::FromString("");
 	}
 
 	bool bSearchAnimated;
@@ -227,6 +228,7 @@ private:
 	TWeakPtr<SWindow> Window;
 
 	TSharedPtr<STextBlock> MaxPolyCountText;
+	TSharedPtr<STextBlock> SortByText;
 
 	TSharedPtr<SSketchfabAssetView> AssetViewPtr;
 
