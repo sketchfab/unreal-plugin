@@ -89,6 +89,7 @@ private:
 	TSharedRef<SWidget> MakeFaceCountMenu();
 	void AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc);
 	void AddSortByWidget(FMenuBuilder &MenuBuilder, ESortBy fc);
+	void AddCategoryWidget(FMenuBuilder &MenuBuilder, int32 CategoryIndex);
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -96,14 +97,37 @@ private:
 	ECheckBoxState IsSearchStaffPickedChecked() const;
 	void OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState);
 
+	void HandleCategoryStateChanged(ECheckBoxState NewRadioState, int32 NewCategoryIndex)
+	{
+		if (NewRadioState == ECheckBoxState::Checked)
+		{
+			CategoryIndex = NewCategoryIndex;
+		}
+		CategoryText->SetText(GetCategoryText());
+	}
 
-	TSharedRef<SWidget> CreateCheckBox(const FText& CheckBoxText, bool* CheckBoxChoice);
+	ECheckBoxState HandleCategoryIsChecked(int32 NewCategoryIndex) const
+	{
+		return (CategoryIndex == NewCategoryIndex)
+			? ECheckBoxState::Checked
+			: ECheckBoxState::Unchecked;
+	}
 
-	// Callback for changing the checked state of a check box.
-	void HandleCategoryCheckBoxCheckedStateChanged(ECheckBoxState NewState, bool* CheckBoxThatChanged);
-
-	// Callback for determining whether a check box is checked.
-	ECheckBoxState HandleCategoryCheckBoxIsChecked(bool* CheckBox) const;
+	FText GetCategoryText(int32 CustomIndex = -2) const
+	{
+		int32 val = CategoryIndex;
+		if (CustomIndex != -2)
+		{
+			val = CustomIndex;
+		}
+		
+		if (val >= 0 && val < Categories.Num())
+		{
+			return FText::FromString(Categories[val].name);
+		}
+		
+		return FText::FromString("All");
+	}
 
 	void HandleSortByTypeStateChanged(ECheckBoxState NewRadioState, ESortBy NewSortByType)
 	{
@@ -160,7 +184,6 @@ private:
 		{
 			FaceCount = NewFaceCount;
 		}
-
 		FaceCountText->SetText(GetFaceCountText());
 	}
 
@@ -220,6 +243,7 @@ private:
 	TArray<FSketchfabCategory> Categories;
 	ESortBy SortByType;
 	EFaceCount FaceCount;
+	int32 CategoryIndex;
 
 private:
 	FString Token;
@@ -244,6 +268,7 @@ private:
 
 	TSharedPtr<STextBlock> FaceCountText;
 	TSharedPtr<STextBlock> SortByText;
+	TSharedPtr<STextBlock> CategoryText;
 
 	TSharedPtr<SSketchfabAssetView> AssetViewPtr;
 

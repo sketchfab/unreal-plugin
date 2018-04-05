@@ -57,6 +57,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	bSearchStaffPicked = true;
 	SortByType = SORTBY_MostRecent;
 	FaceCount = FACECOUNT_ALL;
+	CategoryIndex = -1;
 
 	TSharedPtr<SBox> DetailsViewBox;
 	ChildSlot
@@ -197,7 +198,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
 				SNew(SUniformGridPanel)
-				
+				.SlotPadding(2)
 				+ SUniformGridPanel::Slot(0, 0)
 				[
 					SNew( SComboButton )
@@ -209,8 +210,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeCategoriesMenu)
 					.HasDownArrow( true )
 					.ContentPadding( FMargin( 1, 0 ) )
-					//.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ContentBrowserFiltersCombo")))
-					//.Visibility( ( Config != nullptr ? Config->bCanShowFilters : true ) ? EVisibility::Visible : EVisibility::Collapsed )
 					.ButtonContent()
 					[
 						SNew(SHorizontalBox)
@@ -220,17 +219,16 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.9"))
-							.Text(FText::FromString(FString(TEXT("\xf0b0"))) /*fa-filter*/)
+							.Text(FText::FromString(FString(TEXT("Category: "))))
 						]
 
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(2,0,0,0)
 						[
-							SNew(STextBlock)
+							SAssignNew(CategoryText, STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Search_Categories", "Categories"))
+							.Text(GetCategoryText())
 						]
 					]
 				]
@@ -256,7 +254,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Staff Picked", "Staff Picked" ) )
 					]
 				]
-
+				
 				+ SUniformGridPanel::Slot(3, 0)
 				[
 					SNew( SComboButton )
@@ -277,7 +275,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(FText::FromString(FString(TEXT("Max Faces Count: "))))
+							.Text(FText::FromString(FString(TEXT("Faces Count: "))))
 						]
 
 						+ SHorizontalBox::Slot()
@@ -584,25 +582,10 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	break;
 	}
 
-	int32 categoryCount = Categories.Num();
-	bool firstCategory = false;
-	for (int32 i = 0; i < categoryCount; i++)
+	if (CategoryIndex >= 0 && CategoryIndex < Categories.Num())
 	{
-		if (Categories[i].active)
-		{
-			if (!firstCategory)
-			{
-				url += "&categories=";
-				firstCategory = true;
-			}
-			else
-			{
-				url += "%2C";
-			}
-			url += Categories[i].slug.ToLower();
-
-			break; //You can only have one at a time.
-		}
+		url += "&categories=";
+		url += Categories[CategoryIndex].slug.ToLower();
 	}
 
 	Search(url);
@@ -788,40 +771,29 @@ FReply SSketchfabAssetBrowserWindow::OnKeyDown(const FGeometry& MyGeometry, cons
 	return FReply::Unhandled();
 }
 
-TSharedRef<SWidget> SSketchfabAssetBrowserWindow::CreateCheckBox(const FText& CheckBoxText, bool* CheckBoxChoice)
+void SSketchfabAssetBrowserWindow::AddCategoryWidget(FMenuBuilder &MenuBuilder, int32 CategoryIndex)
 {
-	return SNew(SCheckBox)
-		//.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxIsChecked, CheckBoxChoice)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxCheckedStateChanged, CheckBoxChoice)
+	MenuBuilder.AddWidget(
+		SNew(SCheckBox)
+		.Style(FCoreStyle::Get(), "RadioButton")
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleCategoryIsChecked, CategoryIndex)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleCategoryStateChanged, CategoryIndex)
 		[
 			SNew(STextBlock)
-			.Text(CheckBoxText)
-		];
-}
-
-// Callback for changing the checked state of a check box.
-void SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxCheckedStateChanged(ECheckBoxState NewState, bool* CheckBoxThatChanged)
-{
-	*CheckBoxThatChanged = (NewState == ECheckBoxState::Checked);
-}
-
-// Callback for determining whether a check box is checked.
-ECheckBoxState SSketchfabAssetBrowserWindow::HandleCategoryCheckBoxIsChecked(bool* CheckBox) const
-{
-	return (*CheckBox)
-		? ECheckBoxState::Checked
-		: ECheckBoxState::Unchecked;
+			.Text(GetCategoryText(CategoryIndex))
+		], FText::GetEmpty()
+	);
 }
 
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeCategoriesMenu()
 {
 	// create packing mode menu
 	FMenuBuilder MenuBuilder(true, NULL);
+	AddCategoryWidget(MenuBuilder, -1);
 
 	for (int32 i = 0; i < Categories.Num(); i++)
 	{
-		MenuBuilder.AddWidget(CreateCheckBox(FText::FromString(Categories[i].name), &Categories[i].active), FText::GetEmpty());
+		AddCategoryWidget(MenuBuilder, i);
 	}
 
 	return MenuBuilder.MakeWidget();
