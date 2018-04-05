@@ -53,6 +53,11 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 	Window = InArgs._WidgetWindow;
 
+	bSearchAnimated = false;
+	bSearchStaffPicked = true;
+	SortByType = SORTBY_MostRecent;
+	MaxPolyCount = MAXPOLYCOUNT_ALL;
+
 	TSharedPtr<SBox> DetailsViewBox;
 	ChildSlot
 	[
@@ -388,13 +393,8 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		]
 	];
 		
-	bSearchAnimated = false;
-	bSearchStaffPicked = false;
-	SortByType = SORTBY_Relevance;
-	MaxPolyCount = MAXPOLYCOUNT_ALL;
-
 	GetCategories();
-	Search();
+	OnSearchPressed();
 }
 
 void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID)
@@ -632,7 +632,7 @@ bool SSketchfabAssetBrowserWindow::SetSearchBoxText(const FText& InSearchText)
 		if (InSearchText.IsEmpty())
 		{
 			AssetViewPtr->FlushThumbnails();
-			Search();
+			OnSearchPressed();
 		}
 		else
 		{
@@ -995,12 +995,6 @@ void SSketchfabAssetBrowserWindow::OnSearchStaffPickedCheckStateChanged(ECheckBo
 //=====================================================
 // Direct REST API Calls
 //=====================================================
-
-void SSketchfabAssetBrowserWindow::Search()
-{
-	Search("https://api.sketchfab.com/v3/search?type=models&downloadable=true&staffpicked=true&sort_by=-publishedAt");
-}
-
 void SSketchfabAssetBrowserWindow::Search(const FString &url)
 {
 	FSketchfabTaskData TaskData;

@@ -731,10 +731,7 @@ void FSketchfabAssetThumbnailPool::Tick( float DeltaTime )
 
 FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketchfabAssetData& AssetData, uint32 Width, uint32 Height, FSlateDynamicImageBrush **Image)
 {
-	const FName &ThumbUID = AssetData.ThumbUID;
-	const FName &PackagePath = AssetData.ContentFolder;
-
-	FString path = PackagePath.ToString() / ThumbUID.ToString();
+	FString path = AssetData.ContentFolder.ToString() / AssetData.ThumbUID.ToString();
 	path += ".jpg";
 
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -784,7 +781,7 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 				ThumbnailInfo = FreeThumbnails.Pop();
 
 				ThumbnailInfo->ModelTexture = UImageLoader::LoadImageFromDisk(NULL, path);
-				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), ThumbUID);
+				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), AssetData.ThumbUID);
 			}
 			else
 			{
@@ -799,7 +796,7 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 				
 				// Set the thumbnail and asset on the info. It is NOT safe to change or NULL these pointers until ReleaseResources.
 				ThumbnailInfo->ModelTexture = UImageLoader::LoadImageFromDisk(NULL, path);
-				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), ThumbUID);
+				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), AssetData.ThumbUID);
 			}
 
 
