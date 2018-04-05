@@ -103,9 +103,9 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
 				SNew(SUniformGridPanel)
+				.SlotPadding(10)
 				+ SUniformGridPanel::Slot(0, 0)
 				[
-
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -116,30 +116,59 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 						.Font(FEditorStyle::GetFontStyle(TEXT("PropertyWindow.BoldFont")))
 					]
 					+ SVerticalBox::Slot()
-					.Padding(0, 0, 0, 2)
 					.AutoHeight()
 					[
-						SAssignNew(VertexCountText, STextBlock)
-						.Text(FText::FromString("Vertex Count"))
+						SNew(SUniformGridPanel)
+						+ SUniformGridPanel::Slot(0, 0)
+						.HAlign(EHorizontalAlignment::HAlign_Left)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("Vertex Count:"))
+						]
+						+ SUniformGridPanel::Slot(1, 0)
+						.HAlign(EHorizontalAlignment::HAlign_Right)
+						[
+							SAssignNew(VertexCountText, STextBlock)
+							.Text(FText::FromString(""))
+						]
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
-					.Padding(0, 0, 0, 2)
 					[
-						SAssignNew(FaceCountText, STextBlock)
-						.Text(FText::FromString("Face Count"))
+						SNew(SUniformGridPanel)
+						+ SUniformGridPanel::Slot(0, 0)
+						.HAlign(EHorizontalAlignment::HAlign_Left)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("Face Count:"))
+						]
+						+ SUniformGridPanel::Slot(1, 0)
+						.HAlign(EHorizontalAlignment::HAlign_Right)
+						[
+							SAssignNew(FaceCountText, STextBlock)
+							.Text(FText::FromString(""))
+						]
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
-					.Padding(0, 0, 0, 2)
 					[
-						SAssignNew(AnimatedText, STextBlock)
-						.Text(FText::FromString("Animation"))
+						SNew(SUniformGridPanel)
+						+ SUniformGridPanel::Slot(0, 0)
+						.HAlign(EHorizontalAlignment::HAlign_Left)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("Animation:"))
+						]
+						+ SUniformGridPanel::Slot(1, 0)
+						.HAlign(EHorizontalAlignment::HAlign_Right)
+						[
+							SAssignNew(AnimatedText, STextBlock)
+							.Text(FText::FromString(""))
+						]
 					]
 				]
 				+ SUniformGridPanel::Slot(1, 0)
 				[
-
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -193,16 +222,16 @@ void SSketchfabAssetWindow::GetModelInfo()
 
 void SSketchfabAssetWindow::OnGetModelInfo(const FSketchfabTask& InTask)
 {
-	VertexCountText->SetText(FText::Format(LOCTEXT("SSketchfabAssetWindow_VertexCount", "Vertex Count: {0}"), FText::AsNumber(InTask.TaskData.ModelVertexCount)));
-	FaceCountText->SetText(FText::Format(LOCTEXT("SSketchfabAssetWindow_FaceCount", "Face Count: {0}"), FText::AsNumber(InTask.TaskData.ModelFaceCount)));
+	VertexCountText->SetText(FText::AsNumber(InTask.TaskData.ModelVertexCount));
+	FaceCountText->SetText(FText::AsNumber(InTask.TaskData.ModelFaceCount));
 	
 	if (InTask.TaskData.AnimationCount > 0)
 	{
-		AnimatedText->SetText(LOCTEXT("SSketchfabAssetWindow_AnimatedText", "Animated: Yes"));
+		AnimatedText->SetText(FText::FromString("Yes"));
 	}
 	else
 	{
-		AnimatedText->SetText(LOCTEXT("SSketchfabAssetWindow_AnimatedText", "Animated: No"));
+		AnimatedText->SetText(FText::FromString("No"));
 	}
 
 	LicenceText->SetText(FText::FromString(InTask.TaskData.LicenceType));
