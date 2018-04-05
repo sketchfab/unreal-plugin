@@ -201,26 +201,9 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 	[
 		RootNode
 	];
-
-	GetModelInfo();
 }
 
-void SSketchfabAssetWindow::GetModelInfo()
-{
-	FSketchfabTaskData TaskData;
-	TaskData.CacheFolder = GetSketchfabCacheDir();
-	TaskData.ModelUID = AssetData.ModelUID.ToString();
-	TaskData.StateLock = new FCriticalSection();
-
-	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
-	Task->SetState(SRS_GETMODELINFO);
-	Task->OnModelInfo().BindRaw(this, &SSketchfabAssetWindow::OnGetModelInfo);
-	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetWindow::OnTaskFailed);
-	FSketchfabRESTClient::Get()->AddTask(Task);
-}
-
-
-void SSketchfabAssetWindow::OnGetModelInfo(const FSketchfabTask& InTask)
+void SSketchfabAssetWindow::SetModelInfo(const FSketchfabTask& InTask)
 {
 	VertexCountText->SetText(FText::AsNumber(InTask.TaskData.ModelVertexCount));
 	FaceCountText->SetText(FText::AsNumber(InTask.TaskData.ModelFaceCount));
@@ -236,59 +219,21 @@ void SSketchfabAssetWindow::OnGetModelInfo(const FSketchfabTask& InTask)
 
 	LicenceText->SetText(FText::FromString(InTask.TaskData.LicenceType));
 	ExtraInfoText->SetText(FText::FromString(InTask.TaskData.LicenceInfo));
-
-	if (!InTask.TaskData.ThumbnailUID_1024.IsEmpty())
-	{
-		GetThumbnail(InTask.TaskData);
-	}
 }
 
 
-void SSketchfabAssetWindow::GetThumbnail(const FSketchfabTaskData &data)
-{
-	FString jpg = data.ThumbnailUID_1024 + ".jpg";
-	FString FileName = data.CacheFolder / jpg;
-	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-	if (!PlatformFile.FileExists(*FileName))
-	{
-		FSketchfabTaskData TaskData = data;
-		TaskData.ThumbnailUID = data.ThumbnailUID_1024;
-		TaskData.ThumbnailURL = data.ThumbnailURL_1024;
-		TaskData.StateLock = new FCriticalSection();
-
-		TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
-		Task->SetState(SRS_GETTHUMBNAIL);
-		Task->OnThumbnailDownloaded().BindRaw(this, &SSketchfabAssetWindow::OnGetThumbnail);
-		Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetWindow::OnTaskFailed);
-		FSketchfabRESTClient::Get()->AddTask(Task);
-	}
-	else
-	{
-		FSketchfabAssetData dataAdjusted = AssetData;
-		dataAdjusted.ThumbUID = FName(*data.ThumbnailUID_1024);
-		FSlateDynamicImageBrush* Texture = NULL;
-		AssetThumbnailPool->AccessTexture(dataAdjusted, data.ThumbnailWidth_1024, data.ThumbnailHeight_1024, &Texture);
-		ModelImage->SetImage(Texture);
-	}
-}
-
-
-
-void SSketchfabAssetWindow::OnGetThumbnail(const FSketchfabTask& InTask)
+void SSketchfabAssetWindow::SetThumbnail(const FSketchfabTask& InTask)
 {
 	FSketchfabAssetData dataAdjusted = AssetData;
 	dataAdjusted.ThumbUID = FName(*InTask.TaskData.ThumbnailUID_1024);
 	FSlateDynamicImageBrush* Texture = NULL;
 	AssetThumbnailPool->AccessTexture(dataAdjusted, InTask.TaskData.ThumbnailWidth_1024, InTask.TaskData.ThumbnailHeight_1024, &Texture);
-	ModelImage->SetImage(Texture);
+
+	if (ModelImage.IsValid() && Texture)
+	{
+		ModelImage->SetImage(Texture);
+	}
 }
-
-
-void SSketchfabAssetWindow::OnTaskFailed(const FSketchfabTask& InTask)
-{
-
-}
-
 
 #undef LOCTEXT_NAMESPACE
 

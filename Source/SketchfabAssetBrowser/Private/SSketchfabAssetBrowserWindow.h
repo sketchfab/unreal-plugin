@@ -8,6 +8,7 @@
 #include "Runtime/Online/HTTP/Public/Http.h"
 #include "SketchfabTask.h"
 #include "SSketchfabAssetSearchBox.h"
+#include "SSketchfabAssetWindow.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowserWindow, Log, All);
 
@@ -261,10 +262,19 @@ private:
 	void OnTaskFailed(const FSketchfabTask& InTask);
 	void OnDownloadFailed(const FSketchfabTask& InTask);
 
+	//Call for the Asset Window
+	void GetModelInfo(const FString &ModelUID);
+	void GetBigThumbnail(const FSketchfabTaskData &data);
+
+	//Callbacks for the Asset Window
+	void OnGetModelInfo(const FSketchfabTask& InTask);
+	void OnGetBigThumbnail(const FSketchfabTask& InTask);
+
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;
-	TWeakPtr<SWindow> ModelWindowPtr;
 	TWeakPtr<SWindow> Window;
+
+	TSharedPtr<SSketchfabAssetWindow> AssetWindow;
 
 	TSharedPtr<STextBlock> FaceCountText;
 	TSharedPtr<STextBlock> SortByText;

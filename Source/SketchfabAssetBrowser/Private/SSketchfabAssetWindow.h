@@ -31,15 +31,8 @@ public:
 
 public:
 	void Construct(const FArguments& InArgs);
-
-private:
-	void GetModelInfo();
-	void GetThumbnail(const FSketchfabTaskData &data);
-	void OnGetModelInfo(const FSketchfabTask& InTask);
-	void OnGetThumbnail(const FSketchfabTask& InTask);
-	void OnTaskFailed(const FSketchfabTask& InTask);
-
-
+	void SetModelInfo(const FSketchfabTask& InTask);
+	void SetThumbnail(const FSketchfabTask& InTask);
 
 private:
 	TWeakPtr< SWindow > Window;

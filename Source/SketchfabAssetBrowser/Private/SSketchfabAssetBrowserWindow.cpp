@@ -29,7 +29,6 @@
 #include "SketchfabRESTClient.h"
 #include "SComboButton.h"
 #include "MultiBoxBuilder.h"
-#include "SSketchfabAssetWindow.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
@@ -675,6 +674,8 @@ FReply SSketchfabAssetBrowserWindow::OnNext()
 
 FReply SSketchfabAssetBrowserWindow::OnClearCache()
 {
+	AssetViewPtr->FlushThumbnails();
+
 	FString Folder = GetSketchfabCacheDir();
 
 	FString msg = "Delete all files in the Sketchfab cache folder '" + Folder + "' ?";
@@ -870,6 +871,28 @@ void SSketchfabAssetBrowserWindow::OnSearchStaffPickedCheckStateChanged(ECheckBo
 }
 
 
+void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& AssetData)
+{
+	TSharedRef<SWindow> ModelWindow = SNew(SWindow)
+		.Title(LOCTEXT("SketchfabAssetWindow", "Sketchfab Model Info"))
+		.SizingRule(ESizingRule::FixedSize)
+		.ClientSize(FVector2D(600, 600));
+
+	ModelWindow->SetContent
+	(
+		SAssignNew(AssetWindow, SSketchfabAssetWindow)
+		.WidgetWindow(ModelWindow)
+		.AssetData(AssetData)
+		.ThumbnailPool(AssetViewPtr->GetThumbnailPool())
+	);
+
+	FWidgetPath WidgetPath;
+	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
+	FSlateApplication::Get().AddWindowAsNativeChild(ModelWindow, CurrentWindow.ToSharedRef());
+
+	GetModelInfo(AssetData.ModelUID.ToString());
+}
+
 //=====================================================
 // Direct REST API Calls
 //=====================================================
@@ -914,6 +937,47 @@ void SSketchfabAssetBrowserWindow::GetCategories()
 	Task->OnCategories().BindRaw(this, &SSketchfabAssetBrowserWindow::OnCategories);
 	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
 	FSketchfabRESTClient::Get()->AddTask(Task);
+}
+
+void SSketchfabAssetBrowserWindow::GetModelInfo(const FString &ModelUID)
+{
+	FSketchfabTaskData TaskData;
+	TaskData.CacheFolder = GetSketchfabCacheDir();
+	TaskData.ModelUID = ModelUID;
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETMODELINFO);
+	Task->OnModelInfo().BindRaw(this, &SSketchfabAssetBrowserWindow::OnGetModelInfo);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
+}
+
+void SSketchfabAssetBrowserWindow::GetBigThumbnail(const FSketchfabTaskData &data)
+{
+	FString jpg = data.ThumbnailUID_1024 + ".jpg";
+	FString FileName = data.CacheFolder / jpg;
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	if (!PlatformFile.FileExists(*FileName))
+	{
+		FSketchfabTaskData TaskData = data;
+		TaskData.ThumbnailUID = data.ThumbnailUID_1024;
+		TaskData.ThumbnailURL = data.ThumbnailURL_1024;
+		TaskData.StateLock = new FCriticalSection();
+
+		TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+		Task->SetState(SRS_GETTHUMBNAIL);
+		Task->OnThumbnailDownloaded().BindRaw(this, &SSketchfabAssetBrowserWindow::OnGetBigThumbnail);
+		Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+		FSketchfabRESTClient::Get()->AddTask(Task);
+	}
+	else
+	{
+		if (AssetWindow.IsValid())
+		{
+			AssetWindow->SetThumbnail(data);
+		}
+	}
 }
 
 //=====================================================
@@ -1018,28 +1082,29 @@ void SSketchfabAssetBrowserWindow::OnCategories(const FSketchfabTask& InTask)
 	Categories = InTask.TaskData.Categories;
 }
 
-void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& AssetData)
+
+void SSketchfabAssetBrowserWindow::OnGetModelInfo(const FSketchfabTask& InTask)
 {
-	TSharedRef<SWindow> ModelWindow = SNew(SWindow)
-		.Title(LOCTEXT("SketchfabAssetWindow", "Sketchfab Model Info"))
-		.SizingRule(ESizingRule::FixedSize)
-		.ClientSize(FVector2D(600, 600));
+	if (AssetWindow.IsValid())
+	{
+		AssetWindow->SetThumbnail(InTask);
+		AssetWindow->SetModelInfo(InTask);
+	}
 
-	ModelWindowPtr = ModelWindow;
-
-	TSharedPtr<SSketchfabAssetWindow> AssetWindow;
-	ModelWindow->SetContent
-	(
-		SAssignNew(AssetWindow, SSketchfabAssetWindow)
-		.WidgetWindow(ModelWindow)
-		.AssetData(AssetData)
-		.ThumbnailPool(AssetViewPtr->GetThumbnailPool())
-	);
-
-	FWidgetPath WidgetPath;
-	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
-	FSlateApplication::Get().AddWindowAsNativeChild(ModelWindow, CurrentWindow.ToSharedRef());
+	if (!InTask.TaskData.ThumbnailUID_1024.IsEmpty())
+	{
+		GetBigThumbnail(InTask.TaskData);
+	}
 }
+void SSketchfabAssetBrowserWindow::OnGetBigThumbnail(const FSketchfabTask& InTask)
+{
+	if (AssetWindow.IsValid())
+	{
+		AssetWindow->SetThumbnail(InTask);
+	}
+}
+
+
 
 #undef LOCTEXT_NAMESPACE
 

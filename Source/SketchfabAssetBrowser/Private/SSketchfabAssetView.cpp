@@ -953,7 +953,7 @@ void SAssetTileItem::Construct( const FArguments& InArgs )
  			.VAlign(VAlign_Center)
  			.FillHeight(1.f)
  			[
- 				SAssignNew(ThumbnailLabelWidget, STextBlock)
+ 				SAssignNew(InlineRenameWidget, STextBlock)
  					.Text( GetNameText() )
  					.Justification(ETextJustify::Center)
  			]
