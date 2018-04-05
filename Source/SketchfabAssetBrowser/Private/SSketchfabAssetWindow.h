@@ -33,7 +33,18 @@ public:
 	void Construct(const FArguments& InArgs);
 
 private:
+	void GetModelInfo();
+	void OnGetModelInfo(const FSketchfabTask& InTask);
+	void OnTaskFailed(const FSketchfabTask& InTask);
+
+private:
 	TWeakPtr< SWindow > Window;
+	TSharedPtr<STextBlock> VertexCountText;
+	TSharedPtr<STextBlock> FaceCountText;
+	TSharedPtr<STextBlock> AnimatedText;
+	TSharedPtr<STextBlock> LicenceText;
+	TSharedPtr<STextBlock> ExtraInfoText;
+
 	FSketchfabAssetData AssetData;
 };
 

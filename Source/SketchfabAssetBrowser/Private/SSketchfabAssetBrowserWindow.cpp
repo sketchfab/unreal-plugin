@@ -608,7 +608,7 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	bool firstCategory = false;
 	for (int32 i = 0; i < categoryCount; i++)
 	{
-		if (Categories[i]->active)
+		if (Categories[i].active)
 		{
 			if (!firstCategory)
 			{
@@ -619,7 +619,7 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 			{
 				url += "%2C";
 			}
-			url += Categories[i]->slug.ToLower();
+			url += Categories[i].slug.ToLower();
 
 			break; //You can only have one at a time.
 		}
@@ -841,7 +841,7 @@ TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeCategoriesMenu()
 
 	for (int32 i = 0; i < Categories.Num(); i++)
 	{
-		MenuBuilder.AddWidget(CreateCheckBox(FText::FromString(Categories[i]->name), &Categories[i]->active), FText::GetEmpty());
+		MenuBuilder.AddWidget(CreateCheckBox(FText::FromString(Categories[i].name), &Categories[i].active), FText::GetEmpty());
 	}
 
 	return MenuBuilder.MakeWidget();
@@ -1149,7 +1149,7 @@ void SSketchfabAssetBrowserWindow::OnModelDownloadProgress(const FSketchfabTask&
 
 void SSketchfabAssetBrowserWindow::OnCategories(const FSketchfabTask& InTask)
 {
-	Categories = InTask.Categories;
+	Categories = InTask.TaskData.Categories;
 }
 
 void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& AssetData)
@@ -1157,7 +1157,9 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 	TSharedRef<SWindow> ModelWindow = SNew(SWindow)
 		.Title(LOCTEXT("SketchfabAssetWindow", "Sketchfab Model Info"))
 		.SizingRule(ESizingRule::UserSized)
-		.ClientSize(FVector2D(600, 400));
+		.ClientSize(FVector2D(400, 600));
+
+	ModelWindowPtr = ModelWindow;
 
 	TSharedPtr<SSketchfabAssetWindow> AssetWindow;
 	ModelWindow->SetContent
@@ -1170,8 +1172,7 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 
 	FWidgetPath WidgetPath;
 	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
-	FSlateApplication::Get().AddModalWindow(ModelWindow, CurrentWindow, false);
-
+	FSlateApplication::Get().AddWindowAsNativeChild(ModelWindow, CurrentWindow.ToSharedRef());
 }
 
 #undef LOCTEXT_NAMESPACE

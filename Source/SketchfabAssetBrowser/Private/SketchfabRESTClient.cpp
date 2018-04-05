@@ -145,6 +145,14 @@ void FSketchfabRESTClient::UpdateTaskStates()
 		case SRS_GETCATEGORIES_DONE:
 			TasksMarkedForRemoval.Add(SketchfabTask);
 			break;
+		case SRS_GETMODELINFO:
+			SketchfabTask->GetModelInfo();
+			break;
+		case SRS_GETMODELINFO_PROCESSING:
+			break;
+		case SRS_GETMODELINFO_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
 		}
 	}
 

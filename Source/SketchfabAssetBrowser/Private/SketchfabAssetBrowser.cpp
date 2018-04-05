@@ -37,7 +37,15 @@ bool USketchfabAssetBrowser::ShowWindow()
 		.WidgetWindow(Window)
 	);
 
-	FSlateApplication::Get().AddWindow(Window);
+	if (ParentWindow.IsValid())
+	{
+		FSlateApplication::Get().AddWindowAsNativeChild(Window, ParentWindow.ToSharedRef());
+	}
+	else
+	{
+		FSlateApplication::Get().AddWindow(Window);
+	}
+
 
 	return true;
 }

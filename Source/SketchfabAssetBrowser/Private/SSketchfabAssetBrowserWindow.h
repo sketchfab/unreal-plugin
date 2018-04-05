@@ -199,7 +199,7 @@ private:
 
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
-	TArray<TSharedPtr< struct FSketchfabCategory>> Categories;
+	TArray<FSketchfabCategory> Categories;
 	ESortBy SortByType;
 	EMaxPolyCount MaxPolyCount;
 
@@ -221,6 +221,7 @@ private:
 
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;
+	TWeakPtr<SWindow> ModelWindowPtr;
 
 	TWeakPtr< SWindow > Window;
 

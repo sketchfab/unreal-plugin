@@ -21,6 +21,7 @@
 #include "SSplitter.h"
 #include "SComboButton.h"
 #include "MultiBoxBuilder.h"
+#include "SketchfabRESTClient.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetWindow"
 
@@ -65,9 +66,11 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			.Padding(0, 0, 0, 2)
 			[
-				SNew(SBox)
-				.WidthOverride(AssetData.ThumbnailWidth)
-				.HeightOverride(AssetData.ThumbnailHeight)
+				SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 				[
 					SNew(SImage).Image(Texture)
 				]
@@ -90,26 +93,28 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
+					.Padding(0,2)
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString("Model Information"))
+						.Font(FEditorStyle::GetFontStyle(TEXT("PropertyWindow.BoldFont")))
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(STextBlock)
+						SAssignNew(VertexCountText, STextBlock)
 						.Text(FText::FromString("Vertex Count"))
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(STextBlock)
+						SAssignNew(FaceCountText, STextBlock)
 						.Text(FText::FromString("Face Count"))
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(STextBlock)
+						SAssignNew(AnimatedText, STextBlock)
 						.Text(FText::FromString("Animation"))
 					]
 				]
@@ -119,20 +124,22 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
+					.Padding(0, 2)
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString("License Information"))
+						.Font(FEditorStyle::GetFontStyle(TEXT("PropertyWindow.BoldFont")))
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(STextBlock)
+						SAssignNew(LicenceText, STextBlock)
 						.Text(FText::FromString("Creative Common Attribution"))
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(STextBlock)
+						SAssignNew(ExtraInfoText, STextBlock)
 						.Text(FText::FromString("More information here..."))
 					]
 				]
@@ -144,7 +151,35 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 	[
 		RootNode
 	];
+
+	GetModelInfo();
 }
+
+void SSketchfabAssetWindow::GetModelInfo()
+{
+	FSketchfabTaskData TaskData;
+	TaskData.ModelUID = AssetData.ModelUID.ToString();
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETMODELINFO);
+	Task->OnModelInfo().BindRaw(this, &SSketchfabAssetWindow::OnGetModelInfo);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
+}
+
+
+void SSketchfabAssetWindow::OnGetModelInfo(const FSketchfabTask& InTask)
+{
+	VertexCountText->SetText(FText::Format(LOCTEXT("SSketchfabAssetWindow_VertexCount", "Vertex Count: {0}"), FText::AsNumber(InTask.TaskData.ModelVertexCount)));
+	FaceCountText->SetText(FText::Format(LOCTEXT("SSketchfabAssetWindow_FaceCount", "Face Count: {0}"), FText::AsNumber(InTask.TaskData.ModelFaceCount)));
+}
+
+void SSketchfabAssetWindow::OnTaskFailed(const FSketchfabTask& InTask)
+{
+
+}
+
 
 #undef LOCTEXT_NAMESPACE
 
