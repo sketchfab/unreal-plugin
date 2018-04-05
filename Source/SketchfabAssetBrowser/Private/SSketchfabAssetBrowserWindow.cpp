@@ -827,60 +827,29 @@ TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeCategoriesMenu()
 	return MenuBuilder.MakeWidget();
 }
 
-TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeSortByMenu()
+void SSketchfabAssetBrowserWindow::AddSortByWidget(FMenuBuilder &MenuBuilder, ESortBy sb)
 {
-	// create packing mode menu
-	FMenuBuilder MenuBuilder(true, NULL);
-
 	MenuBuilder.AddWidget(
 		SNew(SCheckBox)
 		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, SORTBY_Relevance)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, SORTBY_Relevance)
+		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, sb)
+		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, sb)
 		[
 			SNew(STextBlock)
-			.Text(FText::FromString("Relevance"))
+			.Text(GetSortByText(sb))
 		], FText::GetEmpty()
 	);
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, SORTBY_MostLiked)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, SORTBY_MostLiked)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("Most Liked"))
-		], FText::GetEmpty()
-	);
-
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, SORTBY_MostViewed)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, SORTBY_MostViewed)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("Most Viewed"))
-		], FText::GetEmpty()
-	);
-
-
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, SORTBY_MostRecent)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, SORTBY_MostRecent)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString("Most Recent"))
-		], FText::GetEmpty()
-	);
-
-	return MenuBuilder.MakeWidget();
 }
 
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeSortByMenu()
+{
+	FMenuBuilder MenuBuilder(true, NULL);
+	AddSortByWidget(MenuBuilder, SORTBY_Relevance);
+	AddSortByWidget(MenuBuilder, SORTBY_MostLiked);
+	AddSortByWidget(MenuBuilder, SORTBY_MostViewed);
+	AddSortByWidget(MenuBuilder, SORTBY_MostRecent);
+	return MenuBuilder.MakeWidget();
+}
 
 void SSketchfabAssetBrowserWindow::AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc)
 {

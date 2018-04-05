@@ -69,7 +69,8 @@ private:
 		SORTBY_Relevance,
 		SORTBY_MostLiked,
 		SORTBY_MostViewed,
-		SORTBY_MostRecent
+		SORTBY_MostRecent,
+		SORTBY_UNDEFINED,
 	};
 
 	enum EFaceCount {
@@ -87,6 +88,7 @@ private:
 	TSharedRef<SWidget> MakeSortByMenu();
 	TSharedRef<SWidget> MakeFaceCountMenu();
 	void AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc);
+	void AddSortByWidget(FMenuBuilder &MenuBuilder, ESortBy fc);
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -119,9 +121,14 @@ private:
 			: ECheckBoxState::Unchecked;
 	}
 
-	FText GetSortByText() const
+	FText GetSortByText(ESortBy custom = SORTBY_UNDEFINED) const
 	{
-		switch (SortByType)
+		ESortBy val = SortByType;
+		if (custom != SORTBY_UNDEFINED)
+		{
+			val = custom;
+		}
+		switch (val)
 		{
 		case SORTBY_Relevance:
 		{
