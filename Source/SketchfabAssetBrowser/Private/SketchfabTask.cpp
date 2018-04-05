@@ -159,6 +159,39 @@ void FSketchfabTask::Search()
 	}
 }
 
+
+void GetThumnailData(TSharedPtr<FJsonObject> JsonObject, int32 size, FString &thumbUID, FString &thumbURL, int32 &outWidth, int32 &outHeight)
+{
+	outWidth = 0;
+	outHeight = 0;
+
+	TSharedPtr<FJsonObject> thumbnails = JsonObject->GetObjectField("thumbnails");
+	TArray<TSharedPtr<FJsonValue>> images = thumbnails->GetArrayField("images");
+	for (int a = 0; a < images.Num(); a++)
+	{
+		TSharedPtr<FJsonObject> imageObj = images[a]->AsObject();
+		FString url = imageObj->GetStringField("url");
+		FString uid = imageObj->GetStringField("uid");
+		int32 width = imageObj->GetIntegerField("width");
+		int32 height = imageObj->GetIntegerField("height");
+
+		if (thumbUID.IsEmpty())
+		{
+			thumbUID = uid;
+			thumbURL = url;
+		}
+
+		if (width > outWidth && width <= size && height > outHeight && height <= size)
+		{
+			thumbUID = uid;
+			thumbURL = url;
+			outWidth = width;
+			outHeight = height;
+		}
+	}
+}
+
+
 /*Assigned function on successfull http call*/
 void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
@@ -226,41 +259,11 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 						authorName = userObj->GetStringField("username");
 					}
 
-					FString thumbUID;
-					FString thumbURL;
-					int32 oldWidth = 0;
-					int32 oldHeight = 0;
-
-					TSharedPtr<FJsonObject> thumbnails = resultObj->GetObjectField("thumbnails");
-					TArray<TSharedPtr<FJsonValue>> images = thumbnails->GetArrayField("images");
-					for (int a = 0; a < images.Num(); a++)
-					{
-						TSharedPtr<FJsonObject> imageObj = images[a]->AsObject();
-						FString url = imageObj->GetStringField("url");
-						FString uid = imageObj->GetStringField("uid");
-						int32 width = imageObj->GetIntegerField("width");
-						int32 height = imageObj->GetIntegerField("height");
-
-						if (thumbUID.IsEmpty())
-						{
-							thumbUID = uid;
-							thumbURL = url;
-						}
-
-						if (width > oldWidth && width <= 512 && height > oldHeight && height <= 512)
-						{
-							thumbUID = uid;
-							thumbURL = url;
-							oldWidth = width;
-							oldHeight = height;
-						}
-					}
-
 					TSharedPtr<FSketchfabTaskData> OutItem = MakeShareable(new FSketchfabTaskData());
-					OutItem->ThumbnailUID = thumbUID;
-					OutItem->ThumbnailURL = thumbURL;
-					OutItem->ThumbnailWidth = oldWidth;
-					OutItem->ThumbnailHeight = oldHeight;
+
+					GetThumnailData(resultObj, 512, OutItem->ThumbnailUID, OutItem->ThumbnailURL, OutItem->ThumbnailWidth, OutItem->ThumbnailHeight);
+					GetThumnailData(resultObj, 1024, OutItem->ThumbnailUID_1024, OutItem->ThumbnailURL_1024, OutItem->ThumbnailWidth_1024, OutItem->ThumbnailHeight_1024);
+
 					OutItem->ModelName = modelName;
 					OutItem->ModelUID = modelUID;
 					OutItem->CacheFolder = TaskData.CacheFolder;
@@ -336,6 +339,14 @@ void FSketchfabTask::GetThumbnail_Response(FHttpRequestPtr Request, FHttpRespons
 
 		if (Response->GetContentType() != "image/jpeg")
 		{
+			SetState(SRS_FAILED);
+			return;
+		}
+
+		if (TaskData.CacheFolder.IsEmpty())
+		{
+			ensure(false);
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Cache Folder not set internally"));
 			SetState(SRS_FAILED);
 			return;
 		}
@@ -515,6 +526,14 @@ void FSketchfabTask::DownloadModel_Response(FHttpRequestPtr Request, FHttpRespon
 		if (this == nullptr)
 		{
 			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
+			SetState(SRS_FAILED);
+			return;
+		}
+
+		if (TaskData.CacheFolder.IsEmpty())
+		{
+			ensure(false);
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Cache Folder not set internally"));
 			SetState(SRS_FAILED);
 			return;
 		}
@@ -973,7 +992,18 @@ void FSketchfabTask::GetModelInfo_Response(FHttpRequestPtr Request, FHttpRespons
 			{
 				TaskData.ModelVertexCount = JsonObject->GetIntegerField("vertexCount");
 				TaskData.ModelFaceCount = JsonObject->GetIntegerField("faceCount");
+				TaskData.AnimationCount = JsonObject->GetIntegerField("animationCount");
+
+				TSharedPtr<FJsonObject> license = JsonObject->GetObjectField("license");
+				if (license.IsValid())
+				{
+					TaskData.LicenceType = license->GetStringField("fullName");
+					TaskData.LicenceInfo = license->GetStringField("requirements");
+				}
+
+				GetThumnailData(JsonObject, 1024, TaskData.ThumbnailUID_1024, TaskData.ThumbnailURL_1024, TaskData.ThumbnailWidth_1024, TaskData.ThumbnailHeight_1024);
 			}
+
 			OnModelInfo().Execute(*this);
 			SetState(SRS_GETMODELINFO_DONE);
 			return;

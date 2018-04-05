@@ -1156,8 +1156,8 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 {
 	TSharedRef<SWindow> ModelWindow = SNew(SWindow)
 		.Title(LOCTEXT("SketchfabAssetWindow", "Sketchfab Model Info"))
-		.SizingRule(ESizingRule::UserSized)
-		.ClientSize(FVector2D(400, 600));
+		.SizingRule(ESizingRule::FixedSize)
+		.ClientSize(FVector2D(600, 600));
 
 	ModelWindowPtr = ModelWindow;
 

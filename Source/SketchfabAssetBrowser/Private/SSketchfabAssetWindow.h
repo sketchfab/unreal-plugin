@@ -34,8 +34,12 @@ public:
 
 private:
 	void GetModelInfo();
+	void GetThumbnail(const FSketchfabTaskData &data);
 	void OnGetModelInfo(const FSketchfabTask& InTask);
+	void OnGetThumbnail(const FSketchfabTask& InTask);
 	void OnTaskFailed(const FSketchfabTask& InTask);
+
+
 
 private:
 	TWeakPtr< SWindow > Window;
@@ -44,7 +48,10 @@ private:
 	TSharedPtr<STextBlock> AnimatedText;
 	TSharedPtr<STextBlock> LicenceText;
 	TSharedPtr<STextBlock> ExtraInfoText;
+	TSharedPtr<SImage> ModelImage;
 
 	FSketchfabAssetData AssetData;
+
+	TSharedPtr<FSketchfabAssetThumbnailPool> AssetThumbnailPool;
 };
 

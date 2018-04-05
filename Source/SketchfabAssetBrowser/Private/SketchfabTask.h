@@ -108,12 +108,20 @@ struct FSketchfabTaskData
 	/** Thumbnail Unique Identifier */
 	FString ThumbnailUID;
 
+	/** Thumbnail Unique Identifier for a thumbnail that is up to 1024 in size */
+	FString ThumbnailUID_1024;
+
 	/** Thumbnail Download URL */
 	FString ThumbnailURL;
 
+	/** Thumbnail Download URL */
+	FString ThumbnailURL_1024;
+
 	int32 ThumbnailWidth;
+	int32 ThumbnailWidth_1024;
 
 	int32 ThumbnailHeight;
+	int32 ThumbnailHeight_1024;
 
 	/** The Cache folder for downloaded content */
 	FString CacheFolder;
@@ -136,8 +144,11 @@ struct FSketchfabTaskData
 	TArray<FSketchfabCategory> Categories;
 
 	int32 ModelVertexCount;
-
 	int32 ModelFaceCount;
+	int32 AnimationCount;
+
+	FString LicenceType;
+	FString LicenceInfo;
 
 	FSketchfabTaskData()
 	{
@@ -147,6 +158,7 @@ struct FSketchfabTaskData
 		ThumbnailHeight = 0;
 		ModelVertexCount = 0;
 		ModelFaceCount = 0;
+		AnimationCount = 0;
 	}
 
 };
