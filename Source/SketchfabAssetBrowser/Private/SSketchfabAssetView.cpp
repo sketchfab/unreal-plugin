@@ -39,6 +39,7 @@
 #include "SInlineEditableTextBlock.h"
 #include "ConstructorHelpers.h"
 #include "ImageLoader.h"
+#include "SketchfabTask.h"
 
 #define LOCTEXT_NAMESPACE "SSketchfabAssetView"
 
@@ -441,7 +442,7 @@ bool SSketchfabAssetView::CanOpenContextMenu() const
 }
 
 /*
-void SSketchfabAssetView::CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID)
+void SSketchfabAssetView::CreateNewAsset(TSharedPtr<FSketchfabTaskData> Data)
 {
 	// we should only be creating one deferred asset per tick
 	check(!DeferredAssetToCreate.IsValid());
@@ -495,14 +496,16 @@ void SSketchfabAssetView::DownloadProgress(const FString& ModelUID, float progre
 	DownloadProgressData.Add(ModelUID, progress);
 }
 
-void SSketchfabAssetView::ForceCreateNewAsset(const FString& ModelNameStr, const FString& ContentFolderStr, const FString& ModelAssetUID, const FString& ThumbAssetUID, int32 ThumbnailWidth, int32 ThumbnailHeight)
+void SSketchfabAssetView::ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Data)
 {
-	FName ContentFolder = FName(*ContentFolderStr);
-	FName ModelName = FName(*ModelNameStr);
-	FName ObjectUIDName = FName(*ModelAssetUID);
-	FName ThumbAssetUIDName = FName(*ThumbAssetUID);
-
-	FSketchfabAssetData NewAssetData(ContentFolder, ModelName, ObjectUIDName, ThumbAssetUIDName, ThumbnailWidth, ThumbnailHeight);
+	FSketchfabAssetData NewAssetData;
+	NewAssetData.ContentFolder = FName(*Data->CacheFolder);
+	NewAssetData.ModelName = FName(*Data->ModelName);
+	NewAssetData.ModelUID = FName(*Data->ModelUID);
+	NewAssetData.ThumbUID = FName(*Data->ThumbnailUID);
+	NewAssetData.ThumbnailWidth = Data->ThumbnailWidth;
+	NewAssetData.ThumbnailHeight = Data->ThumbnailHeight;
+	NewAssetData.AuthorName = FName(*Data->ModelAuthor);
 
 	TSharedPtr<FAssetViewItem> NewItem = MakeShareable(new FAssetViewAsset(NewAssetData));
 

@@ -808,18 +808,6 @@ FReply SSketchfabAssetBrowserWindow::OnKeyDown(const FGeometry& MyGeometry, cons
 	return FReply::Unhandled();
 }
 
-/*
-void SSketchfabAssetBrowserWindow::CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID)
-{
-	AssetViewPtr->CreateNewAsset(DefaultAssetName, PackagePath, AssetClass, Factory, ModelAssetUID, ThumbAssetUID);
-}
-*/
-
-void SSketchfabAssetBrowserWindow::ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID, int32 ThumbnailWidth, int32 ThumbnailHeight)
-{
-	AssetViewPtr->ForceCreateNewAsset(DefaultAssetName, PackagePath, ModelAssetUID, ThumbAssetUID, ThumbnailWidth, ThumbnailHeight);
-}
-
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::CreateCheckBox(const FText& CheckBoxText, bool* CheckBoxChoice)
 {
 	return SNew(SCheckBox)
@@ -1104,9 +1092,9 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 {
 	for (int32 Index = 0; Index < InTask.SearchData.Num(); Index++)
 	{
-		const TSharedPtr<FSketchfabTaskData>& Data = InTask.SearchData[Index];
+		TSharedPtr<FSketchfabTaskData> Data = InTask.SearchData[Index];
 
-		ForceCreateNewAsset(Data->ModelName, Data->CacheFolder, Data->ModelUID, Data->ThumbnailUID, Data->ThumbnailWidth, Data->ThumbnailHeight);
+		AssetViewPtr->ForceCreateNewAsset(Data);
 
 		FString jpg = Data->ThumbnailUID + ".jpg";
 		FString FileName = Data->CacheFolder / jpg;

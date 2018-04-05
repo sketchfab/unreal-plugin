@@ -217,6 +217,13 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 					FString modelUID = resultObj->GetStringField("uid");
 					FString modelName = resultObj->GetStringField("name");
 
+					FString authorName;
+					TSharedPtr<FJsonObject> userObj = resultObj->GetObjectField("user");
+					if (userObj.IsValid())
+					{
+						authorName = userObj->GetStringField("username");
+					}
+
 					FString thumbUID;
 					FString thumbURL;
 					int32 oldWidth = 0;
@@ -256,6 +263,7 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 					OutItem->ModelUID = modelUID;
 					OutItem->CacheFolder = TaskData.CacheFolder;
 					OutItem->Token = TaskData.Token;
+					OutItem->ModelAuthor = authorName;
 
 					SearchData.Add(OutItem);
 				}

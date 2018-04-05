@@ -63,10 +63,6 @@ private:
 	void DownloadModel(const FString &ModelUID);
 	void ShowModelWindow(const FSketchfabAssetData& AssetData);
 
-public:
-	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
-	void ForceCreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, const FString& ModelAssetUID, const FString& ThumbAssetUID, int32 ThumbnailWidth, int32 ThumbnailHeight);
-
 private: 	
 
 	enum ESortBy {

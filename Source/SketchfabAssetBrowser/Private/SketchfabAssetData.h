@@ -22,30 +22,22 @@ struct FSketchfabAssetData
 {
 	GENERATED_BODY()
 public:
+	FName AuthorName;
 	FName ModelUID;
 	FName ContentFolder;
-	FName AssetName;
+	FName ModelName;
 	FName ThumbUID;
 	float DownloadProgress;
 	int32 ThumbnailWidth;
 	int32 ThumbnailHeight;
+	int32 VertexCount;
+	int32 FaceCount;
+	bool Animated;
 
 public:
 	/** Default constructor */
 	FSketchfabAssetData()
 	{}
-
-	/** Constructor */
-	FSketchfabAssetData(FName InContentFolder, FName InAssetName, FName InModelUID, FName InThumbUID, int32 InThumbnailWidth, int32 InThumbnailHeight)
-		: ContentFolder(InContentFolder)
-		, AssetName(InAssetName)
-		, ModelUID(InModelUID)
-		, ThumbUID(InThumbUID)
-		, DownloadProgress(0)
-		, ThumbnailWidth(InThumbnailWidth)
-		, ThumbnailHeight(InThumbnailHeight)
-	{
-	}
 
 	/** FAssetDatas are equal if their object paths match */
 	bool operator==(const FSketchfabAssetData& Other) const

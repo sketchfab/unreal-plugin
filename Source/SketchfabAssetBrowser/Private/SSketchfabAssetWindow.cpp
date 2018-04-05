@@ -37,15 +37,33 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 
 	TSharedRef<SVerticalBox> RootNode = SNew(SVerticalBox);
 
+	RootNode->AddSlot()
+		.AutoHeight()
+		.Padding(0, 0, 0, 2)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(AssetData.ModelName.ToString()))
+		];
+	RootNode->AddSlot()
+		.AutoHeight()
+		.Padding(0, 0, 0, 2)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(AssetData.AuthorName.ToString()))
+		];
+
+
+
 	if (InArgs._ThumbnailPool.IsValid())
 	{
 		FSlateDynamicImageBrush* Texture = NULL;
 		InArgs._ThumbnailPool->AccessTexture(AssetData, AssetData.ThumbnailWidth, AssetData.ThumbnailHeight, &Texture);
-
 		// The viewport for the rendered thumbnail, if it exists
 		if (Texture)
 		{
 			RootNode->AddSlot()
+			.AutoHeight()
+			.Padding(0, 0, 0, 2)
 			[
 				SNew(SBox)
 				.WidthOverride(AssetData.ThumbnailWidth)
@@ -56,6 +74,71 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 			];
 		}
 	}
+
+	RootNode->AddSlot()
+		.AutoHeight()
+		.Padding(0, 0, 0, 2)
+		[
+			SNew(SBorder)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SUniformGridPanel)
+				+ SUniformGridPanel::Slot(0, 0)
+				[
+
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("Model Information"))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("Vertex Count"))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("Face Count"))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("Animation"))
+					]
+				]
+				+ SUniformGridPanel::Slot(1, 0)
+				[
+
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("License Information"))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("Creative Common Attribution"))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("More information here..."))
+					]
+				]
+			]
+		];
+
 
 	ChildSlot
 	[

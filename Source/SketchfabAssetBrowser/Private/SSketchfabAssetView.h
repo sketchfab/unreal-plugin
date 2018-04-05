@@ -21,6 +21,7 @@
 #include "SInlineEditableTextBlock.h"
 #include "SlateStyle.h"
 #include "SlateStyleRegistry.h"
+#include "SketchfabTask.h"
 
 struct FAssetViewItemHelper;
 
@@ -164,7 +165,7 @@ public:
 		{
 			if (AssetItem->GetType() != EAssetItemType::Folder)
 			{
-				return FText::FromName(StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data.AssetName);
+				return FText::FromName(StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data.ModelName);
 			}
 			else
 			{
@@ -390,8 +391,8 @@ public:
 
 public:
 	void Construct(const FArguments& InArgs);
-	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
-	void ForceCreateNewAsset(const FString& ModelName, const FString& ContentFolder, const FString& ModelAssetUID, const FString& ThumbAssetUID, int32 ThumbnailWidth, int32 ThumbnailHeight);
+	//void CreateNewAsset(TSharedPtr<FSketchfabTaskData> Data);
+	void ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Data);
 	void NeedRefresh();
 	void DownloadProgress(const FString& ModelUID, float progress);
 	void FlushThumbnails();

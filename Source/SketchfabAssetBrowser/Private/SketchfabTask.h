@@ -60,7 +60,6 @@ struct FSketchfabCategory
 	}
 };
 
-/** Struct holding essential task data for task management. */
 struct FSketchfabTaskData
 {
 	/** Path to zip file containing resulting geometry */
@@ -96,6 +95,9 @@ struct FSketchfabTaskData
 
 	/** Download size of the model in bytes */
 	uint64 ModelSize;
+
+	/** Model Author Name */
+	FString ModelAuthor;
 
 	/** Download size of the model in bytes */
 	uint64 DownloadedBytes;

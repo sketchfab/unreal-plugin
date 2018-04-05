@@ -457,7 +457,7 @@ private:
 	FText GetAssetDisplayName() const
 	{
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
-		return FText::FromName(AssetData.AssetName);
+		return FText::FromName(AssetData.ModelName);
 	}
 
 	void OnRenderedThumbnailChanged( bool bInHasRenderedThumbnail )
