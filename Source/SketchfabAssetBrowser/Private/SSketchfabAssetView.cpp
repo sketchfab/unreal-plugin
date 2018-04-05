@@ -953,30 +953,16 @@ void SAssetTileItem::Construct( const FArguments& InArgs )
  			.VAlign(VAlign_Center)
  			.FillHeight(1.f)
  			[
- 				SAssignNew(InlineRenameWidget, SInlineEditableTextBlock)
- 					//.Font( this, &SAssetTileItem::GetThumbnailFont )
+ 				SAssignNew(ThumbnailLabelWidget, STextBlock)
  					.Text( GetNameText() )
- 					//.OnBeginTextEdit(this, &SAssetTileItem::HandleBeginNameChange)
- 					//.OnTextCommitted(this, &SAssetTileItem::HandleNameCommitted)
- 					//.OnVerifyTextChanged(this, &SAssetTileItem::HandleVerifyNameChanged)
- 					//.HighlightText(InArgs._HighlightText)
- 					.IsSelected(InArgs._IsSelected)
- 					.IsReadOnly(this, &SAssetTileItem::IsNameReadOnly)
  					.Justification(ETextJustify::Center)
- 					.LineBreakPolicy(FBreakIterator::CreateLineBreakIterator())
  			]
 		]
 	];
-
-	if(AssetItem.IsValid())
-	{
-		AssetItem->RenamedRequestEvent.BindSP( InlineRenameWidget.Get(), &SInlineEditableTextBlock::EnterEditingMode );
-	}
 }
 
 void SAssetTileItem::OnAssetDataChanged()
 {
-	//SAssetViewItem::OnAssetDataChanged();
 }
 
 FOptionalSize SAssetTileItem::GetThumbnailBoxSize() const

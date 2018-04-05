@@ -219,14 +219,13 @@ public:
 
 		// Set cached wrap text width based on new "LastGeometry" value. 
 		// We set this only when changed because binding a delegate to text wrapping attributes is expensive
-		/*
-		if (PrevSizeX != AllottedGeometry.Size.X && InlineRenameWidget.IsValid())
+		if (PrevSizeX != AllottedGeometry.Size.X && ThumbnailLabelWidget.IsValid())
 		{
-		InlineRenameWidget->SetWrapTextAt(GetNameTextWrapWidth());
+			ThumbnailLabelWidget->SetWrapTextAt(GetNameTextWrapWidth());
 		}
 
+		/*
 		UpdatePackageDirtyState();
-
 		UpdateSourceControlState((float)InDeltaTime);
 		*/
 	}
@@ -237,7 +236,7 @@ protected:
 	/** The data for this item */
 	TSharedPtr<FAssetViewItem> AssetItem;
 
-	TSharedPtr< SInlineEditableTextBlock > InlineRenameWidget;
+	TSharedPtr< STextBlock > ThumbnailLabelWidget;
 
 	/** The geometry last frame. Used when telling popup messages where to appear. */
 	FGeometry LastGeometry;
