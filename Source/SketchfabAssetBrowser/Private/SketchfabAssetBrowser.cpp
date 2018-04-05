@@ -28,7 +28,7 @@ bool USketchfabAssetBrowser::ShowWindow()
 	TSharedRef<SWindow> Window = SNew(SWindow)
 		.Title(LOCTEXT("SketchfabAssetBrowserWindow", "Sketchfab Asset Browser"))
 		.SizingRule(ESizingRule::UserSized)
-		.ClientSize(FVector2D(600, 400));
+		.ClientSize(FVector2D(1024, 800));
 
 	TSharedPtr<SSketchfabAssetBrowserWindow> AssetWindow;
 	Window->SetContent

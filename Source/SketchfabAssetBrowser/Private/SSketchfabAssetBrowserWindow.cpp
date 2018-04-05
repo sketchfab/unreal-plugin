@@ -274,15 +274,14 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Font(FEditorStyle::Get().GetFontStyle("FontAwesome.9"))
-							.Text(FText::FromString(FString(TEXT("\xf0b0"))) /*fa-filter*/)
+							.Text(FText::FromString(FString(TEXT("Max Faces Count: "))))
 						]
 
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(2,0,0,0)
 						[
-							SNew(STextBlock)
+							SAssignNew(MaxPolyCountText, STextBlock)
 							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
 							.Text(GetMaxPolyCountText())
 						]

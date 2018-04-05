@@ -150,6 +150,8 @@ private:
 		{
 			MaxPolyCount = NewMaxPolyCount;
 		}
+
+		MaxPolyCountText->SetText(GetMaxPolyCountText());
 	}
 
 	ECheckBoxState HandleMaxPolyCountIsChecked(EMaxPolyCount NewMaxPolyCount) const
@@ -165,7 +167,7 @@ private:
 		{
 		case MAXPOLYCOUNT_ALL:
 		{
-			return FText::FromString("All Models Sizes");
+			return FText::FromString("All");
 		}
 		break;
 		case MAXPOLYCOUNT_100:
@@ -222,8 +224,9 @@ private:
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;
 	TWeakPtr<SWindow> ModelWindowPtr;
+	TWeakPtr<SWindow> Window;
 
-	TWeakPtr< SWindow > Window;
+	TSharedPtr<STextBlock> MaxPolyCountText;
 
 	TSharedPtr<SSketchfabAssetView> AssetViewPtr;
 
