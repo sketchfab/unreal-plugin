@@ -281,7 +281,7 @@ private:
 	// The Asset Window is telling the main window to download a file
 	void OnDownloadRequest(const FString &ModelUID);
 
-	bool LoginBrowserClosed(const TWeakPtr<IWebBrowserWindow>& WindowWindowPtr);
+	void LoginBrowserClosed();
 
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;
