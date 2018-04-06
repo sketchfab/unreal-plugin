@@ -9,6 +9,9 @@
 #include "SketchfabTask.h"
 #include "SSketchfabAssetSearchBox.h"
 #include "SSketchfabAssetWindow.h"
+#include "SOAuthWebBrowser.h"
+
+//#include "../WebBrowser/Public/IWebBrowserWindow.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowserWindow, Log, All);
 
@@ -33,6 +36,11 @@ public:
 
 	//Main Window
 	FReply OnLogin();
+	FReply OnLogout();
+
+	bool OnLoginEnabled() const;
+	bool OnLogoutEnabled() const;
+
 	FReply OnCancel();
 	FReply OnNext();
 	FReply OnDownloadSelected();
@@ -272,6 +280,8 @@ private:
 
 	// The Asset Window is telling the main window to download a file
 	void OnDownloadRequest(const FString &ModelUID);
+
+	bool LoginBrowserClosed(const TWeakPtr<IWebBrowserWindow>& WindowWindowPtr);
 
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;
