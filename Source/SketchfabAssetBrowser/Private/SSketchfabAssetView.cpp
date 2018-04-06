@@ -962,6 +962,7 @@ void SAssetTileItem::Construct( const FArguments& InArgs )
  				SAssignNew(InlineRenameWidget, STextBlock)
  					.Text( GetNameText() )
  					.Justification(ETextJustify::Center)
+					.WrapTextAt(134)
  			]
 		]
 	];
