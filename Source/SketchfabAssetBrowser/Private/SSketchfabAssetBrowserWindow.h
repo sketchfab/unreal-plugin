@@ -270,6 +270,9 @@ private:
 	void OnGetModelInfo(const FSketchfabTask& InTask);
 	void OnGetBigThumbnail(const FSketchfabTask& InTask);
 
+	// The Asset Window is telling the main window to download a file
+	void OnDownloadRequest(const FString &ModelUID);
+
 private:
 	TWeakPtr<SWindow> OAuthWindowPtr;
 	TWeakPtr<SWindow> Window;

@@ -993,6 +993,7 @@ void FSketchfabTask::GetModelInfo_Response(FHttpRequestPtr Request, FHttpRespons
 				TaskData.ModelVertexCount = JsonObject->GetIntegerField("vertexCount");
 				TaskData.ModelFaceCount = JsonObject->GetIntegerField("faceCount");
 				TaskData.AnimationCount = JsonObject->GetIntegerField("animationCount");
+				TaskData.ModelSize = JsonObject->GetIntegerField("size");
 
 				TSharedPtr<FJsonObject> license = JsonObject->GetObjectField("license");
 				if (license.IsValid())

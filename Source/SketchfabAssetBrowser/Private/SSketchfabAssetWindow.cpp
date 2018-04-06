@@ -37,6 +37,7 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 	Window = InArgs._WidgetWindow;
 	AssetData = InArgs._AssetData;
 	AssetThumbnailPool = InArgs._ThumbnailPool;
+	OnDownloadRequest = InArgs._OnDownloadRequest;
 
 	TSharedRef<SVerticalBox> RootNode = SNew(SVerticalBox);
 
@@ -93,6 +94,16 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 			];
 		}
 	}
+
+	RootNode->AddSlot()
+		.AutoHeight()
+		.Padding(2, 0, 0, 2)
+		[
+			SNew(SButton)
+			.HAlign(HAlign_Center)
+			.Text(LOCTEXT("SSketchfabAssetWindow_DownloadModel", "Download Model"))
+			.OnClicked(this, &SSketchfabAssetWindow::DownloadModel)
+		];
 
 	RootNode->AddSlot()
 		.FillHeight(1.0)
@@ -166,6 +177,23 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 							.Text(FText::FromString(""))
 						]
 					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SUniformGridPanel)
+						+ SUniformGridPanel::Slot(0, 0)
+						.HAlign(EHorizontalAlignment::HAlign_Left)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("File Size:"))
+						]
+						+ SUniformGridPanel::Slot(1, 0)
+						.HAlign(EHorizontalAlignment::HAlign_Right)
+						[
+							SAssignNew(DownloadSizeText, STextBlock)
+							.Text(FText::FromString(""))
+						]
+					]
 				]
 				+ SUniformGridPanel::Slot(1, 0)
 				[
@@ -219,6 +247,9 @@ void SSketchfabAssetWindow::SetModelInfo(const FSketchfabTask& InTask)
 
 	LicenceText->SetText(FText::FromString(InTask.TaskData.LicenceType));
 	ExtraInfoText->SetText(FText::FromString(InTask.TaskData.LicenceInfo));
+
+	DownloadSize = InTask.TaskData.ModelSize / 1000.0f;
+	DownloadSizeText->SetText(FText::Format(FText::FromString("{0} KB"), FText::AsNumber(DownloadSize)));
 }
 
 
@@ -233,6 +264,12 @@ void SSketchfabAssetWindow::SetThumbnail(const FSketchfabTask& InTask)
 	{
 		ModelImage->SetImage(Texture);
 	}
+}
+
+FReply SSketchfabAssetWindow::DownloadModel()
+{
+	OnDownloadRequest.Execute(AssetData.ModelUID.ToString());
+	return FReply::Handled();
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -90,16 +90,8 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center)
-					.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
-					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
-					]
-					+ SUniformGridPanel::Slot(1, 0)
-					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Cancel", "Cancel"))
-						//.ToolTipText(LOCTEXT("SSketchfabAssetBrowserWindow_Cancel_ToolTip", "Close the window"))
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnCancel)
+						.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
 					]
 				]
 			]
@@ -396,6 +388,15 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID)
 {
+	if (LoggedInUser.IsEmpty())
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("SSketchfabAssetBrowserWindow_ModelDoubleClick", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
+		if (Window.IsValid())
+		{
+			Window.Pin()->BringToFront(true);
+		}
+	}
+
 	if (LoggedInUser.IsEmpty() || Token.IsEmpty() || ModelUID.IsEmpty())
 	{
 		return;
@@ -884,6 +885,7 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 		.WidgetWindow(ModelWindow)
 		.AssetData(AssetData)
 		.ThumbnailPool(AssetViewPtr->GetThumbnailPool())
+		.OnDownloadRequest(this, &SSketchfabAssetBrowserWindow::DownloadModel)
 	);
 
 	FWidgetPath WidgetPath;

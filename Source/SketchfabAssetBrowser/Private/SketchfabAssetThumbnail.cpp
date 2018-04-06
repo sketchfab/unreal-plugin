@@ -890,7 +890,7 @@ void FSketchfabAssetThumbnailPool::PrioritizeThumbnails( const TArray< TSharedPt
 		TSet<FName> ObjectPathList;
 		for ( int32 ThumbIdx = 0; ThumbIdx < ThumbnailsToPrioritize.Num(); ++ThumbIdx )
 		{
-			ObjectPathList.Add(ThumbnailsToPrioritize[ThumbIdx]->GetAssetData().ModelUID);
+			ObjectPathList.Add(ThumbnailsToPrioritize[ThumbIdx]->GetAssetData().ModelUID); 
 		}
 	}
 }

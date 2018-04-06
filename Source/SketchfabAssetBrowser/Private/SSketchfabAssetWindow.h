@@ -12,6 +12,8 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetWindow, Log, All);
 
+DECLARE_DELEGATE_OneParam(FOnDownloadRequest, const FString &);
+
 class SSketchfabAssetWindow : public SCompoundWidget
 {
 public:
@@ -19,6 +21,8 @@ public:
 
 	SLATE_BEGIN_ARGS(SSketchfabAssetWindow)
 	{}
+
+	SLATE_EVENT(FOnDownloadRequest, OnDownloadRequest)
 
 	SLATE_ARGUMENT(TSharedPtr<SWindow>, WidgetWindow)
 	SLATE_ARGUMENT(FSketchfabAssetData, AssetData)
@@ -34,6 +38,8 @@ public:
 	void SetModelInfo(const FSketchfabTask& InTask);
 	void SetThumbnail(const FSketchfabTask& InTask);
 
+	FReply DownloadModel();
+
 private:
 	TWeakPtr< SWindow > Window;
 	TSharedPtr<STextBlock> VertexCountText;
@@ -41,9 +47,13 @@ private:
 	TSharedPtr<STextBlock> AnimatedText;
 	TSharedPtr<STextBlock> LicenceText;
 	TSharedPtr<STextBlock> ExtraInfoText;
+	TSharedPtr<STextBlock> DownloadSizeText;
 	TSharedPtr<SImage> ModelImage;
 
+	float DownloadSize;
+
 	FSketchfabAssetData AssetData;
+	FOnDownloadRequest OnDownloadRequest;
 
 	TSharedPtr<FSketchfabAssetThumbnailPool> AssetThumbnailPool;
 };
