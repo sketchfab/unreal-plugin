@@ -32,6 +32,7 @@
 #include "IVREditorModule.h"
 #include "ImageLoader.h"
 #include "SlateDynamicImageBrush.h"
+#include "SScaleBox.h"
 
 class SSketchfabAssetThumbnail : public SCompoundWidget
 {
@@ -148,7 +149,12 @@ public:
 			// The viewport for the rendered thumbnail, if it exists
 			OverlayWidget->AddSlot()
 				[
-					SNew(SImage).Image(ModelImageBrush)
+					SNew(SScaleBox)
+					.StretchDirection(EStretchDirection::Both)
+					.Stretch(EStretch::ScaleToFill)
+					[
+						SNew(SImage).Image(ModelImageBrush)
+					]
 				];
 		}
 

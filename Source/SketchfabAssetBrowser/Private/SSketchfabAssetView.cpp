@@ -282,7 +282,7 @@ TSharedRef<ITableRow> SSketchfabAssetView::MakeTileViewWidget(TSharedPtr<FAssetV
 	else
 	{
 		const float ThumbnailResolution = TileViewThumbnailResolution;
-		AssetThumbnail = MakeShareable(new FSketchfabAssetThumbnail(AssetItemAsAsset->Data, ThumbnailResolution, ThumbnailResolution, AssetThumbnailPool));
+		AssetThumbnail = MakeShareable(new FSketchfabAssetThumbnail(AssetItemAsAsset->Data, AssetItemAsAsset->Data.ThumbnailWidth, AssetItemAsAsset->Data.ThumbnailHeight, AssetThumbnailPool));
 		RelevantThumbnails.Add(AssetItemAsAsset, AssetThumbnail);
 		AssetThumbnail->GetViewportRenderTargetTexture(); // Access the texture once to trigger it to render
 	}
@@ -838,6 +838,10 @@ TSharedPtr<FSketchfabAssetThumbnail> SSketchfabAssetView::AddItemToNewThumbnailR
 	}
 	else
 	{
+		/*
+		//For now I am ignoring the scale of the thumbnail since it is currently not used for the asset browser
+		//In future if this is to be used the the width and height of the loaded thumbnail image will need to be 
+		//calculated correctly and code changed in the thumbnailpool loading method.
 		if (!ensure(CurrentThumbnailSize > 0 && CurrentThumbnailSize <= MAX_THUMBNAIL_SIZE))
 		{
 			// Thumbnail size must be in a sane range
@@ -846,7 +850,9 @@ TSharedPtr<FSketchfabAssetThumbnail> SSketchfabAssetView::AddItemToNewThumbnailR
 
 		// The thumbnail newly relevant, create a new thumbnail
 		const float ThumbnailResolution = CurrentThumbnailSize * MaxThumbnailScale;
-		TSharedPtr<FSketchfabAssetThumbnail> NewThumbnail = MakeShareable(new FSketchfabAssetThumbnail(Item->Data, ThumbnailResolution, ThumbnailResolution, AssetThumbnailPool));
+		*/
+
+		TSharedPtr<FSketchfabAssetThumbnail> NewThumbnail = MakeShareable(new FSketchfabAssetThumbnail(Item->Data, Item->Data.ThumbnailWidth, Item->Data.ThumbnailHeight, AssetThumbnailPool));
 		NewRelevantThumbnails.Add(Item, NewThumbnail);
 		NewThumbnail->GetViewportRenderTargetTexture(); // Access the texture once to trigger it to render
 
