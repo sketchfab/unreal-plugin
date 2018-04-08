@@ -634,48 +634,53 @@ void SSketchfabAssetBrowserWindow::OnSearchBoxCommitted(const FText& InSearchTex
 
 FReply SSketchfabAssetBrowserWindow::OnLogin()
 {
-	/*
-	TSharedPtr<SWindow> loginWindow = OAuthWindowPtr.Pin();
-	if (loginWindow.IsValid())
-	{
-		loginWindow->ShowWindow();
-		return FReply::Handled();
-	}
-	*/
-
-	TSharedPtr<SWindow> ParentWindow;
-
-	if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
-	{
-		IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-		ParentWindow = MainFrame.GetParentWindow();
-	}
-
-	TSharedRef<SWindow> OAuthWindow = SNew(SWindow)
-		.Title(LOCTEXT("SketchfabAssetBrowser_LoginWindow", "Sketchfab Login Window"))
-		.SizingRule(ESizingRule::FixedSize)
-		.ClientSize(FVector2D(400, 600));
-
-	OAuthWindow->GetOnWindowDeactivatedEvent().AddSP(this, &SSketchfabAssetBrowserWindow::LoginBrowserClosed);
-
-	OAuthWindowPtr = OAuthWindow;
-
-	FString initialURL = "https://sketchfab.com/oauth2/authorize/?state=123456789&response_type=token&client_id=lZklEgZh9G5LcFqiCUUXTzXyNIZaO7iX35iXODqO";
-
-	TSharedPtr<SOAuthWebBrowser> OAuthBrowser;
-	OAuthWindow->SetContent
-	(
-		SAssignNew(OAuthBrowser, SOAuthWebBrowser)
-		.ParentWindow(OAuthWindow)
-		.InitialURL(initialURL)
-		.OnUrlChanged(this, &SSketchfabAssetBrowserWindow::OnUrlChanged)
-	);
-
-	FWidgetPath WidgetPath;
-	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
-	FSlateApplication::Get().AddWindowAsNativeChild(OAuthWindow, CurrentWindow.ToSharedRef());
-
+	FString url = "https://sketchfab.com/oauth2/authorize/?state=123456789&response_type=token&client_id=lZklEgZh9G5LcFqiCUUXTzXyNIZaO7iX35iXODqO";
+	DoLoginLogout(url);
 	return FReply::Handled();
+}
+	
+void SSketchfabAssetBrowserWindow::DoLoginLogout(const FString &url)
+{
+	if (OAuthWindowPtr.IsValid())
+	{
+		OAuthWindowPtr->BringToFront();
+	}
+	else
+	{
+		TSharedPtr<SWindow> ParentWindow;
+
+		if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
+		{
+			IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
+			ParentWindow = MainFrame.GetParentWindow();
+		}
+
+		OAuthWindowPtr = SNew(SWindow)
+			.Title(LOCTEXT("SketchfabAssetBrowser_LoginWindow", "Sketchfab Login Window"))
+			.SizingRule(ESizingRule::FixedSize)
+			.ClientSize(FVector2D(400, 600));
+
+		OAuthWindowPtr->SetOnWindowClosed(FOnWindowClosed::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnOAuthWindowClosed));
+
+		TSharedPtr<SOAuthWebBrowser> OAuthBrowser;
+		OAuthWindowPtr->SetContent
+		(
+			SAssignNew(OAuthBrowser, SOAuthWebBrowser)
+			.ParentWindow(OAuthWindowPtr)
+			.InitialURL(url)
+			.OnUrlChanged(this, &SSketchfabAssetBrowserWindow::OnUrlChanged)
+		);
+
+		FWidgetPath WidgetPath;
+		TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
+		FSlateApplication::Get().AddWindowAsNativeChild(OAuthWindowPtr.ToSharedRef(), CurrentWindow.ToSharedRef());
+	}
+
+}
+
+void SSketchfabAssetBrowserWindow::OnOAuthWindowClosed(const TSharedRef<SWindow>& InWindow)
+{
+	OAuthWindowPtr = NULL;
 }
 
 FReply SSketchfabAssetBrowserWindow::OnLogout()
@@ -683,48 +688,8 @@ FReply SSketchfabAssetBrowserWindow::OnLogout()
 	Token = "";
 	LoggedInUser = "";
 
-	/*
-	TSharedPtr<SWindow> loginWindow = OAuthWindowPtr.Pin();
-	if (loginWindow.IsValid())
-	{
-		loginWindow->ShowWindow();
-		return FReply::Handled();
-	}
-	*/
-
-	TSharedPtr<SWindow> ParentWindow;
-
-	if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
-	{
-		IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-		ParentWindow = MainFrame.GetParentWindow();
-	}
-
-
-	TSharedRef<SWindow> OAuthWindow = SNew(SWindow)
-		.Title(LOCTEXT("SketchfabAssetBrowser_LogoutWindow", "Sketchfab Logout Window"))
-		.SizingRule(ESizingRule::FixedSize)
-		.ClientSize(FVector2D(400, 600));
-
-	OAuthWindow->GetOnWindowDeactivatedEvent().AddSP(this, &SSketchfabAssetBrowserWindow::LoginBrowserClosed);
-
-	OAuthWindowPtr = OAuthWindow;
-
-	FString initialURL = "https://sketchfab.com/logout";
-
-	TSharedPtr<SOAuthWebBrowser> OAuthBrowser;
-	OAuthWindow->SetContent
-	(
-		SAssignNew(OAuthBrowser, SOAuthWebBrowser)
-		.ParentWindow(OAuthWindow)
-		.InitialURL(initialURL)
-		.OnUrlChanged(this, &SSketchfabAssetBrowserWindow::OnUrlChanged)
-	);
-
-	FWidgetPath WidgetPath;
-	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
-	FSlateApplication::Get().AddWindowAsNativeChild(OAuthWindow, CurrentWindow.ToSharedRef());
-
+	FString url = "https://sketchfab.com/logout";
+	DoLoginLogout(url);
 	return FReply::Handled();
 }
 
@@ -742,10 +707,6 @@ bool SSketchfabAssetBrowserWindow::OnLogoutEnabled() const
 	return !OnLoginEnabled();
 }
 
-void SSketchfabAssetBrowserWindow::LoginBrowserClosed()
-{
-	//OAuthWindowPtr = NULL;
-}
 
 FReply SSketchfabAssetBrowserWindow::OnCancel()
 {
@@ -841,13 +802,10 @@ void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
 
 		if (accesstoken.Len() != 0)
 		{
-			TSharedPtr<SWindow> loginWindow = OAuthWindowPtr.Pin();
-			if (loginWindow.IsValid())
+			if (OAuthWindowPtr.IsValid())
 			{
-				loginWindow->RequestDestroyWindow();
+				OAuthWindowPtr->RequestDestroyWindow();
 			}
-
-			OAuthWindowPtr = NULL;
 
 			Token = accesstoken;
 			GetUserData();
@@ -858,12 +816,10 @@ void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
 	leftBlock = TEXT("https://sketchfab.com/?logged_out=1");
 	if (data.Contains(leftBlock))
 	{
-		TSharedPtr<SWindow> loginWindow = OAuthWindowPtr.Pin();
-		if (loginWindow.IsValid())
+		if (OAuthWindowPtr.IsValid())
 		{
-			loginWindow->RequestDestroyWindow();
+			OAuthWindowPtr->RequestDestroyWindow();
 		}
-		OAuthWindowPtr = NULL;
 	}
 	return;
 }

@@ -71,6 +71,7 @@ private:
 	void Search(const FString &url);
 	void DownloadModel(const FString &ModelUID);
 	void ShowModelWindow(const FSketchfabAssetData& AssetData);
+	void DoLoginLogout(const FString &url);
 
 private: 	
 
@@ -281,12 +282,12 @@ private:
 	// The Asset Window is telling the main window to download a file
 	void OnDownloadRequest(const FString &ModelUID);
 
-	void LoginBrowserClosed();
+	void OnOAuthWindowClosed(const TSharedRef<SWindow>& InWindow);
 
 private:
-	TWeakPtr<SWindow> OAuthWindowPtr;
 	TWeakPtr<SWindow> Window;
 
+	TSharedPtr<SWindow> OAuthWindowPtr;
 	TSharedPtr<SSketchfabAssetWindow> AssetWindow;
 
 	TSharedPtr<STextBlock> FaceCountText;
