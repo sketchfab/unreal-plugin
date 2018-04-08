@@ -13,6 +13,10 @@ class USketchfabAssetBrowser : public UObject
 	GENERATED_UCLASS_BODY()
 public:
 	bool ShowWindow();
+	void OnWindowClosed(const TSharedRef<SWindow>& InWindow);
+
+private:
+	TSharedPtr<SWindow> SketchfabBrowserWindowPtr;
 };
 
 
