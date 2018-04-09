@@ -130,6 +130,7 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 			.HAlign(HAlign_Center)
 			.Text(LOCTEXT("SSketchfabAssetWindow_DownloadModel", "Download Model"))
 			.OnClicked(this, &SSketchfabAssetWindow::DownloadModel)
+			.IsEnabled(this, &SSketchfabAssetWindow::OnDownloadEnabled)
 		];
 
 	RootNode->AddSlot()
@@ -305,6 +306,15 @@ FReply SSketchfabAssetWindow::ViewOnSketchfab()
 	FPlatformMisc::OsExecute(TEXT("open"), *Command);
 	return FReply::Handled();
 }
+
+bool SSketchfabAssetWindow::OnDownloadEnabled() const
+{
+	//TODO
+	//If its already on disk then the button is not active
+	//If the file is currently being downloaded or the user has pressed the download button then its not active.
+	return true;
+}
+
 
 #undef LOCTEXT_NAMESPACE
 

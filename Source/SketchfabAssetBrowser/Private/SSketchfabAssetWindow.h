@@ -40,6 +40,7 @@ public:
 
 	FReply DownloadModel();
 	FReply ViewOnSketchfab();
+	bool OnDownloadEnabled() const;
 
 private:
 	TWeakPtr< SWindow > Window;
