@@ -42,20 +42,47 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 	TSharedRef<SVerticalBox> RootNode = SNew(SVerticalBox);
 
 	RootNode->AddSlot()
-		.AutoHeight()
-		.Padding(2, 2, 0, 2)
+	.Padding(2, 2, 2, 2)
+	.AutoHeight()
+	[
+		SNew(SUniformGridPanel)
+		.SlotPadding(10)
+		+ SUniformGridPanel::Slot(0, 0)
 		[
-			SNew(STextBlock)
-			.Text(FText::FromString(AssetData.ModelName.ToString()))
-			.Font(FEditorStyle::GetFontStyle(TEXT("PropertyWindow.BoldFont")))
-		];
-	RootNode->AddSlot()
-		.AutoHeight()
-		.Padding(2, 0, 0, 2)
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(EHorizontalAlignment::HAlign_Left)
+			.Padding(0, 0, 0, 2)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(AssetData.ModelName.ToString()))
+				.Font(FEditorStyle::GetFontStyle(TEXT("PropertyWindow.BoldFont")))
+			]
+			+SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(AssetData.AuthorName.ToString()))
+			]
+		]
+		+ SUniformGridPanel::Slot(1, 0)
 		[
-			SNew(STextBlock)
-			.Text(FText::FromString(AssetData.AuthorName.ToString()))
-		];
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(EHorizontalAlignment::HAlign_Right)
+			.Padding(0, 0, 0, 2)
+			[
+				SNew(SButton)
+				.HAlign(HAlign_Center)
+				.Text(LOCTEXT("SSketchfabAssetWindow_OpenOnSketchfab", "View on Sketchfab"))
+				.OnClicked(this, &SSketchfabAssetWindow::ViewOnSketchfab)
+			]
+		]
+	];
+
+	
 
 
 
@@ -269,6 +296,13 @@ void SSketchfabAssetWindow::SetThumbnail(const FSketchfabTask& InTask)
 FReply SSketchfabAssetWindow::DownloadModel()
 {
 	OnDownloadRequest.Execute(AssetData.ModelUID.ToString());
+	return FReply::Handled();
+}
+
+FReply SSketchfabAssetWindow::ViewOnSketchfab()
+{
+	FString Command = "https://sketchfab.com/models/" + AssetData.ModelUID.ToString();
+	FPlatformMisc::OsExecute(TEXT("open"), *Command);
 	return FReply::Handled();
 }
 

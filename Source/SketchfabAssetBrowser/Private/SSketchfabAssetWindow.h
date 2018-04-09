@@ -39,6 +39,7 @@ public:
 	void SetThumbnail(const FSketchfabTask& InTask);
 
 	FReply DownloadModel();
+	FReply ViewOnSketchfab();
 
 private:
 	TWeakPtr< SWindow > Window;
@@ -51,6 +52,7 @@ private:
 	TSharedPtr<SImage> ModelImage;
 
 	float DownloadSize;
+	FString ModelURL;
 
 	FSketchfabAssetData AssetData;
 	FOnDownloadRequest OnDownloadRequest;
