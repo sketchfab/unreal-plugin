@@ -261,26 +261,30 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 
 void SSketchfabAssetWindow::SetModelInfo(const FSketchfabTask& InTask)
 {
+	FNumberFormattingOptions FormattingOptions;
+	FormattingOptions.SetUseGrouping(false);
+	FormattingOptions.SetMaximumFractionalDigits(2);
+
 	if (InTask.TaskData.ModelVertexCount < 1000)
 	{
-		static const FText VertexCountBytes = LOCTEXT("VertexCountBytes", "{0} vertices");
+		static const FText VertexCountBytes = LOCTEXT("VertexCountBytes", "{0}");
 		VertexCountText->SetText(FText::Format(VertexCountBytes, FText::AsNumber(InTask.TaskData.ModelVertexCount)));
 	}
 	else
 	{
-		static const FText VertexCountKiloBytes = LOCTEXT("VertexCountKiloBytes", "{0}k vertices");
-		VertexCountText->SetText(FText::Format(VertexCountKiloBytes, FText::AsNumber(InTask.TaskData.ModelVertexCount / 1000)));
+		static const FText VertexCountKiloBytes = LOCTEXT("VertexCountKiloBytes", "{0}k");
+		VertexCountText->SetText(FText::Format(VertexCountKiloBytes, FText::AsNumber(InTask.TaskData.ModelVertexCount / 1000.0, &FormattingOptions)));
 	}
 
 	if (InTask.TaskData.ModelFaceCount < 1000)
 	{
-		static const FText FaceCountBytes = LOCTEXT("FaceCountBytes", "{0} faces");
+		static const FText FaceCountBytes = LOCTEXT("FaceCountBytes", "{0}");
 		FaceCountText->SetText(FText::Format(FaceCountBytes, FText::AsNumber(InTask.TaskData.ModelFaceCount)));
 	}
 	else
 	{
-		static const FText FaceCountKiloBytes = LOCTEXT("FaceCountKiloBytes", "{0}k faces");
-		FaceCountText->SetText(FText::Format(FaceCountKiloBytes, FText::AsNumber(InTask.TaskData.ModelFaceCount / 1000)));
+		static const FText FaceCountKiloBytes = LOCTEXT("FaceCountKiloBytes", "{0}k");
+		FaceCountText->SetText(FText::Format(FaceCountKiloBytes, FText::AsNumber(InTask.TaskData.ModelFaceCount / 1000.0, &FormattingOptions)));
 	}
 
 	
