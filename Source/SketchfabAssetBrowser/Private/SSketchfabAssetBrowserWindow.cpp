@@ -55,7 +55,9 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	bSearchStaffPicked = true;
 	SortByType = SORTBY_MostRecent;
 	FaceCount = FACECOUNT_ALL;
-	CategoryIndex = -1;
+
+	CategoryIndex = 0;
+	CurrentCategoryString = TEXT("All");
 
 	TSharedPtr<SBox> DetailsViewBox;
 	ChildSlot
@@ -200,35 +202,14 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				.SlotPadding(2)
 				+ SUniformGridPanel::Slot(0, 0)
 				[
-					SNew( SComboButton )
-					.HAlign(HAlign_Center)
-					.ComboButtonStyle( FEditorStyle::Get(), "GenericFilters.ComboButtonStyle" )
-					.ForegroundColor(FLinearColor::White)
-					.ContentPadding(0)
-					//.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
-					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeCategoriesMenu)
-					.HasDownArrow( true )
-					.ContentPadding( FMargin( 1, 0 ) )
-					.ButtonContent()
+					SAssignNew(CategoriesComboBox,SComboBox<TSharedPtr<FString>>)
+					.OptionsSource(&CategoryComboList)
+					.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateCategoryComboItem)
+					.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleCategoryComboChanged)
+					.ContentPadding(0.0f)
 					[
-						SNew(SHorizontalBox)
-
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						[
-							SNew(STextBlock)
-							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(FText::FromString(FString(TEXT("Category: "))))
-						]
-
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(2,0,0,0)
-						[
-							SAssignNew(CategoryText, STextBlock)
-							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(GetCategoryText())
-						]
+						SNew(STextBlock)
+						.Text(this, &SSketchfabAssetBrowserWindow::GetCategoryComboText)
 					]
 				]
 
@@ -590,7 +571,7 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	break;
 	}
 
-	if (CategoryIndex >= 0 && CategoryIndex < Categories.Num())
+	if (CategoryIndex > 0 && CategoryIndex < Categories.Num())
 	{
 		url += "&categories=";
 		url += Categories[CategoryIndex].slug.ToLower();
@@ -834,34 +815,6 @@ FReply SSketchfabAssetBrowserWindow::OnKeyDown(const FGeometry& MyGeometry, cons
 	return FReply::Unhandled();
 }
 
-void SSketchfabAssetBrowserWindow::AddCategoryWidget(FMenuBuilder &MenuBuilder, int32 CategoryIndex)
-{
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleCategoryIsChecked, CategoryIndex)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleCategoryStateChanged, CategoryIndex)
-		[
-			SNew(STextBlock)
-			.Text(GetCategoryText(CategoryIndex))
-		], FText::GetEmpty()
-	);
-}
-
-TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeCategoriesMenu()
-{
-	// create packing mode menu
-	FMenuBuilder MenuBuilder(true, NULL);
-	AddCategoryWidget(MenuBuilder, -1);
-
-	for (int32 i = 0; i < Categories.Num(); i++)
-	{
-		AddCategoryWidget(MenuBuilder, i);
-	}
-
-	return MenuBuilder.MakeWidget();
-}
-
 void SSketchfabAssetBrowserWindow::AddSortByWidget(FMenuBuilder &MenuBuilder, ESortBy sb)
 {
 	MenuBuilder.AddWidget(
@@ -954,6 +907,31 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 	FSlateApplication::Get().AddWindowAsNativeChild(ModelWindow, CurrentWindow.ToSharedRef());
 
 	GetModelInfo(AssetData.ModelUID.ToString());
+}
+
+
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateCategoryComboItem(TSharedPtr<FString> InItem)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(*InItem));
+}
+
+void SSketchfabAssetBrowserWindow::HandleCategoryComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
+{
+	for (int32 i = 0; i < CategoryComboList.Num(); i++)
+	{
+		if (Item == CategoryComboList[i])
+		{
+			CurrentCategoryString = *Item.Get();
+			CategoryIndex = i;
+			OnSearchPressed();
+		}
+	}
+}
+
+FText SSketchfabAssetBrowserWindow::GetCategoryComboText() const
+{
+	return FText::FromString(CurrentCategoryString);
 }
 
 //=====================================================
@@ -1142,7 +1120,21 @@ void SSketchfabAssetBrowserWindow::OnModelDownloadProgress(const FSketchfabTask&
 
 void SSketchfabAssetBrowserWindow::OnCategories(const FSketchfabTask& InTask)
 {
-	Categories = InTask.TaskData.Categories;
+	Categories.Empty();
+	FSketchfabCategory allCat;
+	allCat.name = TEXT("All");
+	Categories.Add(allCat);
+
+	CategoryComboList.Empty();
+	CategoryComboList.Add(MakeShared<FString>(TEXT("All")));
+
+	for (auto &a : InTask.TaskData.Categories)
+	{
+		Categories.Add(a);
+		CategoryComboList.Add(MakeShared<FString>(a.name));
+	}
+
+	CategoriesComboBox->RefreshOptions();
 }
 
 
@@ -1166,7 +1158,6 @@ void SSketchfabAssetBrowserWindow::OnGetBigThumbnail(const FSketchfabTask& InTas
 		AssetWindow->SetThumbnail(InTask);
 	}
 }
-
 
 
 #undef LOCTEXT_NAMESPACE

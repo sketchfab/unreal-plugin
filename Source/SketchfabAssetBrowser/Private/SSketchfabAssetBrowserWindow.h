@@ -10,6 +10,7 @@
 #include "SSketchfabAssetSearchBox.h"
 #include "SSketchfabAssetWindow.h"
 #include "SOAuthWebBrowser.h"
+#include "SComboBox.h"
 
 //#include "../WebBrowser/Public/IWebBrowserWindow.h"
 
@@ -94,12 +95,10 @@ private:
 	};
 
 	//Search Options
-	TSharedRef<SWidget> MakeCategoriesMenu();
 	TSharedRef<SWidget> MakeSortByMenu();
 	TSharedRef<SWidget> MakeFaceCountMenu();
 	void AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc);
 	void AddSortByWidget(FMenuBuilder &MenuBuilder, ESortBy fc);
-	void AddCategoryWidget(FMenuBuilder &MenuBuilder, int32 CategoryIndex);
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -248,12 +247,20 @@ private:
 		return FText::FromString("");
 	}
 
+	TSharedRef<SWidget> GenerateCategoryComboItem(TSharedPtr<FString> InItem);
+	void HandleCategoryComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
+	FText GetCategoryComboText() const;
+
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
-	TArray<FSketchfabCategory> Categories;
 	ESortBy SortByType;
 	EFaceCount FaceCount;
+
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> CategoriesComboBox;
+	TArray<FSketchfabCategory> Categories;
+	TArray<TSharedPtr<FString>> CategoryComboList;
 	int32 CategoryIndex;
+	FString CurrentCategoryString;
 
 private:
 	FString Token;
