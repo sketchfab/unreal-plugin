@@ -261,8 +261,28 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 
 void SSketchfabAssetWindow::SetModelInfo(const FSketchfabTask& InTask)
 {
-	VertexCountText->SetText(FText::AsNumber(InTask.TaskData.ModelVertexCount));
-	FaceCountText->SetText(FText::AsNumber(InTask.TaskData.ModelFaceCount));
+	if (InTask.TaskData.ModelVertexCount < 1000)
+	{
+		static const FText VertexCountBytes = LOCTEXT("VertexCountBytes", "{0} vertices");
+		VertexCountText->SetText(FText::Format(VertexCountBytes, FText::AsNumber(InTask.TaskData.ModelVertexCount)));
+	}
+	else
+	{
+		static const FText VertexCountKiloBytes = LOCTEXT("VertexCountKiloBytes", "{0}k vertices");
+		VertexCountText->SetText(FText::Format(VertexCountKiloBytes, FText::AsNumber(InTask.TaskData.ModelVertexCount / 1000)));
+	}
+
+	if (InTask.TaskData.ModelFaceCount < 1000)
+	{
+		static const FText FaceCountBytes = LOCTEXT("FaceCountBytes", "{0} faces");
+		FaceCountText->SetText(FText::Format(FaceCountBytes, FText::AsNumber(InTask.TaskData.ModelFaceCount)));
+	}
+	else
+	{
+		static const FText FaceCountKiloBytes = LOCTEXT("FaceCountKiloBytes", "{0}k faces");
+		FaceCountText->SetText(FText::Format(FaceCountKiloBytes, FText::AsNumber(InTask.TaskData.ModelFaceCount / 1000)));
+	}
+
 	
 	if (InTask.TaskData.AnimationCount > 0)
 	{
