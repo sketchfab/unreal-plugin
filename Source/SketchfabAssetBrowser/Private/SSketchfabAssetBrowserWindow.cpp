@@ -53,7 +53,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 	bSearchAnimated = false;
 	bSearchStaffPicked = true;
-	FaceCount = FACECOUNT_ALL;
 
 	CategoryIndex = 0;
 	CurrentCategoryString = TEXT("All");
@@ -86,6 +85,46 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		break;
 		}
 	}
+
+	FaceCountIndex = (int32)FACECOUNT_ALL;
+	CurrentFaceCountString = TEXT("All");
+	for (int32 i = 0; i < (int32)FACECOUNT_UNDEFINED; i++)
+	{
+		switch (i)
+		{
+		case FACECOUNT_ALL:
+		{
+			FaceCountComboList.Add(MakeShared<FString>(TEXT("All")));
+		}
+		break;
+		case FACECOUNT_0_10:
+		{
+			FaceCountComboList.Add(MakeShared<FString>(TEXT("Up to 10k")));
+		}
+		break;
+		case FACECOUNT_10_50:
+		{
+			FaceCountComboList.Add(MakeShared<FString>(TEXT("10k to 50k")));
+		}
+		break;
+		case FACECOUNT_50_100:
+		{
+			FaceCountComboList.Add(MakeShared<FString>(TEXT("50k to 100k")));
+		}
+		break;
+		case FACECOUNT_100_250:
+		{
+			FaceCountComboList.Add(MakeShared<FString>(TEXT("100k to 250k")));
+		}
+		break;
+		case FACECOUNT_250:
+		{
+			FaceCountComboList.Add(MakeShared<FString>(TEXT("250k+")));
+		}
+		break;
+		}
+	}
+
 
 
 	TSharedPtr<SBox> DetailsViewBox;
@@ -265,35 +304,13 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				
 				+ SUniformGridPanel::Slot(3, 0)
 				[
-					SNew( SComboButton )
-					.HAlign(HAlign_Center)
-					.ComboButtonStyle( FEditorStyle::Get(), "GenericFilters.ComboButtonStyle" )
-					.ForegroundColor(FLinearColor::White)
-					.ContentPadding(0)
-					//.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
-					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeFaceCountMenu)
-					.HasDownArrow( true )
-					.ContentPadding( FMargin( 1, 0 ) )
-					.ButtonContent()
+					SAssignNew(FaceCountComboBox, SComboBox<TSharedPtr<FString>>)
+					.OptionsSource(&FaceCountComboList)
+					.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateFaceCountComboItem)
+					.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleFaceCountComboChanged)
 					[
-						SNew(SHorizontalBox)
-
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						[
-							SNew(STextBlock)
-							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(FText::FromString(FString(TEXT("Faces Count: "))))
-						]
-
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(2,0,0,0)
-						[
-							SAssignNew(FaceCountText, STextBlock)
-							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(GetFaceCountText())
-						]
+						SNew(STextBlock)
+						.Text(this, &SSketchfabAssetBrowserWindow::GetFaceCountComboText)
 					]
 				]
 
@@ -543,7 +560,7 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	}
 
 	//Sort By
-	switch (FaceCount)
+	switch (FaceCountIndex)
 	{
 	case FACECOUNT_ALL:
 	{
@@ -821,32 +838,6 @@ FReply SSketchfabAssetBrowserWindow::OnKeyDown(const FGeometry& MyGeometry, cons
 	return FReply::Unhandled();
 }
 
-void SSketchfabAssetBrowserWindow::AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc)
-{
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleFaceCountChecked, fc)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleFaceCountStateChanged, fc)
-		[
-			SNew(STextBlock)
-			.Text(GetFaceCountText(fc))
-		], FText::GetEmpty()
-	);
-}
-
-TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeFaceCountMenu()
-{
-	FMenuBuilder MenuBuilder(true, NULL);
-	AddFaceCountWidget(MenuBuilder, FACECOUNT_ALL);
-	AddFaceCountWidget(MenuBuilder, FACECOUNT_0_10);
-	AddFaceCountWidget(MenuBuilder, FACECOUNT_10_50);
-	AddFaceCountWidget(MenuBuilder, FACECOUNT_50_100);
-	AddFaceCountWidget(MenuBuilder, FACECOUNT_100_250);
-	AddFaceCountWidget(MenuBuilder, FACECOUNT_250);
-	return MenuBuilder.MakeWidget();
-}
-
 ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked() const
 {
 	return bSearchAnimated ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
@@ -943,6 +934,31 @@ FText SSketchfabAssetBrowserWindow::GetSortByComboText() const
 	return FText::FromString(CurrentSortByString);
 }
 
+
+// FaceCount
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateFaceCountComboItem(TSharedPtr<FString> InItem)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(*InItem));
+}
+
+void SSketchfabAssetBrowserWindow::HandleFaceCountComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
+{
+	for (int32 i = 0; i < FaceCountComboList.Num(); i++)
+	{
+		if (Item == FaceCountComboList[i])
+		{
+			CurrentFaceCountString = *Item.Get();
+			FaceCountIndex = i;
+			OnSearchPressed();
+		}
+	}
+}
+
+FText SSketchfabAssetBrowserWindow::GetFaceCountComboText() const
+{
+	return FText::FromString(CurrentFaceCountString);
+}
 
 //=====================================================
 // Direct REST API Calls

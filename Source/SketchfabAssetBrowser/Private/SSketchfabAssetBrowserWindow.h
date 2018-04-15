@@ -75,7 +75,7 @@ private:
 	void DoLoginLogout(const FString &url);
 
 private: 	
-
+	//Search Options
 	enum ESortBy {
 		SORTBY_Relevance,
 		SORTBY_MostLiked,
@@ -94,80 +94,14 @@ private:
 		FACECOUNT_UNDEFINED,
 	};
 
-	//Search Options
-	TSharedRef<SWidget> MakeFaceCountMenu();
-	void AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc);
-
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
 
 	ECheckBoxState IsSearchStaffPickedChecked() const;
 	void OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState);
 
-
-	void HandleFaceCountStateChanged(ECheckBoxState NewRadioState, EFaceCount NewFaceCount)
-	{
-		if (NewRadioState == ECheckBoxState::Checked)
-		{
-			FaceCount = NewFaceCount;
-		}
-		FaceCountText->SetText(GetFaceCountText());
-	}
-
-	ECheckBoxState HandleFaceCountChecked(EFaceCount NewFaceCount) const
-	{
-		return (FaceCount == NewFaceCount)
-			? ECheckBoxState::Checked
-			: ECheckBoxState::Unchecked;
-	}
-
-	FText GetFaceCountText(EFaceCount custom = FACECOUNT_UNDEFINED) const
-	{
-		EFaceCount val = FaceCount;
-		if (custom != FACECOUNT_UNDEFINED)
-		{
-			val = custom;
-		}
-
-		switch (val)
-		{
-		case FACECOUNT_ALL:
-		{
-			return FText::FromString("All");
-		}
-		break;
-		case FACECOUNT_0_10:
-		{
-			return FText::FromString("Up to 10k");
-		}
-		break;
-		case FACECOUNT_10_50:
-		{
-			return FText::FromString("10k to 50k");
-		}
-		break;
-		case FACECOUNT_50_100:
-		{
-			return FText::FromString("50k to 100k");
-		}
-		break;
-		case FACECOUNT_100_250:
-		{
-			return FText::FromString("100k to 250k");
-		}
-		break;
-		case FACECOUNT_250:
-		{
-			return FText::FromString("250k+");
-		}
-		break;
-		}
-		return FText::FromString("");
-	}
-
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
-	EFaceCount FaceCount;
 
 	// Sort By
 	TSharedRef<SWidget> GenerateSortByComboItem(TSharedPtr<FString> InItem);
@@ -187,6 +121,15 @@ private:
 	TArray<TSharedPtr<FString>> CategoryComboList;
 	int32 CategoryIndex;
 	FString CurrentCategoryString;
+
+	// Face Count
+	TSharedRef<SWidget> GenerateFaceCountComboItem(TSharedPtr<FString> InItem);
+	void HandleFaceCountComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
+	FText GetFaceCountComboText() const;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> FaceCountComboBox;
+	TArray<TSharedPtr<FString>> FaceCountComboList;
+	int32 FaceCountIndex;
+	FString CurrentFaceCountString;
 
 private:
 	FString Token;
