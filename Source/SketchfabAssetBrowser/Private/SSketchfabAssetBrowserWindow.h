@@ -95,10 +95,8 @@ private:
 	};
 
 	//Search Options
-	TSharedRef<SWidget> MakeSortByMenu();
 	TSharedRef<SWidget> MakeFaceCountMenu();
 	void AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc);
-	void AddSortByWidget(FMenuBuilder &MenuBuilder, ESortBy fc);
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -106,86 +104,6 @@ private:
 	ECheckBoxState IsSearchStaffPickedChecked() const;
 	void OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState);
 
-	void HandleCategoryStateChanged(ECheckBoxState NewRadioState, int32 NewCategoryIndex)
-	{
-		if (NewRadioState == ECheckBoxState::Checked)
-		{
-			CategoryIndex = NewCategoryIndex;
-		}
-		CategoryText->SetText(GetCategoryText());
-	}
-
-	ECheckBoxState HandleCategoryIsChecked(int32 NewCategoryIndex) const
-	{
-		return (CategoryIndex == NewCategoryIndex)
-			? ECheckBoxState::Checked
-			: ECheckBoxState::Unchecked;
-	}
-
-	FText GetCategoryText(int32 CustomIndex = -2) const
-	{
-		int32 val = CategoryIndex;
-		if (CustomIndex != -2)
-		{
-			val = CustomIndex;
-		}
-		
-		if (val >= 0 && val < Categories.Num())
-		{
-			return FText::FromString(Categories[val].name);
-		}
-		
-		return FText::FromString("All");
-	}
-
-	void HandleSortByTypeStateChanged(ECheckBoxState NewRadioState, ESortBy NewSortByType)
-	{
-		if (NewRadioState == ECheckBoxState::Checked)
-		{
-			SortByType = NewSortByType;
-		}
-		SortByText->SetText(GetSortByText());
-	}
-
-	ECheckBoxState HandleSortByTypeIsChecked(ESortBy NewSortByType) const
-	{
-		return (SortByType == NewSortByType)
-			? ECheckBoxState::Checked
-			: ECheckBoxState::Unchecked;
-	}
-
-	FText GetSortByText(ESortBy custom = SORTBY_UNDEFINED) const
-	{
-		ESortBy val = SortByType;
-		if (custom != SORTBY_UNDEFINED)
-		{
-			val = custom;
-		}
-		switch (val)
-		{
-		case SORTBY_Relevance:
-		{
-			return FText::FromString("Relevance");
-		}
-		break;
-		case SORTBY_MostLiked:
-		{
-			return FText::FromString("Most Liked");
-		}
-		break;
-		case SORTBY_MostViewed:
-		{
-			return FText::FromString("Most Viewed");
-		}
-		break;
-		case SORTBY_MostRecent:
-		{
-			return FText::FromString("Most Recent");
-		}
-		break;
-		}
-		return FText::FromString("");
-	}
 
 	void HandleFaceCountStateChanged(ECheckBoxState NewRadioState, EFaceCount NewFaceCount)
 	{
@@ -247,15 +165,23 @@ private:
 		return FText::FromString("");
 	}
 
+	bool bSearchAnimated;
+	bool bSearchStaffPicked;
+	EFaceCount FaceCount;
+
+	// Sort By
+	TSharedRef<SWidget> GenerateSortByComboItem(TSharedPtr<FString> InItem);
+	void HandleSortByComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
+	FText GetSortByComboText() const;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> SortByComboBox;
+	TArray<TSharedPtr<FString>> SortByComboList;
+	int32 SortByIndex;
+	FString CurrentSortByString;
+
+	// Category
 	TSharedRef<SWidget> GenerateCategoryComboItem(TSharedPtr<FString> InItem);
 	void HandleCategoryComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
 	FText GetCategoryComboText() const;
-
-	bool bSearchAnimated;
-	bool bSearchStaffPicked;
-	ESortBy SortByType;
-	EFaceCount FaceCount;
-
 	TSharedPtr<SComboBox<TSharedPtr<FString>>> CategoriesComboBox;
 	TArray<FSketchfabCategory> Categories;
 	TArray<TSharedPtr<FString>> CategoryComboList;
@@ -298,8 +224,6 @@ private:
 	TSharedPtr<SSketchfabAssetWindow> AssetWindow;
 
 	TSharedPtr<STextBlock> FaceCountText;
-	TSharedPtr<STextBlock> SortByText;
-	TSharedPtr<STextBlock> CategoryText;
 
 	TSharedPtr<SSketchfabAssetView> AssetViewPtr;
 

@@ -53,11 +53,40 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 	bSearchAnimated = false;
 	bSearchStaffPicked = true;
-	SortByType = SORTBY_MostRecent;
 	FaceCount = FACECOUNT_ALL;
 
 	CategoryIndex = 0;
 	CurrentCategoryString = TEXT("All");
+
+	SortByIndex = (int32)SORTBY_MostRecent;
+	CurrentSortByString = TEXT("Most Recent");
+	for (int32 i = 0; i < (int32)SORTBY_UNDEFINED; i++)
+	{
+		switch (i)
+		{
+		case SORTBY_Relevance:
+		{
+			SortByComboList.Add(MakeShared<FString>(TEXT("Relevance")));
+		}
+		break;
+		case SORTBY_MostLiked:
+		{
+			SortByComboList.Add(MakeShared<FString>(TEXT("Most Liked")));
+		}
+		break;
+		case SORTBY_MostViewed:
+		{
+			SortByComboList.Add(MakeShared<FString>(TEXT("Most Viewed")));
+		}
+		break;
+		case SORTBY_MostRecent:
+		{
+			SortByComboList.Add(MakeShared<FString>(TEXT("Most Recent")));
+		}
+		break;
+		}
+	}
+
 
 	TSharedPtr<SBox> DetailsViewBox;
 	ChildSlot
@@ -206,7 +235,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					.OptionsSource(&CategoryComboList)
 					.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateCategoryComboItem)
 					.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleCategoryComboChanged)
-					.ContentPadding(0.0f)
 					[
 						SNew(STextBlock)
 						.Text(this, &SSketchfabAssetBrowserWindow::GetCategoryComboText)
@@ -271,35 +299,13 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 				+ SUniformGridPanel::Slot(4, 0)
 				[
-					SNew( SComboButton )
-					.HAlign(HAlign_Center)
-					.ComboButtonStyle( FEditorStyle::Get(), "GenericFilters.ComboButtonStyle" )
-					.ForegroundColor(FLinearColor::White)
-					.ContentPadding(0)
-					//.ToolTipText( LOCTEXT( "AddFilterToolTip", "Add an asset filter." ) )
-					.OnGetMenuContent( this, &SSketchfabAssetBrowserWindow::MakeSortByMenu)
-					.HasDownArrow( true )
-					.ContentPadding( FMargin( 1, 0 ) )
-					.ButtonContent()
+					SAssignNew(SortByComboBox, SComboBox<TSharedPtr<FString>>)
+					.OptionsSource(&SortByComboList)
+					.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateSortByComboItem)
+					.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByComboChanged)
 					[
-						SNew(SHorizontalBox)
-
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						[
-							SNew(STextBlock)
-							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(FText::FromString(FString(TEXT("Sort By: "))))
-						]
-
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(2,0,0,0)
-						[
-							SAssignNew(SortByText, STextBlock)
-							.TextStyle(FEditorStyle::Get(), "GenericFilters.TextStyle")
-							.Text(GetSortByText())
-						]
+						SNew(STextBlock)
+						.Text(this, &SSketchfabAssetBrowserWindow::GetSortByComboText)
 					]
 				]
 			]
@@ -512,7 +518,7 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	}
 
 	//Sort By
-	switch (SortByType)
+	switch (SortByIndex)
 	{
 	case SORTBY_Relevance:
 	{
@@ -815,30 +821,6 @@ FReply SSketchfabAssetBrowserWindow::OnKeyDown(const FGeometry& MyGeometry, cons
 	return FReply::Unhandled();
 }
 
-void SSketchfabAssetBrowserWindow::AddSortByWidget(FMenuBuilder &MenuBuilder, ESortBy sb)
-{
-	MenuBuilder.AddWidget(
-		SNew(SCheckBox)
-		.Style(FCoreStyle::Get(), "RadioButton")
-		.IsChecked(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeIsChecked, sb)
-		.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByTypeStateChanged, sb)
-		[
-			SNew(STextBlock)
-			.Text(GetSortByText(sb))
-		], FText::GetEmpty()
-	);
-}
-
-TSharedRef<SWidget> SSketchfabAssetBrowserWindow::MakeSortByMenu()
-{
-	FMenuBuilder MenuBuilder(true, NULL);
-	AddSortByWidget(MenuBuilder, SORTBY_Relevance);
-	AddSortByWidget(MenuBuilder, SORTBY_MostLiked);
-	AddSortByWidget(MenuBuilder, SORTBY_MostViewed);
-	AddSortByWidget(MenuBuilder, SORTBY_MostRecent);
-	return MenuBuilder.MakeWidget();
-}
-
 void SSketchfabAssetBrowserWindow::AddFaceCountWidget(FMenuBuilder &MenuBuilder, EFaceCount fc)
 {
 	MenuBuilder.AddWidget(
@@ -910,6 +892,7 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 }
 
 
+// Category
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateCategoryComboItem(TSharedPtr<FString> InItem)
 {
 	return SNew(STextBlock)
@@ -933,6 +916,33 @@ FText SSketchfabAssetBrowserWindow::GetCategoryComboText() const
 {
 	return FText::FromString(CurrentCategoryString);
 }
+
+
+// Sort By
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateSortByComboItem(TSharedPtr<FString> InItem)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(*InItem));
+}
+
+void SSketchfabAssetBrowserWindow::HandleSortByComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
+{
+	for (int32 i = 0; i < SortByComboList.Num(); i++)
+	{
+		if (Item == SortByComboList[i])
+		{
+			CurrentSortByString = *Item.Get();
+			SortByIndex = i;
+			OnSearchPressed();
+		}
+	}
+}
+
+FText SSketchfabAssetBrowserWindow::GetSortByComboText() const
+{
+	return FText::FromString(CurrentSortByString);
+}
+
 
 //=====================================================
 // Direct REST API Calls
