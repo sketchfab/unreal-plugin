@@ -846,6 +846,7 @@ ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked() const
 void SSketchfabAssetBrowserWindow::OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState)
 {
 	bSearchAnimated = (NewState == ECheckBoxState::Checked);
+	OnSearchPressed();
 }
 
 ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchStaffPickedChecked() const
@@ -856,6 +857,7 @@ ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchStaffPickedChecked() const
 void SSketchfabAssetBrowserWindow::OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState)
 {
 	bSearchStaffPicked = (NewState == ECheckBoxState::Checked);
+	OnSearchPressed();
 }
 
 
