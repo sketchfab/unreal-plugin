@@ -270,14 +270,28 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				.SlotPadding(2)
 				+ SUniformGridPanel::Slot(0, 0)
 				[
-					SAssignNew(CategoriesComboBox,SComboBox<TSharedPtr<FString>>)
-					.OptionsSource(&CategoryComboList)
-					.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateCategoryComboItem)
-					.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleCategoryComboChanged)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.Padding(2.0f, 6.0f)
+					.AutoWidth()
 					[
 						SNew(STextBlock)
-						.Text(this, &SSketchfabAssetBrowserWindow::GetCategoryComboText)
+						.Text(LOCTEXT("CategoryComboMenu", "Categories:"))
 					]
+					+ SHorizontalBox::Slot()
+					.Padding(2.0f, 2.0f)
+					.FillWidth(1.0f)
+					.HAlign(HAlign_Fill)
+					[
+						SAssignNew(CategoriesComboBox, SComboBox<TSharedPtr<FString>>)
+						.OptionsSource(&CategoryComboList)
+						.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateCategoryComboItem)
+						.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleCategoryComboChanged)
+						[
+							SNew(STextBlock)
+							.Text(this, &SSketchfabAssetBrowserWindow::GetCategoryComboText)
+						]
+					]	
 				]
 
 				+ SUniformGridPanel::Slot(1, 0)
@@ -304,26 +318,54 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				
 				+ SUniformGridPanel::Slot(3, 0)
 				[
-					SAssignNew(FaceCountComboBox, SComboBox<TSharedPtr<FString>>)
-					.OptionsSource(&FaceCountComboList)
-					.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateFaceCountComboItem)
-					.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleFaceCountComboChanged)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.Padding(2.0f, 6.0f)
+					.AutoWidth()
 					[
 						SNew(STextBlock)
-						.Text(this, &SSketchfabAssetBrowserWindow::GetFaceCountComboText)
+						.Text(LOCTEXT("FaceCountComboMenu", "Face Count:"))
 					]
+					+ SHorizontalBox::Slot()
+					.Padding(2.0f, 2.0f)
+					.FillWidth(1.0f)
+					.HAlign(HAlign_Fill)
+					[
+						SAssignNew(FaceCountComboBox, SComboBox<TSharedPtr<FString>>)
+						.OptionsSource(&FaceCountComboList)
+						.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateFaceCountComboItem)
+						.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleFaceCountComboChanged)
+						[
+							SNew(STextBlock)
+							.Text(this, &SSketchfabAssetBrowserWindow::GetFaceCountComboText)
+						]
+					]	
 				]
 
 				+ SUniformGridPanel::Slot(4, 0)
 				[
-					SAssignNew(SortByComboBox, SComboBox<TSharedPtr<FString>>)
-					.OptionsSource(&SortByComboList)
-					.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateSortByComboItem)
-					.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByComboChanged)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.Padding(2.0f, 6.0f)
+					.AutoWidth()
 					[
 						SNew(STextBlock)
-						.Text(this, &SSketchfabAssetBrowserWindow::GetSortByComboText)
+						.Text(LOCTEXT("SortByComboMenu", "Sort By:"))
 					]
+					+ SHorizontalBox::Slot()
+					.Padding(2.0f, 2.0f)
+					.FillWidth(1.0f)
+					.HAlign(HAlign_Fill)
+					[
+						SAssignNew(SortByComboBox, SComboBox<TSharedPtr<FString>>)
+						.OptionsSource(&SortByComboList)
+						.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateSortByComboItem)
+						.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByComboChanged)
+						[
+							SNew(STextBlock)
+							.Text(this, &SSketchfabAssetBrowserWindow::GetSortByComboText)
+						]
+					]	
 				]
 			]
 		]
