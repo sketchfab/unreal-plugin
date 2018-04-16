@@ -251,6 +251,9 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 
 					FString modelUID = resultObj->GetStringField("uid");
 					FString modelName = resultObj->GetStringField("name");
+					FString modelPublishedAt = resultObj->GetStringField("publishedAt");
+					TArray<FString> publishedAt;
+					modelPublishedAt.ParseIntoArray(publishedAt, TEXT("-"));
 
 					FString authorName;
 					TSharedPtr<FJsonObject> userObj = resultObj->GetObjectField("user");
@@ -263,6 +266,15 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 
 					GetThumnailData(resultObj, 512, OutItem->ThumbnailUID, OutItem->ThumbnailURL, OutItem->ThumbnailWidth, OutItem->ThumbnailHeight);
 					GetThumnailData(resultObj, 1024, OutItem->ThumbnailUID_1024, OutItem->ThumbnailURL_1024, OutItem->ThumbnailWidth_1024, OutItem->ThumbnailHeight_1024);
+
+					if (publishedAt.Num() == 3)
+					{
+						OutItem->ModelPublishedAt = FDateTime(FCString::Atoi(*publishedAt[0]), FCString::Atoi(*publishedAt[1]), FCString::Atoi(*publishedAt[2]));
+					}
+					else
+					{
+						OutItem->ModelPublishedAt = FDateTime::Today();
+					}
 
 					OutItem->ModelName = modelName;
 					OutItem->ModelUID = modelUID;

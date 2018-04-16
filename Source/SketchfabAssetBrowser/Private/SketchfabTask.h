@@ -99,6 +99,9 @@ struct FSketchfabTaskData
 	/** Download size of the model in bytes */
 	uint64 ModelSize;
 
+	/** Date model was published */
+	FDateTime ModelPublishedAt;
+
 	/** Model Author Name */
 	FString ModelAuthor;
 

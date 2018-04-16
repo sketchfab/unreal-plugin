@@ -1030,6 +1030,22 @@ void SSketchfabAssetBrowserWindow::GetBigThumbnail(const FSketchfabTaskData &dat
 	FString jpg = data.ThumbnailUID_1024 + ".jpg";
 	FString FileName = data.CacheFolder / jpg;
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+	bool download = false;
+	bool fileExists = PlatformFile.FileExists(*FileName);
+	if (fileExists)
+	{
+		FDateTime modifiedTime = PlatformFile.GetTimeStamp(*FileName);
+		if (modifiedTime > data.ModelPublishedAt)
+		{
+			download = true;
+		}
+	}
+	else
+	{
+		download = true;
+	}
+
 	if (!PlatformFile.FileExists(*FileName))
 	{
 		FSketchfabTaskData TaskData = data;
