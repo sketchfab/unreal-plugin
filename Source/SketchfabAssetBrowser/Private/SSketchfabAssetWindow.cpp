@@ -320,7 +320,11 @@ void SSketchfabAssetWindow::SetThumbnail(const FSketchfabTask& InTask)
 
 FReply SSketchfabAssetWindow::DownloadModel()
 {
-	OnDownloadRequest.Execute(AssetData.ModelUID.ToString());
+	OnDownloadRequest.Execute(AssetData.ModelUID.ToString(), AssetData.ModelPublishedAt);
+	if (Window.IsValid())
+	{
+		Window.Pin()->RequestDestroyWindow();
+	}
 	return FReply::Handled();
 }
 

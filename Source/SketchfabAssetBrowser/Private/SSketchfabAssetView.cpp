@@ -506,6 +506,7 @@ void SSketchfabAssetView::ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Dat
 	NewAssetData.ThumbnailWidth = Data->ThumbnailWidth;
 	NewAssetData.ThumbnailHeight = Data->ThumbnailHeight;
 	NewAssetData.AuthorName = FName(*Data->ModelAuthor);
+	NewAssetData.ModelPublishedAt = Data->ModelPublishedAt;
 
 	TSharedPtr<FAssetViewItem> NewItem = MakeShareable(new FAssetViewAsset(NewAssetData));
 

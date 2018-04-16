@@ -12,7 +12,7 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetWindow, Log, All);
 
-DECLARE_DELEGATE_OneParam(FOnDownloadRequest, const FString &);
+DECLARE_DELEGATE_TwoParams(FOnDownloadRequest, const FString &, const FDateTime &);
 
 class SSketchfabAssetWindow : public SCompoundWidget
 {

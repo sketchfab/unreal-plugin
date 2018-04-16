@@ -24,6 +24,7 @@ struct FSketchfabAssetData
 public:
 	FName AuthorName;
 	FName ModelUID;
+	FDateTime ModelPublishedAt;
 	FName ContentFolder;
 	FName ModelName;
 	FName ThumbUID;

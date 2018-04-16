@@ -182,6 +182,9 @@ public:
 
 	bool IsFinished() const;
 
+	/*~ Helpers */
+	FDateTime GetPublishedAt(TSharedPtr<FJsonObject> JsonObject);
+
 	/*~ Events */
 	FSketchfabTaskDelegate& OnTaskFailed() { return OnTaskFailedDelegate; }
 	FSketchfabTaskDelegate& OnSearch() { return OnSearchDelegate; }

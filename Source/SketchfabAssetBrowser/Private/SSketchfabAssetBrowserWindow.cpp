@@ -440,7 +440,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	OnSearchPressed();
 }
 
-void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID)
+void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const FDateTime &ModelPublishedAt)
 {
 	if (LoggedInUser.IsEmpty())
 	{
@@ -458,10 +458,10 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID)
 
 	FString fileName = CacheFolder + ModelUID + ".zip";
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-	if (PlatformFile.FileExists(*fileName))
-	{
+
+	bool download = ShouldDownloadFile(fileName, ModelPublishedAt);
+	if (!download)
 		return;
-	}
 
 	//TODO: Check to see if its already scheduled to be downloaded, or is already downloading.
 	if (ModelsDownloading.Find(ModelUID))
@@ -510,7 +510,7 @@ FReply SSketchfabAssetBrowserWindow::OnDownloadSelected()
 		for (int32 i = 0; i < data.Num(); i++)
 		{
 			const FSketchfabAssetData& AssetData = data[i];
-			DownloadModel(AssetData.ModelUID.ToString());
+			DownloadModel(AssetData.ModelUID.ToString(), AssetData.ModelPublishedAt);
 		}
 	}
 	return FReply::Handled();
@@ -1073,22 +1073,8 @@ void SSketchfabAssetBrowserWindow::GetBigThumbnail(const FSketchfabTaskData &dat
 	FString FileName = data.CacheFolder / jpg;
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 
-	bool download = false;
-	bool fileExists = PlatformFile.FileExists(*FileName);
-	if (fileExists)
-	{
-		FDateTime modifiedTime = PlatformFile.GetTimeStamp(*FileName);
-		if (modifiedTime > data.ModelPublishedAt)
-		{
-			download = true;
-		}
-	}
-	else
-	{
-		download = true;
-	}
-
-	if (!PlatformFile.FileExists(*FileName))
+	bool download = ShouldDownloadFile(FileName, data.ModelPublishedAt);
+	if (download)
 	{
 		FSketchfabTaskData TaskData = data;
 		TaskData.ThumbnailUID = data.ThumbnailUID_1024;
@@ -1159,7 +1145,9 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 		FString jpg = Data->ThumbnailUID + ".jpg";
 		FString FileName = Data->CacheFolder / jpg;
 		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-		if (!PlatformFile.FileExists(*FileName))
+
+		bool downloadThumbnail = ShouldDownloadFile(FileName, Data->ModelPublishedAt);
+		if (downloadThumbnail)
 		{
 			FSketchfabTaskData TaskData = (*Data);
 			TaskData.StateLock = new FCriticalSection();
@@ -1248,6 +1236,25 @@ void SSketchfabAssetBrowserWindow::OnGetBigThumbnail(const FSketchfabTask& InTas
 	}
 }
 
+bool SSketchfabAssetBrowserWindow::ShouldDownloadFile(const FString &FileName, const FDateTime &ModelPublishedAt)
+{
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	bool download = false;
+	bool fileExists = PlatformFile.FileExists(*FileName);
+	if (fileExists)
+	{
+		FDateTime modifiedTime = PlatformFile.GetTimeStamp(*FileName);
+		if (ModelPublishedAt > modifiedTime)
+		{
+			download = true;
+		}
+	}
+	else
+	{
+		download = true;
+	}
+	return download;
+}
 
 #undef LOCTEXT_NAMESPACE
 

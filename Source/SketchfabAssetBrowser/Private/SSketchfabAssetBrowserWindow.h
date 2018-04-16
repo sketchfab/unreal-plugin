@@ -70,7 +70,7 @@ public:
 
 private:
 	void Search(const FString &url);
-	void DownloadModel(const FString &ModelUID);
+	void DownloadModel(const FString &ModelUID, const FDateTime &ModelPublishedAt);
 	void ShowModelWindow(const FSketchfabAssetData& AssetData);
 	void DoLoginLogout(const FString &url);
 
@@ -131,6 +131,9 @@ private:
 	int32 FaceCountIndex;
 	FString CurrentFaceCountString;
 
+
+	bool ShouldDownloadFile(const FString &FileName, const FDateTime &ModelPublishedAt);
+
 private:
 	FString Token;
 
@@ -156,7 +159,7 @@ private:
 	void OnGetBigThumbnail(const FSketchfabTask& InTask);
 
 	// The Asset Window is telling the main window to download a file
-	void OnDownloadRequest(const FString &ModelUID);
+	void OnDownloadRequest(const FString &ModelUID, const FString &ModelPublishedAt);
 
 	void OnOAuthWindowClosed(const TSharedRef<SWindow>& InWindow);
 
