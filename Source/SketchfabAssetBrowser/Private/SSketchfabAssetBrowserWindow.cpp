@@ -435,7 +435,18 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			]
 		]
 	];
-		
+
+
+	//Create our own drag and drop handler for the Content Browser so we can drag and drop our assets into the main Content Browser
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+	TArray<FAssetViewDragAndDropExtender>& ExtenderList = ContentBrowserModule.GetAssetViewDragAndDropExtenders();
+	FAssetViewDragAndDropExtender DragAndDrop(
+		FAssetViewDragAndDropExtender::FOnDropDelegate::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnContentBrowserDrop),
+		FAssetViewDragAndDropExtender::FOnDragOverDelegate::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnContentBrowserDragOver),
+		FAssetViewDragAndDropExtender::FOnDragLeaveDelegate::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnContentBrowserDragLeave)
+	);
+	ExtenderList.Add(DragAndDrop);
+	
 	GetCategories();
 	OnSearchPressed();
 }
@@ -791,6 +802,7 @@ FReply SSketchfabAssetBrowserWindow::OnClearCache()
 		Window.Pin()->BringToFront(true);
 	}
 
+	OnSearchPressed();
 	return FReply::Handled();
 }
 
@@ -1255,6 +1267,23 @@ bool SSketchfabAssetBrowserWindow::ShouldDownloadFile(const FString &FileName, c
 	}
 	return download;
 }
+
+// Content Browser Delegate Callbacks
+bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndDropExtender::FPayload &PayLoad)
+{
+	return false;
+}
+
+bool SSketchfabAssetBrowserWindow::OnContentBrowserDragOver(const FAssetViewDragAndDropExtender::FPayload &PayLoad)
+{
+	return false;
+}
+
+bool SSketchfabAssetBrowserWindow::OnContentBrowserDragLeave(const FAssetViewDragAndDropExtender::FPayload &PayLoad)
+{
+	return false;
+}
+
 
 #undef LOCTEXT_NAMESPACE
 

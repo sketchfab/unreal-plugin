@@ -11,8 +11,7 @@
 #include "SSketchfabAssetWindow.h"
 #include "SOAuthWebBrowser.h"
 #include "SComboBox.h"
-
-//#include "../WebBrowser/Public/IWebBrowserWindow.h"
+#include "ContentBrowserModule.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowserWindow, Log, All);
 
@@ -162,6 +161,11 @@ private:
 	void OnDownloadRequest(const FString &ModelUID, const FString &ModelPublishedAt);
 
 	void OnOAuthWindowClosed(const TSharedRef<SWindow>& InWindow);
+
+private:
+	bool OnContentBrowserDrop(const FAssetViewDragAndDropExtender::FPayload &PayLoad);
+	bool OnContentBrowserDragOver(const FAssetViewDragAndDropExtender::FPayload &PayLoad);
+	bool OnContentBrowserDragLeave(const FAssetViewDragAndDropExtender::FPayload &PayLoad);
 
 private:
 	TWeakPtr<SWindow> Window;
