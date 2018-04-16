@@ -889,7 +889,8 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateCategoryComboItem(TSharedPtr<FString> InItem)
 {
 	return SNew(STextBlock)
-		.Text(FText::FromString(*InItem));
+		.Text(FText::FromString(*InItem))
+		.Margin(FMargin(4, 2));
 }
 
 void SSketchfabAssetBrowserWindow::HandleCategoryComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
@@ -915,7 +916,8 @@ FText SSketchfabAssetBrowserWindow::GetCategoryComboText() const
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateSortByComboItem(TSharedPtr<FString> InItem)
 {
 	return SNew(STextBlock)
-		.Text(FText::FromString(*InItem));
+		.Text(FText::FromString(*InItem))
+		.Margin(FMargin(4, 2));
 }
 
 void SSketchfabAssetBrowserWindow::HandleSortByComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
@@ -941,7 +943,8 @@ FText SSketchfabAssetBrowserWindow::GetSortByComboText() const
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateFaceCountComboItem(TSharedPtr<FString> InItem)
 {
 	return SNew(STextBlock)
-		.Text(FText::FromString(*InItem));
+		.Text(FText::FromString(*InItem))
+		.Margin(FMargin(4, 2));
 }
 
 void SSketchfabAssetBrowserWindow::HandleFaceCountComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
