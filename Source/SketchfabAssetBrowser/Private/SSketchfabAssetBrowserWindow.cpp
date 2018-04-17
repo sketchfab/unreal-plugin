@@ -973,20 +973,20 @@ FReply SSketchfabAssetBrowserWindow::OnNext()
 
 FReply SSketchfabAssetBrowserWindow::OnClearCache()
 {
-	AssetViewPtr->FlushThumbnails();
-
 	FString Folder = GetSketchfabCacheDir();
 
 	FString msg = "Delete all files in the Sketchfab cache folder '" + Folder + "' ?";
 	if (FMessageDialog::Open(EAppMsgType::OkCancel, FText::FromString(msg)) == EAppReturnType::Ok)
 	{
+		AssetViewPtr->FlushThumbnails();
+
 		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 		if (PlatformFile.DirectoryExists(*Folder))
 		{
 			PlatformFile.DeleteDirectoryRecursively(*Folder);
 			PlatformFile.CreateDirectory(*Folder);
-			OnSearchPressed();
 		}
+		OnSearchPressed();
 	}
 
 	if (Window.IsValid())
