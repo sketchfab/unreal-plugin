@@ -20,6 +20,9 @@ public:
 	/** Called when the Url changes. */
 	SLATE_EVENT(FOnTextChanged, OnUrlChanged)
 
+	/** Called when a browser window close event is detected */
+	SLATE_EVENT(FOnCloseWindowDelegate, OnCloseWindow)
+
 	SLATE_END_ARGS()
 
 public:

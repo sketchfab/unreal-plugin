@@ -21,6 +21,7 @@
 #include "SInlineEditableTextBlock.h"
 #include "SlateStyle.h"
 #include "SlateStyleRegistry.h"
+#include "SketchfabTask.h"
 
 struct FAssetViewItemHelper;
 
@@ -99,19 +100,6 @@ struct FAssetViewAsset : public FAssetViewItem
 		OnAssetDataChanged.Broadcast();
 	}
 
-	bool GetTagValue(FName Tag, FString& OutString) const
-	{
-		const FString* FoundString = CustomColumnData.Find(Tag);
-
-		if (FoundString)
-		{
-			OutString = *FoundString;
-			return true;
-		}
-
-		return Data.GetTagValue(Tag, OutString);
-	}
-
 	// FAssetViewItem interface
 	virtual EAssetItemType::Type GetType() const override
 	{
@@ -177,7 +165,7 @@ public:
 		{
 			if (AssetItem->GetType() != EAssetItemType::Folder)
 			{
-				return FText::FromName(StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data.AssetName);
+				return FText::FromName(StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data.ModelName);
 			}
 			else
 			{
@@ -231,12 +219,12 @@ public:
 
 		// Set cached wrap text width based on new "LastGeometry" value. 
 		// We set this only when changed because binding a delegate to text wrapping attributes is expensive
-		/*
 		if (PrevSizeX != AllottedGeometry.Size.X && InlineRenameWidget.IsValid())
 		{
-		InlineRenameWidget->SetWrapTextAt(GetNameTextWrapWidth());
+			InlineRenameWidget->SetWrapTextAt(GetNameTextWrapWidth());
 		}
 
+		/*
 		UpdatePackageDirtyState();
 
 		UpdateSourceControlState((float)InDeltaTime);
@@ -249,7 +237,7 @@ protected:
 	/** The data for this item */
 	TSharedPtr<FAssetViewItem> AssetItem;
 
-	TSharedPtr< SInlineEditableTextBlock > InlineRenameWidget;
+	TSharedPtr< STextBlock > InlineRenameWidget;
 
 	/** The geometry last frame. Used when telling popup messages where to appear. */
 	FGeometry LastGeometry;
@@ -350,6 +338,12 @@ struct FAssetViewCreation : public FAssetViewAsset, public FGCObject
 };
 */
 
+// Additional data
+struct LicenceDataInfo
+{
+	FString LicenceType;
+	FString LicenceInfo;
+};
 
 class SAssetTileView;
 class SSketchfabAssetView : public SCompoundWidget
@@ -403,10 +397,19 @@ public:
 
 public:
 	void Construct(const FArguments& InArgs);
-	//void CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID);
-	void ForceCreateNewAsset(const FString& ModelName, const FString& ContentFolder, const FString& ModelAssetUID, const FString& ThumbAssetUID);
+	//void CreateNewAsset(TSharedPtr<FSketchfabTaskData> Data);
+	void ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Data);
 	void NeedRefresh();
 	void DownloadProgress(const FString& ModelUID, float progress);
+	void FlushThumbnails();
+
+	void SetLicence(const FString& ModelUID, const FString &LicenceType, const FString &LicenceInfo);
+	bool HasLicence(const FString& ModelUID);
+
+	/** Returns all the asset data objects in items currently selected in the view */
+	TArray<FSketchfabAssetData> GetSelectedAssets() const;
+
+	TSharedPtr<FSketchfabAssetThumbnailPool> GetThumbnailPool() { return AssetThumbnailPool; }
 
 private:
 	void CreateCurrentView();
@@ -450,9 +453,6 @@ private:
 private:
 	/** Returns all the items currently selected in the view */
 	TArray<TSharedPtr<FAssetViewItem>> GetSelectedItems() const;
-
-	/** Returns all the asset data objects in items currently selected in the view */
-	TArray<FSketchfabAssetData> GetSelectedAssets() const;
 
 private:
 	// SWidget inherited
@@ -504,7 +504,7 @@ private:
 	TArray<TSharedPtr<FAssetViewItem>> FilteredAssetItems;
 
 	/** Pool for maintaining and rendering thumbnails */
-	TSharedPtr<class FSketchfabAssetThumbnailPool> AssetThumbnailPool;
+	TSharedPtr<FSketchfabAssetThumbnailPool> AssetThumbnailPool;
 
 	/** The number of thumbnails to keep for asset items that are not currently visible. Half of the thumbnails will be before the earliest item and half will be after the latest. */
 	int32 NumOffscreenThumbnails;
@@ -574,8 +574,11 @@ private:
 	FOnSketchfabAssetToolTipClosing OnAssetToolTipClosing;
 
 	bool bBulkSelecting;
-
 	bool bNeedsRefresh;
+	bool bFlushThumbnails;
+
+	/** Licensing information from the ModelInfo call */
+	TMap<FString, LicenceDataInfo> LicenceData;
 
 	/** Progress information for ModelUID download. Gets set on the RelevantThumbnails */
 	TMap<FString, float> DownloadProgressData;
@@ -605,6 +608,27 @@ private:
 	template <typename T>
 	static TSharedRef<SWidget> CreateListTileItemContents(T* const InTileOrListItem, const TSharedRef<SWidget>& InThumbnail, FName& OutItemShadowBorder);
 };
+
+
+//TODO: 
+//Copy code from FFlipbookKeyFrameDragDropOp
+class FSketchfabDragDropOperation : public FDragDropOperation
+{
+public:
+	DRAG_DROP_OPERATOR_TYPE(FSketchfabDragDropOperation, FDragDropOperation)
+
+	FSketchfabDragDropOperation();
+	virtual TSharedPtr<SWidget> GetDefaultDecorator() const override;
+	virtual void OnDragged(const class FDragDropEvent& DragDropEvent);
+	virtual void Construct() override;
+
+public:
+	TSharedPtr<FSketchfabAssetThumbnailPool> AssetThumbnailPool;
+	TArray<FSketchfabAssetData> DraggedAssets;
+	TArray<FString> DraggedAssetPaths;
+};
+
+
 
 FString GetSketchfabCacheDir();
 FString GetSketchfabAssetZipPath(const FSketchfabAssetData &AssetData);

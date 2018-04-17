@@ -56,7 +56,6 @@ void FSketchfabRESTClient::Wait(const float InSeconds, const float InSleepTime /
 
 uint32 FSketchfabRESTClient::Run()
 {
-	Wait(5);
 	do
 	{
 
@@ -136,6 +135,22 @@ void FSketchfabRESTClient::UpdateTaskStates()
 		case SRS_GETUSERTHUMB_PROCESSING:
 			break;
 		case SRS_GETUSERTHUMB_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
+		case SRS_GETCATEGORIES:
+			SketchfabTask->GetCategories();
+			break;
+		case SRS_GETCATEGORIES_PROCESSING:
+			break;
+		case SRS_GETCATEGORIES_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
+		case SRS_GETMODELINFO:
+			SketchfabTask->GetModelInfo();
+			break;
+		case SRS_GETMODELINFO_PROCESSING:
+			break;
+		case SRS_GETMODELINFO_DONE:
 			TasksMarkedForRemoval.Add(SketchfabTask);
 			break;
 		}

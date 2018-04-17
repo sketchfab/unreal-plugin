@@ -17,29 +17,48 @@ USketchfabAssetBrowser::USketchfabAssetBrowser(const FObjectInitializer& Initial
 
 bool USketchfabAssetBrowser::ShowWindow()
 {
-	TSharedPtr<SWindow> ParentWindow;
-
-	if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
+	if (SketchfabBrowserWindowPtr.IsValid())
 	{
-		IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-		ParentWindow = MainFrame.GetParentWindow();
+		SketchfabBrowserWindowPtr->BringToFront();
+	}
+	else
+	{
+		TSharedPtr<SWindow> ParentWindow;
+
+		if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
+		{
+			IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
+			ParentWindow = MainFrame.GetParentWindow();
+		}
+
+		SketchfabBrowserWindowPtr = SNew(SWindow)
+			.Title(LOCTEXT("SketchfabAssetBrowserWindow", "Sketchfab Asset Browser"))
+			.SizingRule(ESizingRule::UserSized)
+			.ClientSize(FVector2D(1024, 800))
+			[
+				SNew(SSketchfabAssetBrowserWindow)
+				.WidgetWindow(SketchfabBrowserWindowPtr)
+			];
+
+		// Set the closed callback
+		SketchfabBrowserWindowPtr->SetOnWindowClosed(FOnWindowClosed::CreateUObject(this, &USketchfabAssetBrowser::OnWindowClosed));
+
+		if (ParentWindow.IsValid())
+		{
+			FSlateApplication::Get().AddWindowAsNativeChild(SketchfabBrowserWindowPtr.ToSharedRef(), ParentWindow.ToSharedRef());
+		}
+		else
+		{
+			FSlateApplication::Get().AddWindow(SketchfabBrowserWindowPtr.ToSharedRef());
+		}
 	}
 
-	TSharedRef<SWindow> Window = SNew(SWindow)
-		.Title(LOCTEXT("SketchfabAssetBrowserWindow", "Sketchfab Asset Browser"))
-		.SizingRule(ESizingRule::UserSized)
-		.ClientSize(FVector2D(600, 400));
-
-	TSharedPtr<SSketchfabAssetBrowserWindow> AssetWindow;
-	Window->SetContent
-	(
-		SAssignNew(AssetWindow, SSketchfabAssetBrowserWindow)
-		.WidgetWindow(Window)
-	);
-
-	FSlateApplication::Get().AddWindow(Window);
-
 	return true;
+}
+
+void USketchfabAssetBrowser::OnWindowClosed(const TSharedRef<SWindow>& InWindow)
+{
+	SketchfabBrowserWindowPtr = NULL;
 }
 
 #undef LOCTEXT_NAMESPACE

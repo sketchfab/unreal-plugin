@@ -39,6 +39,7 @@
 #include "SInlineEditableTextBlock.h"
 #include "ConstructorHelpers.h"
 #include "ImageLoader.h"
+#include "SketchfabTask.h"
 
 #define LOCTEXT_NAMESPACE "SSketchfabAssetView"
 
@@ -271,84 +272,50 @@ TSharedRef<ITableRow> SSketchfabAssetView::MakeTileViewWidget(TSharedPtr<FAssetV
 	bPendingUpdateThumbnails = true;
 
 
-	if (AssetItem->GetType() == EAssetItemType::Folder)
+	TSharedPtr<FAssetViewAsset> AssetItemAsAsset = StaticCastSharedPtr<FAssetViewAsset>(AssetItem);
+	TSharedPtr<FSketchfabAssetThumbnail>* AssetThumbnailPtr = RelevantThumbnails.Find(AssetItemAsAsset);
+	TSharedPtr<FSketchfabAssetThumbnail> AssetThumbnail;
+	if (AssetThumbnailPtr)
 	{
-		TSharedPtr< STableRow<TSharedPtr<FAssetViewItem>> > TableRowWidget;
-		/*
-		SAssignNew(TableRowWidget, STableRow<TSharedPtr<FAssetViewItem>>, OwnerTable)
-			.Style(FEditorStyle::Get(), "ContentBrowser.AssetListView.TableRow")
-			.Cursor(bAllowDragging ? EMouseCursor::GrabHand : EMouseCursor::Default)
-			.OnDragDetected(this, &SAssetView::OnDraggingAssetItem);
-
-		TSharedRef<SAssetTileItem> Item =
-			SNew(SAssetTileItem)
-			.AssetItem(AssetItem)
-			.ItemWidth(this, &SAssetView::GetTileViewItemWidth)
-			.OnRenameBegin(this, &SAssetView::AssetRenameBegin)
-			.OnRenameCommit(this, &SAssetView::AssetRenameCommit)
-			.OnVerifyRenameCommit(this, &SAssetView::AssetVerifyRenameCommit)
-			.OnItemDestroyed(this, &SAssetView::AssetItemWidgetDestroyed)
-			.ShouldAllowToolTip(this, &SAssetView::ShouldAllowToolTips)
-			.HighlightText(HighlightedText)
-			.IsSelected(FIsSelected::CreateSP(TableRowWidget.Get(), &STableRow<TSharedPtr<FAssetViewItem>>::IsSelectedExclusively))
-			.OnAssetsOrPathsDragDropped(this, &SAssetView::OnAssetsOrPathsDragDropped)
-			.OnFilesDragDropped(this, &SAssetView::OnFilesDragDropped);
-
-		TableRowWidget->SetContent(Item);
-		*/
-
-		return TableRowWidget.ToSharedRef();
+		AssetThumbnail = *AssetThumbnailPtr;
 	}
-	else 
+	else
 	{
-		TSharedPtr<FAssetViewAsset> AssetItemAsAsset = StaticCastSharedPtr<FAssetViewAsset>(AssetItem);
-
-		TSharedPtr<FSketchfabAssetThumbnail>* AssetThumbnailPtr = RelevantThumbnails.Find(AssetItemAsAsset);
-		TSharedPtr<FSketchfabAssetThumbnail> AssetThumbnail;
-		if (AssetThumbnailPtr)
-		{
-			AssetThumbnail = *AssetThumbnailPtr;
-		}
-		else
-		{
-			const float ThumbnailResolution = TileViewThumbnailResolution;
-			AssetThumbnail = MakeShareable(new FSketchfabAssetThumbnail(AssetItemAsAsset->Data, ThumbnailResolution, ThumbnailResolution, AssetThumbnailPool));
-			RelevantThumbnails.Add(AssetItemAsAsset, AssetThumbnail);
-			AssetThumbnail->GetViewportRenderTargetTexture(); // Access the texture once to trigger it to render
-		}
-
-		TSharedPtr< STableRow<TSharedPtr<FAssetViewItem>> > TableRowWidget;
-		SAssignNew(TableRowWidget, STableRow<TSharedPtr<FAssetViewItem>>, OwnerTable)
-			.Style(FEditorStyle::Get(), "ContentBrowser.AssetListView.TableRow")
-			.Cursor(bAllowDragging ? EMouseCursor::GrabHand : EMouseCursor::Default)
-			.OnDragDetected(this, &SSketchfabAssetView::OnDraggingAssetItem);
-
-		TSharedRef<SAssetTileItem> Item =
-			SNew(SAssetTileItem)
-			.AssetThumbnail(AssetThumbnail)
-			.AssetItem(AssetItem)
-			.ThumbnailPadding(TileViewThumbnailPadding)
-			.ItemWidth(this, &SSketchfabAssetView::GetTileViewItemWidth)
-			//.OnRenameBegin(this, &SAssetView::AssetRenameBegin)
-			//.OnRenameCommit(this, &SAssetView::AssetRenameCommit)
-			//.OnVerifyRenameCommit(this, &SAssetView::AssetVerifyRenameCommit)
-			//.OnItemDestroyed(this, &SAssetView::AssetItemWidgetDestroyed)
-			//.ShouldAllowToolTip(this, &SAssetView::ShouldAllowToolTips)
-			//.HighlightText(HighlightedText)
-			//.ThumbnailEditMode(this, &SAssetView::IsThumbnailEditMode)
-			.ThumbnailLabel(ThumbnailLabel)
-			//.ThumbnailHintColorAndOpacity(this, &SAssetView::GetThumbnailHintColorAndOpacity)
-			//.AllowThumbnailHintLabel(AllowThumbnailHintLabel)
-			.IsSelected(FIsSelected::CreateSP(TableRowWidget.Get(), &STableRow<TSharedPtr<FAssetViewItem>>::IsSelectedExclusively))
-			//.OnGetCustomAssetToolTip(OnGetCustomAssetToolTip)
-			//.OnVisualizeAssetToolTip(OnVisualizeAssetToolTip)
-			//.OnAssetToolTipClosing(OnAssetToolTipClosing);
-			;
-
-		TableRowWidget->SetContent(Item);
-
-		return TableRowWidget.ToSharedRef();
+		const float ThumbnailResolution = TileViewThumbnailResolution;
+		AssetThumbnail = MakeShareable(new FSketchfabAssetThumbnail(AssetItemAsAsset->Data, AssetItemAsAsset->Data.ThumbnailWidth, AssetItemAsAsset->Data.ThumbnailHeight, AssetThumbnailPool));
+		RelevantThumbnails.Add(AssetItemAsAsset, AssetThumbnail);
+		AssetThumbnail->GetViewportRenderTargetTexture(); // Access the texture once to trigger it to render
 	}
+
+	TSharedPtr< STableRow<TSharedPtr<FAssetViewItem>> > TableRowWidget;
+	SAssignNew(TableRowWidget, STableRow<TSharedPtr<FAssetViewItem>>, OwnerTable)
+		.Style(FEditorStyle::Get(), "ContentBrowser.AssetListView.TableRow")
+		.Cursor(bAllowDragging ? EMouseCursor::GrabHand : EMouseCursor::Default)
+		.OnDragDetected(this, &SSketchfabAssetView::OnDraggingAssetItem);
+
+	TSharedRef<SAssetTileItem> Item =
+		SNew(SAssetTileItem)
+		.AssetThumbnail(AssetThumbnail)
+		.AssetItem(AssetItem)
+		.ThumbnailPadding(TileViewThumbnailPadding)
+		.ItemWidth(this, &SSketchfabAssetView::GetTileViewItemWidth)
+		//.OnRenameBegin(this, &SAssetView::AssetRenameBegin)
+		//.OnRenameCommit(this, &SAssetView::AssetRenameCommit)
+		//.OnVerifyRenameCommit(this, &SAssetView::AssetVerifyRenameCommit)
+		//.OnItemDestroyed(this, &SAssetView::AssetItemWidgetDestroyed)
+		//.ShouldAllowToolTip(this, &SSketchfabAssetView::ShouldAllowToolTips)
+		//.HighlightText(HighlightedText)
+		//.ThumbnailEditMode(this, &SAssetView::IsThumbnailEditMode)
+		.ThumbnailLabel(ThumbnailLabel)
+		//.ThumbnailHintColorAndOpacity(this, &SAssetView::GetThumbnailHintColorAndOpacity)
+		//.AllowThumbnailHintLabel(AllowThumbnailHintLabel)
+		.IsSelected(FIsSelected::CreateSP(TableRowWidget.Get(), &STableRow<TSharedPtr<FAssetViewItem>>::IsSelectedExclusively));
+		//.OnGetCustomAssetToolTip(OnGetCustomAssetToolTip)
+		//.OnVisualizeAssetToolTip(OnVisualizeAssetToolTip)
+		//.OnAssetToolTipClosing(OnAssetToolTipClosing);
+	TableRowWidget->SetContent(Item);
+
+	return TableRowWidget.ToSharedRef();
 }
 
 void SSketchfabAssetView::OnListMouseButtonDoubleClick(TSharedPtr<FAssetViewItem> AssetItem)
@@ -357,27 +324,6 @@ void SSketchfabAssetView::OnListMouseButtonDoubleClick(TSharedPtr<FAssetViewItem
 	{
 		return;
 	}
-	/*
-	if (IsThumbnailEditMode())
-	{
-		// You can not activate assets when in thumbnail edit mode because double clicking may happen inadvertently while adjusting thumbnails.
-		return;
-	}
-
-	if (AssetItem->GetType() == EAssetItemType::Folder)
-	{
-		OnPathSelected.ExecuteIfBound(StaticCastSharedPtr<FAssetViewFolder>(AssetItem)->FolderPath);
-		return;
-	}
-	*/
-
-	/*
-	if (AssetItem->IsTemporaryItem())
-	{
-		// You may not activate temporary items, they are just for display.
-		return;
-	}
-	*/
 
 	TArray<FSketchfabAssetData> ActivatedAssets;
 	ActivatedAssets.Add(StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data);
@@ -388,8 +334,8 @@ FReply SSketchfabAssetView::OnDraggingAssetItem(const FGeometry& MyGeometry, con
 {
 	if (bAllowDragging)
 	{
-		TArray<FSketchfabAssetData> DraggedAssets;
-		TArray<FString> DraggedAssetPaths;
+		TSharedRef<FSketchfabDragDropOperation> Operation = MakeShareable(new FSketchfabDragDropOperation);
+		Operation->AssetThumbnailPool = AssetThumbnailPool;
 
 		// Work out which assets to drag
 		{
@@ -399,23 +345,30 @@ FReply SSketchfabAssetView::OnDraggingAssetItem(const FGeometry& MyGeometry, con
 				// Skip invalid assets and redirectors
 				if (AssetData.IsValid() && HasSketchAssetZipFile(AssetData))
 				{
-					DraggedAssets.Add(AssetData);
-					DraggedAssetPaths.Add(GetSketchfabAssetZipPath(AssetData));
+					FSketchfabAssetData DataCopy = AssetData;
+					LicenceDataInfo *data = LicenceData.Find(AssetData.ModelUID.ToString());
+					if (data)
+					{
+						DataCopy.LicenceInfo = data->LicenceInfo;
+						DataCopy.LicenceType = data->LicenceType;
+					}
+
+					Operation->DraggedAssets.Add(DataCopy);
+					Operation->DraggedAssetPaths.Add(GetSketchfabAssetZipPath(DataCopy));
 				}
 			}
 		}
 
 		// Use the custom drag handler?
-		if (DraggedAssets.Num() > 0 && FEditorDelegates::OnAssetDragStarted.IsBound())
+		if (Operation->DraggedAssets.Num() > 0 && FEditorDelegates::OnAssetDragStarted.IsBound())
 		{
-			//FEditorDelegates::OnAssetDragStarted.Broadcast(DraggedAssets, nullptr);
 			return FReply::Handled();
 		}
 
-		// Use the standard drag handler?
-		if ((DraggedAssets.Num() > 0 || DraggedAssetPaths.Num() > 0) && MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
-		{			
-			return FReply::Handled().BeginDragDrop(FExternalDragOperation::NewFiles(DraggedAssetPaths));
+		if ((Operation->DraggedAssets.Num() > 0 || Operation->DraggedAssetPaths.Num() > 0) && MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+		{
+			Operation->Construct();
+			return FReply::Handled().BeginDragDrop(Operation);
 		}
 	}
 
@@ -472,15 +425,6 @@ bool SSketchfabAssetView::CanOpenContextMenu() const
 		return false;
 	}
 
-
-	/*
-	if (IsThumbnailEditMode())
-	{
-		// You can not summon a context menu for assets when in thumbnail edit mode because right clicking may happen inadvertently while adjusting thumbnails.
-		return false;
-	}
-	*/
-
 	TArray<FSketchfabAssetData> SelectedAssets = GetSelectedAssets();
 
 	// Detect if at least one temporary item was selected. If there were no valid assets selected and a temporary one was, then deny the context menu.
@@ -501,40 +445,11 @@ bool SSketchfabAssetView::CanOpenContextMenu() const
 		return false;
 	}
 
-	/*
-	if (SelectedAssets.Num() == 0 && SourcesData.HasCollections())
-	{
-		// Don't allow a context menu when we're viewing a collection and have no assets selected
-		return false;
-	}
-	*/
-
-	// Build a list of selected object paths
-	/*
-	TArray<FString> ObjectPaths;
-	for (auto AssetIt = SelectedAssets.CreateConstIterator(); AssetIt; ++AssetIt)
-	{
-		ObjectPaths.Add(AssetIt->ObjectPath.ToString());
-	}
-	*/
-
-	bool bLoadSuccessful = true;
-
-	/*
-	if (bPreloadAssetsForContextMenu)
-	{
-		TArray<UObject*> LoadedObjects;
-		const bool bAllowedToPrompt = false;
-		bLoadSuccessful = ContentBrowserUtils::LoadAssetsIfNeeded(ObjectPaths, LoadedObjects, bAllowedToPrompt);
-	}
-	*/
-
-	// Do not show the context menu if the load failed
-	return bLoadSuccessful;
+	return true;
 }
 
 /*
-void SSketchfabAssetView::CreateNewAsset(const FString& DefaultAssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory, const FString& ModelAssetUID, const FString& ThumbAssetUID)
+void SSketchfabAssetView::CreateNewAsset(TSharedPtr<FSketchfabTaskData> Data)
 {
 	// we should only be creating one deferred asset per tick
 	check(!DeferredAssetToCreate.IsValid());
@@ -588,14 +503,47 @@ void SSketchfabAssetView::DownloadProgress(const FString& ModelUID, float progre
 	DownloadProgressData.Add(ModelUID, progress);
 }
 
-void SSketchfabAssetView::ForceCreateNewAsset(const FString& ModelNameStr, const FString& ContentFolderStr, const FString& ModelAssetUID, const FString& ThumbAssetUID)
+bool SSketchfabAssetView::HasLicence(const FString& ModelUID)
 {
-	FName ContentFolder = FName(*ContentFolderStr);
-	FName ModelName = FName(*ModelNameStr);
-	FName ObjectUIDName = FName(*ModelAssetUID);
-	FName ThumbAssetUIDName = FName(*ThumbAssetUID);
+	LicenceDataInfo *data = LicenceData.Find(ModelUID);
+	if (data && !data->LicenceType.IsEmpty())
+	{ 
+		return true;
+	}
+	return false;
+}
 
-	FSketchfabAssetData NewAssetData(ContentFolder, ModelName, ObjectUIDName, ThumbAssetUIDName);
+void SSketchfabAssetView::SetLicence(const FString& ModelUID, const FString &LicenceType, const FString &LicenceInfo)
+{
+	LicenceDataInfo *data = LicenceData.Find(ModelUID);
+	if (data)
+	{
+		data->LicenceType = LicenceType;
+		data->LicenceInfo = LicenceInfo;
+	}
+	else
+	{
+		LicenceDataInfo data;
+		data.LicenceType = LicenceType;
+		data.LicenceInfo = LicenceInfo;
+		LicenceData.Add(ModelUID, data);
+	}
+}
+
+
+void SSketchfabAssetView::ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Data)
+{
+	FSketchfabAssetData NewAssetData;
+	NewAssetData.ContentFolder = FName(*Data->CacheFolder);
+	NewAssetData.ModelName = FName(*Data->ModelName);
+	NewAssetData.ModelUID = FName(*Data->ModelUID);
+	NewAssetData.ThumbUID = FName(*Data->ThumbnailUID);
+	NewAssetData.ThumbnailWidth = Data->ThumbnailWidth;
+	NewAssetData.ThumbnailHeight = Data->ThumbnailHeight;
+	NewAssetData.AuthorName = FName(*Data->ModelAuthor);
+	NewAssetData.ModelPublishedAt = Data->ModelPublishedAt;
+	NewAssetData.LicenceInfo = Data->LicenceInfo;
+	NewAssetData.LicenceType = Data->LicenceType;
 
 	TSharedPtr<FAssetViewItem> NewItem = MakeShareable(new FAssetViewAsset(NewAssetData));
 
@@ -614,22 +562,13 @@ void SSketchfabAssetView::NeedRefresh()
 	bNeedsRefresh = true;
 }
 
+void SSketchfabAssetView::FlushThumbnails()
+{
+	bFlushThumbnails = true;
+}
+
 void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
-	/*
-	CalculateFillScale(AllottedGeometry);
-
-	CurrentTime = InCurrentTime;
-
-	// If there were any assets that were recently added via the asset registry, process them now
-	ProcessRecentlyAddedAssets();
-
-	// If there were any assets loaded since last frame that we are currently displaying thumbnails for, push them on the render stack now.
-	ProcessRecentlyLoadedOrChangedAssets();
-
-	CalculateThumbnailHintColorAndOpacity();
-	*/
-
 	if (bPendingUpdateThumbnails)
 	{
 		bPendingUpdateThumbnails = false;
@@ -644,6 +583,15 @@ void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double I
 		//This is a hack for now. Just refresh all the widgets.
 		TileView->RebuildList();
 	}
+
+
+	if (bFlushThumbnails)
+	{
+		FilteredAssetItems.Empty();
+		bFlushThumbnails = false;
+		bNeedsRefresh = true;
+	}
+
 
 	/*
 	if (bSlowFullListRefreshRequested)
@@ -912,7 +860,6 @@ void SSketchfabAssetView::UpdateThumbnails()
 				}
 			}
 		}
-
 	}
 }
 
@@ -928,6 +875,10 @@ TSharedPtr<FSketchfabAssetThumbnail> SSketchfabAssetView::AddItemToNewThumbnailR
 	}
 	else
 	{
+		/*
+		//For now I am ignoring the scale of the thumbnail since it is currently not used for the asset browser
+		//In future if this is to be used the the width and height of the loaded thumbnail image will need to be 
+		//calculated correctly and code changed in the thumbnailpool loading method.
 		if (!ensure(CurrentThumbnailSize > 0 && CurrentThumbnailSize <= MAX_THUMBNAIL_SIZE))
 		{
 			// Thumbnail size must be in a sane range
@@ -936,7 +887,9 @@ TSharedPtr<FSketchfabAssetThumbnail> SSketchfabAssetView::AddItemToNewThumbnailR
 
 		// The thumbnail newly relevant, create a new thumbnail
 		const float ThumbnailResolution = CurrentThumbnailSize * MaxThumbnailScale;
-		TSharedPtr<FSketchfabAssetThumbnail> NewThumbnail = MakeShareable(new FSketchfabAssetThumbnail(Item->Data, ThumbnailResolution, ThumbnailResolution, AssetThumbnailPool));
+		*/
+
+		TSharedPtr<FSketchfabAssetThumbnail> NewThumbnail = MakeShareable(new FSketchfabAssetThumbnail(Item->Data, Item->Data.ThumbnailWidth, Item->Data.ThumbnailHeight, AssetThumbnailPool));
 		NewRelevantThumbnails.Add(Item, NewThumbnail);
 		NewThumbnail->GetViewportRenderTargetTexture(); // Access the texture once to trigger it to render
 
@@ -958,22 +911,22 @@ SAssetTileItem::~SAssetTileItem()
 void SAssetTileItem::Construct( const FArguments& InArgs )
 {
 	SAssetViewItem::Construct(SAssetViewItem::FArguments()
-		.AssetItem(InArgs._AssetItem));
-	/*
+		.AssetItem(InArgs._AssetItem)
+		/*
 		.OnRenameBegin(InArgs._OnRenameBegin)
 		.OnRenameCommit(InArgs._OnRenameCommit)
 		.OnVerifyRenameCommit(InArgs._OnVerifyRenameCommit)
 		.OnItemDestroyed(InArgs._OnItemDestroyed)
-		.ShouldAllowToolTip(InArgs._ShouldAllowToolTip)
 		.ThumbnailEditMode(InArgs._ThumbnailEditMode)
 		.HighlightText(InArgs._HighlightText)
 		.OnAssetsOrPathsDragDropped(InArgs._OnAssetsOrPathsDragDropped)
 		.OnFilesDragDropped(InArgs._OnFilesDragDropped)
-		.OnGetCustomAssetToolTip(InArgs._OnGetCustomAssetToolTip)
-		.OnVisualizeAssetToolTip(InArgs._OnVisualizeAssetToolTip)
-		.OnAssetToolTipClosing( InArgs._OnAssetToolTipClosing )
-		);
 		*/
+		//.ShouldAllowToolTip(InArgs._ShouldAllowToolTip)
+		//.OnGetCustomAssetToolTip(InArgs._OnGetCustomAssetToolTip)
+		//.OnVisualizeAssetToolTip(InArgs._OnVisualizeAssetToolTip)
+		//.OnAssetToolTipClosing( InArgs._OnAssetToolTipClosing )
+		);
 
 	AssetThumbnail = InArgs._AssetThumbnail;
 	ItemWidth = InArgs._ItemWidth;
@@ -1043,30 +996,17 @@ void SAssetTileItem::Construct( const FArguments& InArgs )
  			.VAlign(VAlign_Center)
  			.FillHeight(1.f)
  			[
- 				SAssignNew(InlineRenameWidget, SInlineEditableTextBlock)
- 					//.Font( this, &SAssetTileItem::GetThumbnailFont )
+ 				SAssignNew(InlineRenameWidget, STextBlock)
  					.Text( GetNameText() )
- 					//.OnBeginTextEdit(this, &SAssetTileItem::HandleBeginNameChange)
- 					//.OnTextCommitted(this, &SAssetTileItem::HandleNameCommitted)
- 					//.OnVerifyTextChanged(this, &SAssetTileItem::HandleVerifyNameChanged)
- 					//.HighlightText(InArgs._HighlightText)
- 					.IsSelected(InArgs._IsSelected)
- 					.IsReadOnly(this, &SAssetTileItem::IsNameReadOnly)
  					.Justification(ETextJustify::Center)
- 					.LineBreakPolicy(FBreakIterator::CreateLineBreakIterator())
+					.WrapTextAt(134)
  			]
 		]
 	];
-
-	if(AssetItem.IsValid())
-	{
-		AssetItem->RenamedRequestEvent.BindSP( InlineRenameWidget.Get(), &SInlineEditableTextBlock::EnterEditingMode );
-	}
 }
 
 void SAssetTileItem::OnAssetDataChanged()
 {
-	//SAssetViewItem::OnAssetDataChanged();
 }
 
 FOptionalSize SAssetTileItem::GetThumbnailBoxSize() const
@@ -1116,134 +1056,13 @@ TSharedRef<SWidget> FAssetViewItemHelper::CreateListTileItemContents(T* const In
 {
 	TSharedRef<SOverlay> ItemContentsOverlay = SNew(SOverlay);
 
-	/*
-	if (InTileOrListItem->IsFolder())
-	{
-		OutItemShadowBorder = FName("NoBorder");
+	OutItemShadowBorder = FName("ContentBrowser.ThumbnailShadow");
 
-		TSharedPtr<FAssetViewFolder> AssetFolderItem = StaticCastSharedPtr<FAssetViewFolder>(InTileOrListItem->AssetItem);
-
-		ECollectionShareType::Type CollectionFolderShareType = ECollectionShareType::CST_All;
-		if (AssetFolderItem->bCollectionFolder)
-		{
-			ContentBrowserUtils::IsCollectionPath(AssetFolderItem->FolderPath, nullptr, &CollectionFolderShareType);
-		}
-
-		const FSlateBrush* FolderBaseImage = AssetFolderItem->bDeveloperFolder
-			? FEditorStyle::GetBrush("ContentBrowser.ListViewDeveloperFolderIcon.Base")
-			: FEditorStyle::GetBrush("ContentBrowser.ListViewFolderIcon.Base");
-
-		const FSlateBrush* FolderTintImage = AssetFolderItem->bDeveloperFolder
-			? FEditorStyle::GetBrush("ContentBrowser.ListViewDeveloperFolderIcon.Mask")
-			: FEditorStyle::GetBrush("ContentBrowser.ListViewFolderIcon.Mask");
-
-		// Folder base
-		ItemContentsOverlay->AddSlot()
-			[
-				SNew(SImage)
-				.Image(FolderBaseImage)
-			.ColorAndOpacity(InTileOrListItem, &T::GetAssetColor)
-			];
-
-		if (AssetFolderItem->bCollectionFolder)
-		{
-			FLinearColor IconColor = FLinearColor::White;
-			switch (CollectionFolderShareType)
-			{
-			case ECollectionShareType::CST_Local:
-				IconColor = FColor(196, 15, 24);
-				break;
-			case ECollectionShareType::CST_Private:
-				IconColor = FColor(192, 196, 0);
-				break;
-			case ECollectionShareType::CST_Shared:
-				IconColor = FColor(0, 136, 0);
-				break;
-			default:
-				break;
-			}
-
-			auto GetCollectionIconBoxSize = [InTileOrListItem]() -> FOptionalSize
-			{
-				return FOptionalSize(InTileOrListItem->GetThumbnailBoxSize().Get() * 0.3f);
-			};
-
-			auto GetCollectionIconBrush = [=]() -> const FSlateBrush*
-			{
-				const TCHAR* IconSizeSuffix = (GetCollectionIconBoxSize().Get() <= 16.0f) ? TEXT(".Small") : TEXT(".Large");
-			return FEditorStyle::GetBrush(ECollectionShareType::GetIconStyleName(CollectionFolderShareType, IconSizeSuffix));
-			};
-
-			// Collection share type
-			ItemContentsOverlay->AddSlot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					SNew(SBox)
-					.WidthOverride_Lambda(GetCollectionIconBoxSize)
-				.HeightOverride_Lambda(GetCollectionIconBoxSize)
-				[
-					SNew(SImage)
-					.Image_Lambda(GetCollectionIconBrush)
-				.ColorAndOpacity(IconColor)
-				]
-				];
-		}
-
-		// Folder tint
-		ItemContentsOverlay->AddSlot()
-			[
-				SNew(SImage)
-				.Image(FolderTintImage)
-			];
-	}
-	else
-	*/
-	{
-		OutItemShadowBorder = FName("ContentBrowser.ThumbnailShadow");
-
-		// The actual thumbnail
-		ItemContentsOverlay->AddSlot()
-			[
-				InThumbnail
-			];
-
-
-		// Source control state
-		/*
-		ItemContentsOverlay->AddSlot()
-			.HAlign(HAlign_Right)
-			.VAlign(VAlign_Top)
-			[
-				SNew(SBox)
-				.WidthOverride(InTileOrListItem, &T::GetSCCImageSize)
-			.HeightOverride(InTileOrListItem, &T::GetSCCImageSize)
-			[
-				SNew(SImage)
-				.Image(InTileOrListItem, &T::GetSCCStateImage)
-			]
-			];
-
-		// Dirty state
-		ItemContentsOverlay->AddSlot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Bottom)
-			[
-				SNew(SImage)
-				.Image(InTileOrListItem, &T::GetDirtyImage)
-			];
-		*/
-
-		// Tools for thumbnail edit mode
-		/*
-		ItemContentsOverlay->AddSlot()
-			[
-				SNew(SThumbnailEditModeTools, InTileOrListItem->AssetThumbnail)
-				.SmallView(!InTileOrListItem->CanDisplayPrimitiveTools())
-			.Visibility(InTileOrListItem, &T::GetThumbnailEditModeUIVisibility)
-			];
-			*/
-	}
+	// The actual thumbnail
+	ItemContentsOverlay->AddSlot()
+	[
+		InThumbnail
+	];
 
 	return ItemContentsOverlay;
 }
@@ -1269,6 +1088,71 @@ TArray<FSketchfabAssetData> SSketchfabAssetView::GetSelectedAssets() const
 	}
 
 	return SelectedAssets;
+}
+
+//==========================================================================
+
+FSketchfabDragDropOperation::FSketchfabDragDropOperation() 
+{
+}
+
+TSharedPtr<SWidget> FSketchfabDragDropOperation::GetDefaultDecorator() const
+{
+	if (AssetThumbnailPool.IsValid() && DraggedAssets.Num() > 0)
+	{
+		FSlateDynamicImageBrush* Texture = NULL;
+		const FSketchfabAssetData &AssetData = DraggedAssets[0];
+		AssetThumbnailPool->AccessTexture(AssetData, AssetData.ThumbnailWidth, AssetData.ThumbnailHeight, &Texture);
+
+		// The viewport for the rendered thumbnail, if it exists
+		if (Texture)
+		{
+			TSharedRef<SBorder> RootNode = SNew(SBorder)
+			.BorderImage(FEditorStyle::GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.1f, 1.f))
+			.Padding(4)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.MaxHeight(127)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					[
+						SNew(SBox)
+						.HeightOverride(127)
+						.WidthOverride(127)
+						[
+							SNew(SScaleBox)
+							.StretchDirection(EStretchDirection::Both)
+							.Stretch(EStretch::ScaleToFill)
+							[
+								SNew(SImage).Image(Texture)
+							]
+						]
+					]
+				]
+			];
+
+			return RootNode;
+		}
+	}
+	return SNew(SImage).Image(FEditorStyle::GetDefaultBrush());
+}
+
+void FSketchfabDragDropOperation::OnDragged(const class FDragDropEvent& DragDropEvent)
+{
+	if (CursorDecoratorWindow.IsValid())
+	{
+		CursorDecoratorWindow->MoveWindowTo(DragDropEvent.GetScreenSpacePosition());
+	}
+}
+
+void FSketchfabDragDropOperation::Construct()
+{
+	MouseCursor = EMouseCursor::GrabHandClosed;
+	FDragDropOperation::Construct();
 }
 
 #undef LOCTEXT_NAMESPACE

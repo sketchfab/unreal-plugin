@@ -32,6 +32,7 @@
 #include "IVREditorModule.h"
 #include "ImageLoader.h"
 #include "SlateDynamicImageBrush.h"
+#include "SScaleBox.h"
 
 class SSketchfabAssetThumbnail : public SCompoundWidget
 {
@@ -83,28 +84,12 @@ public:
 
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
 
-		/*
-		UClass* Class = FindObject<UClass>(ANY_PACKAGE, *AssetData.AssetClass.ToString());
-		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
-		TSharedPtr<IAssetTypeActions> AssetTypeActions;
-		if ( Class != NULL )
-		{
-			AssetTypeActions = AssetToolsModule.Get().GetAssetTypeActionsForClass(Class).Pin();
-		}
-		*/
-
 		AssetColor = FLinearColor::White;
 
 		if( InArgs._AssetTypeColorOverride.IsSet() )
 		{
 			AssetColor = InArgs._AssetTypeColorOverride.GetValue();
 		}
-		/*
-		else if ( AssetTypeActions.IsValid() )
-		{
-			AssetColor = AssetTypeActions->GetTypeColor();
-		}
-		*/
 
 		TSharedRef<SOverlay> OverlayWidget = SNew(SOverlay);
 
@@ -144,47 +129,6 @@ public:
 			]
 		];
 
-		//I am not using the SViewport method for rendering. So I have duplicated this code below this to just draw an imagebrush
-		/*
-		if ( InArgs._ThumbnailPool.IsValid() && !InArgs._ForceGenericThumbnail )
-		{
-			ViewportFadeAnimation = FCurveSequence();
-			ViewportFadeCurve = ViewportFadeAnimation.AddCurve(0.f, 0.25f, ECurveEaseFunction::QuadOut);
-
-			TSharedPtr<SViewport> Viewport = 
-				SNew( SViewport )
-				.EnableGammaCorrection(false)
-				// In VR editor every widget is in the world and gamma corrected by the scene renderer.  Thumbnails will have already been gamma
-				// corrected and so they need to be reversed
-				.ReverseGammaCorrection(IVREditorModule::Get().IsVREditorModeActive())
-				.EnableBlending(true);
-
-			Viewport->SetViewportInterface( AssetThumbnail.ToSharedRef() );
-			AssetThumbnail->GetViewportRenderTargetTexture(); // Access the render texture to push it on the stack if it isn't already rendered
-
-			InArgs._ThumbnailPool->OnThumbnailRendered().AddSP(this, &SSketchfabAssetThumbnail::OnThumbnailRendered);
-			InArgs._ThumbnailPool->OnThumbnailRenderFailed().AddSP(this, &SSketchfabAssetThumbnail::OnThumbnailRenderFailed);
-
-			if ( ShouldRender() && (!InArgs._AllowFadeIn || InArgs._ThumbnailPool->IsRendered(AssetThumbnail)) )
-			{
-				bHasRenderedThumbnail = true;
-				ViewportFadeAnimation.JumpToEnd();
-			}
-
-			// The viewport for the rendered thumbnail, if it exists
-			OverlayWidget->AddSlot()
-			[
-				SAssignNew(RenderedThumbnailWidget, SBorder)
-				.Padding(0)
-				.BorderImage(FEditorStyle::GetBrush("NoBrush"))
-				.ColorAndOpacity(this, &SSketchfabAssetThumbnail::GetViewportColorAndOpacity)
-				[
-					Viewport.ToSharedRef()
-				]
-			];
-		}
-		*/
-
 		if (InArgs._ThumbnailPool.IsValid() && !InArgs._ForceGenericThumbnail)
 		{
 			ViewportFadeAnimation = FCurveSequence();
@@ -196,7 +140,7 @@ public:
 			InArgs._ThumbnailPool->OnThumbnailRendered().AddSP(this, &SSketchfabAssetThumbnail::OnThumbnailRendered);
 			InArgs._ThumbnailPool->OnThumbnailRenderFailed().AddSP(this, &SSketchfabAssetThumbnail::OnThumbnailRenderFailed);
 
-			if (ShouldRender() && (!InArgs._AllowFadeIn || InArgs._ThumbnailPool->IsRendered(AssetThumbnail)))
+			if (ShouldRender() && !InArgs._AllowFadeIn)
 			{
 				bHasRenderedThumbnail = true;
 				ViewportFadeAnimation.JumpToEnd();
@@ -205,27 +149,14 @@ public:
 			// The viewport for the rendered thumbnail, if it exists
 			OverlayWidget->AddSlot()
 				[
-					SNew(SImage).Image(ModelImageBrush)
+					SNew(SScaleBox)
+					.StretchDirection(EStretchDirection::Both)
+					.Stretch(EStretch::ScaleToFill)
+					[
+						SNew(SImage).Image(ModelImageBrush)
+					]
 				];
 		}
-
-		/*
-		if( ThumbnailClass.Get() && bIsClassType )
-		{
-			OverlayWidget->AddSlot()
-			.VAlign(VAlign_Bottom)
-			.HAlign(HAlign_Right)
-			.Padding(TAttribute<FMargin>(this, &SSketchfabAssetThumbnail::GetClassIconPadding))
-			[
-				SAssignNew(ClassIconWidget, SBorder)
-				.BorderImage(FEditorStyle::GetNoBrush())
-				[
-					SNew(SImage)
-					.Image(this, &SSketchfabAssetThumbnail::GetClassIconBrush)
-				]
-			];
-		}
-		*/
 
 		if( bAllowHintText )
 		{
@@ -259,7 +190,7 @@ public:
 		[
 			SAssignNew(AssetColorStripWidget, SBorder)
 			.BorderImage(FEditorStyle::GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(AssetColor)
+			.BorderBackgroundColor(this, &SSketchfabAssetThumbnail::GetAssetColor)
 			.Padding(this, &SSketchfabAssetThumbnail::GetAssetColorStripPadding)
 		];
 
@@ -273,21 +204,6 @@ public:
 			.BorderBackgroundColor(FLinearColor::Green)
 			.Padding(this, &SSketchfabAssetThumbnail::GetDownloadProgressColorStripPadding)
 			];
-
-		/*
-		if( InArgs._AllowAssetSpecificThumbnailOverlay && AssetTypeActions.IsValid() )
-		{
-			// Does the asset provide an additional thumbnail overlay?
-			TSharedPtr<SWidget> AssetSpecificThumbnailOverlay = AssetTypeActions->GetThumbnailOverlay(AssetData);
-			if( AssetSpecificThumbnailOverlay.IsValid() )
-			{
-				OverlayWidget->AddSlot()
-				[
-					AssetSpecificThumbnailOverlay.ToSharedRef()
-				];
-			}
-		}
-		*/
 
 		ChildSlot
 		[
@@ -368,15 +284,7 @@ private:
 
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
 
-
 		AssetColor = FLinearColor(1.f, 1.f, 1.f, 1.f);
-
-		/*
-		if ( AssetTypeActions.IsValid() )
-		{
-			AssetColor = AssetTypeActions.Pin()->GetTypeColor();
-		}
-		*/
 
 		UpdateThumbnailVisibilities();
 	}
@@ -429,6 +337,21 @@ private:
 		return FMath::Max(FMath::CeilToFloat(WidthLastFrame*0.025f), 4.0f);
 	}
 
+	FSlateColor SSketchfabAssetThumbnail::GetAssetColor() const
+	{
+		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
+		const float Height = GetAssetColorStripHeight();
+		float progress = AssetData.DownloadProgress;
+		if (progress < 1e-9)
+		{
+			return AssetColor;
+		}
+		else
+		{
+			return FLinearColor(0.2, 0.2, 0.2);
+		}
+	}
+
 	FMargin GetAssetColorStripPadding() const
 	{
 		const float Height = GetAssetColorStripHeight();
@@ -452,22 +375,7 @@ private:
 
 	const FSlateBrush* GetClassThumbnailBrush() const
 	{
-		/*
-		if (ClassThumbnailBrushOverride.IsNone())
-		{
-			// For non-class types, use the default based upon the actual asset class
-			// This has the side effect of not showing a class icon for assets that don't have a proper thumbnail image available
-			const FName DefaultThumbnail = (bIsClassType) ? NAME_None : FName(*FString::Printf(TEXT("ClassThumbnail.%s"), *AssetThumbnail->GetAssetData().AssetClass.ToString()));
-			return FClassIconFinder::FindThumbnailForClass(ThumbnailClass.Get(), DefaultThumbnail);
-		}
-		else
-		*/
-		{
-			// Instead of getting the override thumbnail directly from the editor style here get it from the
-			// ClassIconFinder since it may have additional styles registered which can be searched by passing
-			// it as a default with no class to search for.
-			return FClassIconFinder::FindThumbnailForClass(nullptr, ClassThumbnailBrushOverride);
-		}
+		return FClassIconFinder::FindThumbnailForClass(nullptr, ClassThumbnailBrushOverride);
 	}
 
 	EVisibility GetClassThumbnailVisibility() const
@@ -475,7 +383,7 @@ private:
 		if(!bHasRenderedThumbnail)
 		{
 			const FSlateBrush* ClassThumbnailBrush = GetClassThumbnailBrush();
-			if( ClassThumbnailBrush && ThumbnailClass.Get() )
+			if( ClassThumbnailBrush)
 			{
 				return EVisibility::Visible;
 			}
@@ -487,11 +395,6 @@ private:
 	EVisibility GetGenericThumbnailVisibility() const
 	{
 		return (bHasRenderedThumbnail && ViewportFadeAnimation.IsAtEnd()) ? EVisibility::Collapsed : EVisibility::Visible;
-	}
-
-	const FSlateBrush* GetClassIconBrush() const
-	{
-		return FSlateIconFinder::FindIconBrushForClass(ThumbnailClass.Get());
 	}
 
 	FMargin GetClassIconPadding() const
@@ -537,70 +440,11 @@ private:
 			return false;
 		}
 
-		if( AssetData.IsAssetLoaded() )
-		{
-			// Loaded asset, return true if there is a rendering info for it
-			/*
-			UObject* Asset = AssetData.GetAsset();
-			FThumbnailRenderingInfo* RenderInfo = GUnrealEd->GetThumbnailManager()->GetRenderingInfo( Asset );
-			if ( RenderInfo != NULL && RenderInfo->Renderer != NULL )
-			{
-				return true;
-			}
-			*/
-		}
-
 		// Just render it. Ideally we would look for it in the render pool.
 		if (AssetThumbnail->GetImageBrush())
 		{
 			return true;
 		}
-
-		/*
-		const FObjectThumbnail* CachedThumbnail = ThumbnailTools::FindCachedThumbnail(*AssetData.GetFullName());
-		if ( CachedThumbnail != NULL )
-		{
-			// There is a cached thumbnail for this asset, we should render it
-			return !CachedThumbnail->IsEmpty();
-		}
-		if ( AssetData.AssetClass != UBlueprint::StaticClass()->GetFName() )
-		{
-			// If we are not a blueprint, see if the CDO of the asset's class has a rendering info
-			// Blueprints can't do this because the rendering info is based on the generated class
-			UClass* AssetClass = FindObject<UClass>(ANY_PACKAGE, *AssetData.AssetClass.ToString());
-
-			if ( AssetClass )
-			{
-				FThumbnailRenderingInfo* RenderInfo = GUnrealEd->GetThumbnailManager()->GetRenderingInfo( AssetClass->GetDefaultObject() );
-				if ( RenderInfo != NULL && RenderInfo->Renderer != NULL )
-				{
-					return true;
-				}
-			}
-		}
-		*/
-		
-		// Unloaded blueprint or asset that may have a custom thumbnail, check to see if there is a thumbnail in the package to render
-		/*
-		FString PackageFilename;
-		if ( FPackageName::DoesPackageExist(AssetData.PackageName.ToString(), NULL, &PackageFilename) )
-		{
-			TSet<FName> ObjectFullNames;
-			FThumbnailMap ThumbnailMap;
-
-			FName ObjectFullName = FName(*AssetData.GetFullName());
-			ObjectFullNames.Add(ObjectFullName);
-
-			ThumbnailTools::LoadThumbnailsFromPackage(PackageFilename, ObjectFullNames, ThumbnailMap);
-
-			const FObjectThumbnail* ThumbnailPtr = ThumbnailMap.Find(ObjectFullName);
-			if (ThumbnailPtr)
-			{
-				const FObjectThumbnail& ObjectThumbnail = *ThumbnailPtr;
-				return ObjectThumbnail.GetImageWidth() > 0 && ObjectThumbnail.GetImageHeight() > 0 && ObjectThumbnail.GetUncompressedImageData().Num() > 0;
-			}
-		}
-		*/
 
 		return false;
 	}
@@ -634,7 +478,7 @@ private:
 	FText GetAssetDisplayName() const
 	{
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
-		return FText::FromName(AssetData.AssetName);
+		return FText::FromName(AssetData.ModelName);
 	}
 
 	void OnRenderedThumbnailChanged( bool bInHasRenderedThumbnail )
@@ -692,26 +536,7 @@ private:
 
 	/** The name of the thumbnail which should be used instead of the class thumbnail. */
 	FName ClassThumbnailBrushOverride;
-	/** The class to use when finding the thumbnail. */
-	TWeakObjectPtr<UClass> ThumbnailClass;
-	/** Are we showing a class type? (UClass, UBlueprint) */
-	bool bIsClassType;
 };
-
-
-/*
-FSketchfabAssetThumbnail::FSketchfabAssetThumbnail( UObject* InAsset, uint32 InWidth, uint32 InHeight, const TSharedPtr<class FSketchfabAssetThumbnailPool>& InThumbnailPool )
-	: ThumbnailPool(InThumbnailPool)
-	, AssetData(InAsset ? FSketchfabAssetData(InAsset) : FSketchfabAssetData())
-	, Width( InWidth )
-	, Height( InHeight )
-{
-	if ( InThumbnailPool.IsValid() )
-	{
-		InThumbnailPool->AddReferencer(*this);
-	}
-}
-*/
 
 FSketchfabAssetThumbnail::FSketchfabAssetThumbnail( const FSketchfabAssetData& InAssetData , uint32 InWidth, uint32 InHeight, const TSharedPtr<class FSketchfabAssetThumbnailPool>& InThumbnailPool )
 	: ThumbnailPool( InThumbnailPool )
@@ -780,13 +605,6 @@ const FSketchfabAssetData& FSketchfabAssetThumbnail::GetAssetData() const
 	return AssetData;
 }
 
-/*
-void FSketchfabAssetThumbnail::SetAsset( const UObject* InAsset )
-{
-	SetAsset( FSketchfabAssetData(InAsset) );
-}
-*/
-
 void FSketchfabAssetThumbnail::SetAsset( const FSketchfabAssetData& InAssetData )
 {
 	if ( ThumbnailPool.IsValid() )
@@ -848,41 +666,16 @@ FSketchfabAssetThumbnailPool::FSketchfabAssetThumbnailPool( uint32 InNumInPool, 
 	, MaxRealTimeThumbnailsPerFrame( InMaxRealTimeThumbnailsPerFrame )
 	, MaxFrameTimeAllowance( InMaxFrameTimeAllowance )
 {
-	FCoreUObjectDelegates::OnObjectPropertyChanged.AddRaw(this, &FSketchfabAssetThumbnailPool::OnObjectPropertyChanged);
-	FCoreUObjectDelegates::OnAssetLoaded.AddRaw(this, &FSketchfabAssetThumbnailPool::OnAssetLoaded);
-	if ( GEditor )
-	{
-		GEditor->OnActorMoved().AddRaw( this, &FSketchfabAssetThumbnailPool::OnActorPostEditMove );
-	}
 }
 
 FSketchfabAssetThumbnailPool::~FSketchfabAssetThumbnailPool()
 {
-	FCoreUObjectDelegates::OnObjectPropertyChanged.RemoveAll(this);
-	FCoreUObjectDelegates::OnAssetLoaded.RemoveAll(this);
-	if ( GEditor )
-	{
-		GEditor->OnActorMoved().RemoveAll(this);
-	}
-
 	// Release all the texture resources
 	ReleaseResources();
 }
 
 FSketchfabAssetThumbnailPool::FThumbnailInfo::~FThumbnailInfo()
 {
-	if( ThumbnailTexture )
-	{
-		delete ThumbnailTexture;
-		ThumbnailTexture = NULL;
-	}
-
-	if( ThumbnailRenderTarget )
-	{
-		delete ThumbnailRenderTarget;
-		ThumbnailRenderTarget = NULL;
-	}
-
 	if (ModelImageBrush)
 	{
 		delete ModelImageBrush;
@@ -902,11 +695,6 @@ FSketchfabAssetThumbnailPool::FThumbnailInfo::~FThumbnailInfo()
 
 void FSketchfabAssetThumbnailPool::ReleaseResources()
 {
-	// Clear all pending render requests
-	ThumbnailsToRenderStack.Empty();
-	RealTimeThumbnails.Empty();
-	RealTimeThumbnailsToRender.Empty();
-
 	TArray< TSharedRef<FThumbnailInfo> > ThumbnailsToRelease;
 
 	for( auto ThumbIt = ThumbnailToTextureMap.CreateConstIterator(); ThumbIt; ++ThumbIt )
@@ -924,17 +712,7 @@ void FSketchfabAssetThumbnailPool::ReleaseResources()
 	for ( auto ThumbIt = ThumbnailsToRelease.CreateConstIterator(); ThumbIt; ++ThumbIt )
 	{
 		const TSharedRef<FThumbnailInfo>& Thumb = *ThumbIt;
-
-			// Release rendering resources
-			ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER( 
-				ReleaseThumbnailResources,
-				FThumbnailInfo_RenderThread, ThumbInfo, Thumb.Get(),
-			{
-				ThumbInfo.ThumbnailTexture->ClearTextureData();
-				ThumbInfo.ThumbnailTexture->ReleaseResource();
-				ThumbInfo.ThumbnailRenderTarget->ReleaseResource();
-			});
-		}
+	}
 
 	// Wait for all resources to be released
 	FlushRenderingCommands();
@@ -957,211 +735,16 @@ TStatId FSketchfabAssetThumbnailPool::GetStatId() const
 
 bool FSketchfabAssetThumbnailPool::IsTickable() const
 {
-	return RecentlyLoadedAssets.Num() > 0 || ThumbnailsToRenderStack.Num() > 0 || RealTimeThumbnails.Num() > 0;
+	return false;
 }
 
 void FSketchfabAssetThumbnailPool::Tick( float DeltaTime )
 {
-	//Skip all this code. We are not rendering any thumbnails in the background at all.
-	return; 
-
-
-	// If there were any assets loaded since last frame that we are currently displaying thumbnails for, push them on the render stack now.
-	/*
-	if ( RecentlyLoadedAssets.Num() > 0 )
-	{
-		for ( int32 LoadedAssetIdx = 0; LoadedAssetIdx < RecentlyLoadedAssets.Num(); ++LoadedAssetIdx )
-		{
-			RefreshThumbnailsFor(RecentlyLoadedAssets[LoadedAssetIdx]);
-		}
-
-		RecentlyLoadedAssets.Empty();
-	}
-
-	// If we have dynamic thumbnails are we are done rendering the last batch of dynamic thumbnails, start a new batch as long as real-time thumbnails are enabled
-	const bool bIsInPIEOrSimulate = GEditor->PlayWorld != NULL || GEditor->bIsSimulatingInEditor;
-	const bool bShouldUseRealtimeThumbnails = AreRealTimeThumbnailsAllowed.Get() && GetDefault<UContentBrowserSettings>()->RealTimeThumbnails && !bIsInPIEOrSimulate;
-	if ( bShouldUseRealtimeThumbnails && RealTimeThumbnails.Num() > 0 && RealTimeThumbnailsToRender.Num() == 0 )
-	{
-		double CurrentTime = FPlatformTime::Seconds();
-		for ( int32 ThumbIdx = RealTimeThumbnails.Num() - 1; ThumbIdx >= 0; --ThumbIdx )
-		{
-			const TSharedRef<FThumbnailInfo>& Thumb = RealTimeThumbnails[ThumbIdx];
-			if ( Thumb->AssetData.IsAssetLoaded() )
-			{
-				// Only render thumbnails that have been requested recently
-				if ( (CurrentTime - Thumb->LastAccessTime) < 1.f )
-				{
-					RealTimeThumbnailsToRender.Add(Thumb);
-				}
-			}
-			else
-			{
-				RealTimeThumbnails.RemoveAt(ThumbIdx);
-			}
-		}
-	}
-
-	uint32 NumRealTimeThumbnailsRenderedThisFrame = 0;
-	// If there are any thumbnails to render, pop one off the stack and render it.
-	if( ThumbnailsToRenderStack.Num() + RealTimeThumbnailsToRender.Num() > 0 )
-	{
-		double FrameStartTime = FPlatformTime::Seconds();
-		// Render as many thumbnails as we are allowed to
-		while( ThumbnailsToRenderStack.Num() + RealTimeThumbnailsToRender.Num() > 0 && FPlatformTime::Seconds() - FrameStartTime < MaxFrameTimeAllowance )
-		{
-			TSharedPtr<FThumbnailInfo> Info;
-			if ( ThumbnailsToRenderStack.Num() > 0 )
-			{
-				Info = ThumbnailsToRenderStack.Pop();
-			}
-			else if ( FSlateThrottleManager::Get().IsAllowingExpensiveTasks() && RealTimeThumbnailsToRender.Num() > 0 && NumRealTimeThumbnailsRenderedThisFrame < MaxRealTimeThumbnailsPerFrame )
-			{
-				Info = RealTimeThumbnailsToRender.Pop();
-				NumRealTimeThumbnailsRenderedThisFrame++;
-			}
-			else
-			{
-				// No thumbnails left to render or we don't want to render any more
-				break;
-			}
-
-			if( Info.IsValid() )
-			{
-				TSharedRef<FThumbnailInfo> InfoRef = Info.ToSharedRef();
-
-				if ( InfoRef->AssetData.IsValid() )
-				{
-					const FObjectThumbnail* ObjectThumbnail = NULL;
-					bool bLoadedThumbnail = false;
-
-					// If this is a loaded asset and we have a rendering info for it, render a fresh thumbnail here
-					if( InfoRef->AssetData.IsAssetLoaded() )
-					{
-						UObject* Asset = InfoRef->AssetData.GetAsset();
-						FThumbnailRenderingInfo* RenderInfo = GUnrealEd->GetThumbnailManager()->GetRenderingInfo( Asset );
-						if ( RenderInfo != NULL && RenderInfo->Renderer != NULL )
-						{
-							ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(
-								SyncSlateTextureCommand,
-								FThumbnailInfo_RenderThread, ThumbInfo, InfoRef.Get(),
-							{
-								if ( ThumbInfo.ThumbnailTexture->GetTypedResource() != ThumbInfo.ThumbnailRenderTarget->GetTextureRHI() )
-								{
-									ThumbInfo.ThumbnailTexture->ClearTextureData();
-									ThumbInfo.ThumbnailTexture->ReleaseDynamicRHI();
-									ThumbInfo.ThumbnailTexture->SetRHIRef(ThumbInfo.ThumbnailRenderTarget->GetTextureRHI(), ThumbInfo.Width, ThumbInfo.Height);
-								}
-							});
-
-							if (InfoRef->LastUpdateTime <= 0.0f || RenderInfo->Renderer->AllowsRealtimeThumbnails(Asset))
-							{
-								//@todo: this should be done on the GPU only but it is not supported by thumbnail tools yet
-								ThumbnailTools::RenderThumbnail(
-									Asset,
-									InfoRef->Width,
-									InfoRef->Height,
-									ThumbnailTools::EThumbnailTextureFlushMode::NeverFlush,
-									InfoRef->ThumbnailRenderTarget
-									);
-							}
-
-							bLoadedThumbnail = true;
-
-							// Since this was rendered, add it to the list of thumbnails that can be rendered in real-time
-							RealTimeThumbnails.AddUnique(InfoRef);
-						}
-					}
-	
-					FThumbnailMap ThumbnailMap;
-					// If we could not render a fresh thumbnail, see if we already have a cached one to load
-					if ( !bLoadedThumbnail )
-					{
-						// Unloaded asset
-						const FObjectThumbnail* FoundThumbnail = ThumbnailTools::FindCachedThumbnail(InfoRef->AssetData.GetFullName());
-						if ( FoundThumbnail )
-						{
-							ObjectThumbnail = FoundThumbnail;
-						}
-						else
-						{
-							// If we don't have a cached thumbnail, try to find it on disk
-							FString PackageFilename;
-							if ( FPackageName::DoesPackageExist(InfoRef->AssetData.PackageName.ToString(), NULL, &PackageFilename) )
-							{
-								TSet<FName> ObjectFullNames;
-								
- 
-								FName ObjectFullName = FName(*InfoRef->AssetData.GetFullName());
-								ObjectFullNames.Add(ObjectFullName);
- 
-								ThumbnailTools::LoadThumbnailsFromPackage(PackageFilename, ObjectFullNames, ThumbnailMap);
- 
-								const FObjectThumbnail* ThumbnailPtr = ThumbnailMap.Find(ObjectFullName);
-								if (ThumbnailPtr)
-								{
-									ObjectThumbnail = ThumbnailPtr;
-								}
-							}
-						}
-					}
-
-					if ( ObjectThumbnail )
-					{
-						if ( ObjectThumbnail->GetImageWidth() > 0 && ObjectThumbnail->GetImageHeight() > 0 && ObjectThumbnail->GetUncompressedImageData().Num() > 0 )
-						{
-							// Make bulk data for updating the texture memory later
-							FSlateTextureData* BulkData = new FSlateTextureData(ObjectThumbnail->GetImageWidth(),ObjectThumbnail->GetImageHeight(),GPixelFormats[PF_B8G8R8A8].BlockBytes, ObjectThumbnail->AccessImageData() );
-
-							// Update the texture RHI
-							ENQUEUE_UNIQUE_RENDER_COMMAND_TWOPARAMETER(
-								ClearSlateTextureCommand,
-								FThumbnailInfo_RenderThread, ThumbInfo, InfoRef.Get(),
-								FSlateTextureData*, BulkData, BulkData,
-							{
-								if ( ThumbInfo.ThumbnailTexture->GetTypedResource() == ThumbInfo.ThumbnailRenderTarget->GetTextureRHI() )
-								{
-									ThumbInfo.ThumbnailTexture->SetRHIRef(NULL, ThumbInfo.Width, ThumbInfo.Height);
-								}
-
-								ThumbInfo.ThumbnailTexture->SetTextureData( MakeShareable(BulkData) );
-								ThumbInfo.ThumbnailTexture->UpdateRHI();
-							});
-
-							bLoadedThumbnail = true;
-						}
-						else
-						{
-							bLoadedThumbnail = false;
-						}
-					}
-
-					if ( bLoadedThumbnail )
-					{
-						// Mark it as updated
-						InfoRef->LastUpdateTime = FPlatformTime::Seconds();
-
-						// Notify listeners that a thumbnail has been rendered
-						ThumbnailRenderedEvent.Broadcast(InfoRef->AssetData);
-					}
-					else
-					{
-						// Notify listeners that a thumbnail has been rendered
-						ThumbnailRenderFailedEvent.Broadcast(InfoRef->AssetData);
-					}
-				}
-			}
-		}
-	}
-	*/
 }
 
 FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketchfabAssetData& AssetData, uint32 Width, uint32 Height, FSlateDynamicImageBrush **Image)
 {
-	const FName &ThumbUID = AssetData.ThumbUID;
-	const FName &PackagePath = AssetData.ContentFolder;
-
-	FString path = PackagePath.ToString() / ThumbUID.ToString();
+	FString path = AssetData.ContentFolder.ToString() / AssetData.ThumbUID.ToString();
 	path += ".jpg";
 
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -1210,13 +793,8 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 			{
 				ThumbnailInfo = FreeThumbnails.Pop();
 
-				ENQUEUE_UNIQUE_RENDER_COMMAND_THREEPARAMETER( SlateUpdateThumbSizeCommand,
-					FSlateTextureRenderTarget2DResource*, ThumbnailRenderTarget, ThumbnailInfo->ThumbnailRenderTarget,
-					uint32, Width, Width,
-					uint32, Height, Height,
-				{
-					ThumbnailRenderTarget->SetSize(Width, Height);
-				});
+				ThumbnailInfo->ModelTexture = UImageLoader::LoadImageFromDisk(NULL, path);
+				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), AssetData.ThumbUID);
 			}
 			else
 			{
@@ -1230,16 +808,8 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 				ThumbnailInfo = MakeShareable( new FThumbnailInfo );
 				
 				// Set the thumbnail and asset on the info. It is NOT safe to change or NULL these pointers until ReleaseResources.
-				ThumbnailInfo->ThumbnailTexture = new FSlateTexture2DRHIRef( Width, Height, PF_B8G8R8A8, NULL, TexCreate_Dynamic );
-				ThumbnailInfo->ThumbnailRenderTarget = new FSlateTextureRenderTarget2DResource(FLinearColor::Black, Width, Height, PF_B8G8R8A8, SF_Point, TA_Wrap, TA_Wrap, 0.0f);
-
-				// Set the thumbnail and asset on the info. It is NOT safe to change or NULL these pointers until ReleaseResources.
-
 				ThumbnailInfo->ModelTexture = UImageLoader::LoadImageFromDisk(NULL, path);
-				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), ThumbUID);
-
-				BeginInitResource( ThumbnailInfo->ThumbnailTexture );
-				BeginInitResource( ThumbnailInfo->ThumbnailRenderTarget );
+				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), AssetData.ThumbUID);
 			}
 
 
@@ -1255,9 +825,6 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 		
 			// Mark this thumbnail as needing to be updated
 			ThumbnailInfo->LastUpdateTime = -1.f;
-
-			// Request that the thumbnail be rendered as soon as possible
-			ThumbnailsToRenderStack.Push( ThumbnailRef );
 		}
 
 		// This thumbnail was accessed, update its last time to the current time
@@ -1269,7 +836,7 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 			*Image = ThumbnailInfo->ModelImageBrush;
 		}
 
-		return ThumbnailInfo->ThumbnailTexture;
+		return NULL;
 	}
 }
 
@@ -1301,15 +868,15 @@ void FSketchfabAssetThumbnailPool::AddReferencer( const FSketchfabAssetThumbnail
 void FSketchfabAssetThumbnailPool::RemoveReferencer( const FSketchfabAssetThumbnail& AssetThumbnail )
 {
 	FIntPoint Size = AssetThumbnail.GetSize();
-	const FName ObjectPath = AssetThumbnail.GetAssetData().ModelUID;
-	if ( ObjectPath == NAME_None || Size.X == 0 || Size.Y == 0 )
+	const FName ModelUID = AssetThumbnail.GetAssetData().ModelUID;
+	if (ModelUID == NAME_None || Size.X == 0 || Size.Y == 0 )
 	{
 		// Invalid referencer
 		return;
 	}
 
 	// Generate a key and look up the number of references in the RefCountMap
-	FThumbId ThumbId( ObjectPath, Size.X, Size.Y ) ;
+	FThumbId ThumbId(ModelUID, Size.X, Size.Y ) ;
 	int32* RefCountPtr = RefCountMap.Find(ThumbId);
 
 	// This should complement an AddReferencer so this entry should be in the map
@@ -1322,51 +889,13 @@ void FSketchfabAssetThumbnailPool::RemoveReferencer( const FSketchfabAssetThumbn
 		if ( (*RefCountPtr) <= 0 )
 		{
 			RefCountMap.Remove(ThumbId);
-			FreeThumbnail(ObjectPath, Size.X, Size.Y);
+			FreeThumbnail(ModelUID, Size.X, Size.Y);
 		}
 	}
 	else
 	{
 		// This FSketchfabAssetThumbnail did not reference anything or was deleted after the pool was deleted.
 	}
-}
-
-bool FSketchfabAssetThumbnailPool::IsInRenderStack( const TSharedPtr<FSketchfabAssetThumbnail>& Thumbnail ) const
-{
-	const FSketchfabAssetData& AssetData = Thumbnail->GetAssetData();
-	const uint32 Width = Thumbnail->GetSize().X;
-	const uint32 Height = Thumbnail->GetSize().Y;
-
-	if ( ensure(AssetData.ModelUID != NAME_None) && ensure(Width > 0) && ensure(Height > 0) )
-	{
-		FThumbId ThumbId( AssetData.ModelUID, Width, Height ) ;
-		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find( ThumbId );
-		if ( ThumbnailInfoPtr )
-		{
-			return ThumbnailsToRenderStack.Contains(*ThumbnailInfoPtr);
-		}
-	}
-
-	return false;
-}
-
-bool FSketchfabAssetThumbnailPool::IsRendered(const TSharedPtr<FSketchfabAssetThumbnail>& Thumbnail) const
-{
-	const FSketchfabAssetData& AssetData = Thumbnail->GetAssetData();
-	const uint32 Width = Thumbnail->GetSize().X;
-	const uint32 Height = Thumbnail->GetSize().Y;
-
-	if (ensure(AssetData.ModelUID != NAME_None) && ensure(Width > 0) && ensure(Height > 0))
-	{
-		FThumbId ThumbId(AssetData.ModelUID, Width, Height);
-		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find(ThumbId);
-		if (ThumbnailInfoPtr)
-		{
-			return (*ThumbnailInfoPtr).Get().LastUpdateTime >= 0.f;
-		}
-	}
-
-	return false;
 }
 
 void FSketchfabAssetThumbnailPool::PrioritizeThumbnails( const TArray< TSharedPtr<FSketchfabAssetThumbnail> >& ThumbnailsToPrioritize, uint32 Width, uint32 Height )
@@ -1376,23 +905,7 @@ void FSketchfabAssetThumbnailPool::PrioritizeThumbnails( const TArray< TSharedPt
 		TSet<FName> ObjectPathList;
 		for ( int32 ThumbIdx = 0; ThumbIdx < ThumbnailsToPrioritize.Num(); ++ThumbIdx )
 		{
-			ObjectPathList.Add(ThumbnailsToPrioritize[ThumbIdx]->GetAssetData().ModelUID);
-		}
-
-		TArray< TSharedRef<FThumbnailInfo> > FoundThumbnails;
-		for ( int32 ThumbIdx = ThumbnailsToRenderStack.Num() - 1; ThumbIdx >= 0; --ThumbIdx )
-		{
-			const TSharedRef<FThumbnailInfo>& ThumbnailInfo = ThumbnailsToRenderStack[ThumbIdx];
-			if ( ThumbnailInfo->Width == Width && ThumbnailInfo->Height == Height && ObjectPathList.Contains(ThumbnailInfo->AssetData.ModelUID) )
-			{
-				FoundThumbnails.Add(ThumbnailInfo);
-				ThumbnailsToRenderStack.RemoveAt(ThumbIdx);
-			}
-		}
-
-		for ( int32 ThumbIdx = 0; ThumbIdx < FoundThumbnails.Num(); ++ThumbIdx )
-		{
-			ThumbnailsToRenderStack.Push(FoundThumbnails[ThumbIdx]);
+			ObjectPathList.Add(ThumbnailsToPrioritize[ThumbIdx]->GetAssetData().ModelUID); 
 		}
 	}
 }
@@ -1409,32 +922,29 @@ void FSketchfabAssetThumbnailPool::RefreshThumbnail( const TSharedPtr<FSketchfab
 		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find( ThumbId );
 		if ( ThumbnailInfoPtr )
 		{
-			ThumbnailsToRenderStack.AddUnique(*ThumbnailInfoPtr);
 		}
 	}
 }
 
-void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ObjectPath, uint32 Width, uint32 Height )
+void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ModelUID, uint32 Width, uint32 Height )
 {
-	if(ObjectPath != NAME_None && Width != 0 && Height != 0)
+	if(ModelUID != NAME_None && Width != 0 && Height != 0)
 	{
-		FThumbId ThumbId( ObjectPath, Width, Height ) ;
+		FThumbId ThumbId(ModelUID, Width, Height ) ;
 
 		const TSharedRef<FThumbnailInfo>* ThumbnailInfoPtr = ThumbnailToTextureMap.Find(ThumbId);
 		if( ThumbnailInfoPtr )
 		{
 			TSharedRef<FThumbnailInfo> ThumbnailInfo = *ThumbnailInfoPtr;
 			ThumbnailToTextureMap.Remove(ThumbId);
-			ThumbnailsToRenderStack.Remove(ThumbnailInfo);
-			RealTimeThumbnails.Remove(ThumbnailInfo);
-			RealTimeThumbnailsToRender.Remove(ThumbnailInfo);
 
-			ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER( 
-				ReleaseThumbnailTextureData,
-				FSlateTexture2DRHIRef*, ThumbnailTexture, ThumbnailInfo->ThumbnailTexture,
+			if (ThumbnailInfo->ModelImageBrush)
 			{
-				ThumbnailTexture->ClearTextureData();
-			});
+				delete ThumbnailInfo->ModelImageBrush;
+				ThumbnailInfo->ModelImageBrush = NULL;
+			}
+
+			ThumbnailInfo->ModelTexture = NULL;
 
 			FreeThumbnails.Add( ThumbnailInfo );
 		}
@@ -1442,88 +952,12 @@ void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ObjectPath, uint3
 			
 }
 
-void FSketchfabAssetThumbnailPool::RefreshThumbnailsFor( FName ObjectPath )
+void FSketchfabAssetThumbnailPool::RefreshThumbnailsFor( FName ModelUID)
 {
 	for ( auto ThumbIt = ThumbnailToTextureMap.CreateIterator(); ThumbIt; ++ThumbIt)
 	{
-		if ( ThumbIt.Key().ObjectPath == ObjectPath )
+		if ( ThumbIt.Key().ModelUID == ModelUID)
 		{
-			ThumbnailsToRenderStack.Push( ThumbIt.Value() );
 		}
 	}
 }
-
-void FSketchfabAssetThumbnailPool::OnAssetLoaded( UObject* Asset )
-{
-	if ( Asset != NULL )
-	{
-		RecentlyLoadedAssets.Add( FName(*Asset->GetPathName()) );
-	}
-}
-
-void FSketchfabAssetThumbnailPool::OnActorPostEditMove( AActor* Actor )
-{
-	DirtyThumbnailForObject(Actor);
-}
-
-void FSketchfabAssetThumbnailPool::OnObjectPropertyChanged( UObject* ObjectBeingModified, FPropertyChangedEvent& PropertyChangedEvent )
-{
-	DirtyThumbnailForObject(ObjectBeingModified);
-}
-
-void FSketchfabAssetThumbnailPool::DirtyThumbnailForObject(UObject* ObjectBeingModified)
-{
-	if (!ObjectBeingModified)
-	{
-		return;
-	}
-
-	if (ObjectBeingModified->HasAnyFlags(RF_ClassDefaultObject))
-	{
-		if (ObjectBeingModified->GetClass()->ClassGeneratedBy != NULL)
-		{
-			// This is a blueprint modification. Check to see if this thumbnail is the blueprint of the modified CDO
-			ObjectBeingModified = ObjectBeingModified->GetClass()->ClassGeneratedBy;
-		}
-	}
-	else if (AActor* ActorBeingModified = Cast<AActor>(ObjectBeingModified))
-	{
-		// This is a non CDO actor getting modified. Update the actor's world's thumbnail.
-		ObjectBeingModified = ActorBeingModified->GetWorld();
-	}
-
-	if (ObjectBeingModified && ObjectBeingModified->IsAsset())
-	{
-		// An object in memory was modified.  We'll mark it's thumbnail as dirty so that it'll be
-		// regenerated on demand later. (Before being displayed in the browser, or package saves, etc.)
-		FObjectThumbnail* Thumbnail = ThumbnailTools::GetThumbnailForObject(ObjectBeingModified);
-
-		if (Thumbnail == NULL && !IsGarbageCollecting())
-		{
-			// If we don't yet have a thumbnail map, load one from disk if possible
-			// Don't attempt to do this while garbage collecting since loading or finding objects during GC is illegal
-			FName ObjectFullName = FName(*ObjectBeingModified->GetFullName());
-			TArray<FName> ObjectFullNames;
-			FThumbnailMap LoadedThumbnails;
-			ObjectFullNames.Add(ObjectFullName);
-			if (ThumbnailTools::ConditionallyLoadThumbnailsForObjects(ObjectFullNames, LoadedThumbnails))
-			{
-				Thumbnail = LoadedThumbnails.Find(ObjectFullName);
-
-				if (Thumbnail != NULL)
-				{
-					Thumbnail = ThumbnailTools::CacheThumbnail(ObjectBeingModified->GetFullName(), Thumbnail, ObjectBeingModified->GetOutermost());
-				}
-			}
-		}
-
-		if (Thumbnail != NULL)
-		{
-			// Mark the thumbnail as dirty
-			Thumbnail->MarkAsDirty();
-		}
-
-		RefreshThumbnailsFor( FName(*ObjectBeingModified->GetPathName()) );
-	}
-}
-

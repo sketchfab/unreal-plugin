@@ -197,12 +197,6 @@ public:
 	 */
 	void RemoveReferencer( const FSketchfabAssetThumbnail& AssetThumbnail );
 
-	/** Returns true if the thumbnail for the specified asset in the specified size is in the stack of thumbnails to render */
-	bool IsInRenderStack( const TSharedPtr<FSketchfabAssetThumbnail>& Thumbnail ) const;
-
-	/** Returns true if the thumbnail for the specified asset in the specified size has been rendered */
-	bool IsRendered( const TSharedPtr<FSketchfabAssetThumbnail>& Thumbnail ) const;
-
 	/** Brings all items in ThumbnailsToPrioritize to the front of the render stack if they are actually in the stack */
 	void PrioritizeThumbnails( const TArray< TSharedPtr<FSketchfabAssetThumbnail> >& ThumbnailsToPrioritize, uint32 Width, uint32 Height );
 
@@ -221,26 +215,15 @@ private:
 	/**
 	 * Frees the rendering resources and clears a slot in the pool for an asset thumbnail at the specified width and height
 	 *
-	 * @param ObjectPath	The path to the asset whose thumbnail should be free
+	 * @param ModelUID		The unique model id to the asset whose thumbnail should be free
 	 * @param Width 		The width of the thumbnail to free
 	 * @param Height		The height of the thumbnail to free
 	 */
-	void FreeThumbnail( const FName& ObjectPath, uint32 Width, uint32 Height );
+	void FreeThumbnail( const FName& ModelUID, uint32 Width, uint32 Height );
 
 	/** Adds the thumbnails associated with the object found at ObjectPath to the render stack */
-	void RefreshThumbnailsFor( FName ObjectPath );
+	void RefreshThumbnailsFor( FName ModelUID);
 
-	/** Handler for when an asset is loaded */
-	void OnAssetLoaded( UObject* Asset );
-
-	/** Handler for when an actor is moved in a level. Used to update world asset thumbnails. */
-	void OnActorPostEditMove( AActor* Actor );
-
-	/** Handler for when an asset is loaded */
-	void OnObjectPropertyChanged( UObject* Asset, FPropertyChangedEvent& PropertyChangedEvent );
-
-	/** Handler to dirty cached thumbnails in packages to make sure they are re-rendered later */
-	void DirtyThumbnailForObject( UObject* ObjectBeingModified );
 
 private:
 	/** Information about a thumbnail */
@@ -248,11 +231,6 @@ private:
 	{
 		/** The object whose thumbnail is rendered */
 		FSketchfabAssetData AssetData;
-
-		/** Rendering resource for slate */
-		FSlateTexture2DRHIRef* ThumbnailTexture;
-		/** Render target for slate */
-		FSlateTextureRenderTarget2DResource* ThumbnailRenderTarget;
 
 		UTexture2D* ModelTexture;
 		FSlateDynamicImageBrush* ModelImageBrush;
@@ -267,47 +245,28 @@ private:
 		uint32 Height;
 		~FThumbnailInfo();
 	};
-
-	struct FThumbnailInfo_RenderThread
-	{
-		/** Rendering resource for slate */
-		FSlateTexture2DRHIRef* ThumbnailTexture;
-		/** Render target for slate */
-		FSlateTextureRenderTarget2DResource* ThumbnailRenderTarget;
-		/** Width of the thumbnail */
-		uint32 Width;
-		/** Height of the thumbnail */
-		uint32 Height;
-
-		FThumbnailInfo_RenderThread(const FThumbnailInfo& Info)
-			: ThumbnailTexture(Info.ThumbnailTexture)
-			, ThumbnailRenderTarget(Info.ThumbnailRenderTarget)
-			, Width(Info.Width)
-			, Height(Info.Height)
-		{}
-	};
 	
 	/** Key for looking up thumbnails in a map */
 	struct FThumbId
 	{
-		FName ObjectPath;
+		FName ModelUID;
 		uint32 Width;
 		uint32 Height;
 
-		FThumbId( const FName& InObjectPath, uint32 InWidth, uint32 InHeight )
-			: ObjectPath( InObjectPath )
+		FThumbId( const FName& InModelUID, uint32 InWidth, uint32 InHeight )
+			: ModelUID(InModelUID)
 			, Width( InWidth )
 			, Height( InHeight )
 		{}
 
 		bool operator==( const FThumbId& Other ) const
 		{
-			return ObjectPath == Other.ObjectPath && Width == Other.Width && Height == Other.Height;
+			return ModelUID == Other.ModelUID && Width == Other.Width && Height == Other.Height;
 		}
 
 		friend uint32 GetTypeHash( const FThumbId& Id )
 		{
-			return GetTypeHash( Id.ObjectPath ) ^ GetTypeHash( Id.Width ) ^ GetTypeHash( Id.Height );
+			return GetTypeHash( Id.ModelUID) ^ GetTypeHash( Id.Width ) ^ GetTypeHash( Id.Height );
 		}
 	};
 	/** The delegate to execute when a thumbnail is rendered */
@@ -318,15 +277,6 @@ private:
 
 	/** A mapping of objects to their thumbnails */
 	TMap< FThumbId, TSharedRef<FThumbnailInfo> > ThumbnailToTextureMap;
-
-	/** List of thumbnails to render when possible */
-	TArray< TSharedRef<FThumbnailInfo> > ThumbnailsToRenderStack;
-
-	/** List of thumbnails that can be rendered in real-time */
-	TArray< TSharedRef<FThumbnailInfo> > RealTimeThumbnails;
-
-	/** List of real-time thumbnails that are queued to be rendered */
-	TArray< TSharedRef<FThumbnailInfo> > RealTimeThumbnailsToRender;
 
 	/** List of free thumbnails that can be reused */
 	TArray< TSharedRef<FThumbnailInfo> > FreeThumbnails;

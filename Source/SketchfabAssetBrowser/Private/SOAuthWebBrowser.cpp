@@ -8,6 +8,7 @@ void SOAuthWebBrowser::Construct(const FArguments& InArgs)
 		.ParentWindow(InArgs._ParentWindow)
 		.InitialURL(InArgs._InitialURL)
 		.OnUrlChanged(InArgs._OnUrlChanged)
+		.OnCloseWindow(InArgs._OnCloseWindow)
 		.ShowControls(false)
 		.ShowAddressBar(false));
 }
