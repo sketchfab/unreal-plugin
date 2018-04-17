@@ -985,6 +985,7 @@ FReply SSketchfabAssetBrowserWindow::OnClearCache()
 		{
 			PlatformFile.DeleteDirectoryRecursively(*Folder);
 			PlatformFile.CreateDirectory(*Folder);
+			OnSearchPressed();
 		}
 	}
 
@@ -993,7 +994,6 @@ FReply SSketchfabAssetBrowserWindow::OnClearCache()
 		Window.Pin()->BringToFront(true);
 	}
 
-	OnSearchPressed();
 	return FReply::Handled();
 }
 
