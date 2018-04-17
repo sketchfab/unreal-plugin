@@ -37,6 +37,7 @@ public:
 	void Construct(const FArguments& InArgs);
 	void SetModelInfo(const FSketchfabTask& InTask);
 	void SetThumbnail(const FSketchfabTask& InTask);
+	void SetFileSize(const FSketchfabTask& InTask);
 
 	FReply DownloadModel();
 	FReply ViewOnSketchfab();

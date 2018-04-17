@@ -34,6 +34,8 @@ public:
 	int32 VertexCount;
 	int32 FaceCount;
 	bool Animated;
+	FString LicenceType;
+	FString LicenceInfo;
 
 public:
 	/** Default constructor */

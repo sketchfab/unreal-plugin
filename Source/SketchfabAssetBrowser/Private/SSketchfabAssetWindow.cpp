@@ -299,9 +299,6 @@ void SSketchfabAssetWindow::SetModelInfo(const FSketchfabTask& InTask)
 
 	LicenceText->SetText(FText::FromString(InTask.TaskData.LicenceType));
 	ExtraInfoText->SetText(FText::FromString(InTask.TaskData.LicenceInfo));
-
-	DownloadSize = InTask.TaskData.ModelSize / 1000.0f;
-	DownloadSizeText->SetText(FText::Format(FText::FromString("{0} KB"), FText::AsNumber(DownloadSize)));
 }
 
 
@@ -317,6 +314,35 @@ void SSketchfabAssetWindow::SetThumbnail(const FSketchfabTask& InTask)
 		ModelImage->SetImage(Texture);
 	}
 }
+
+void SSketchfabAssetWindow::SetFileSize(const FSketchfabTask& InTask)
+{
+	FNumberFormattingOptions FormattingOptions;
+	FormattingOptions.SetUseGrouping(false);
+	FormattingOptions.SetMaximumFractionalDigits(2);
+
+	if (InTask.TaskData.ModelSize < 1e3)
+	{
+		DownloadSize = InTask.TaskData.ModelSize;
+		DownloadSizeText->SetText(FText::Format(FText::FromString("{0} Bytes"), FText::AsNumber(DownloadSize)));
+	}
+	else if (InTask.TaskData.ModelSize >= 1e3 && InTask.TaskData.ModelSize < 1e6)
+	{
+		DownloadSize = InTask.TaskData.ModelSize / 1e3;
+		DownloadSizeText->SetText(FText::Format(FText::FromString("{0} KB"), FText::AsNumber(DownloadSize, &FormattingOptions)));
+	}
+	else if (InTask.TaskData.ModelSize >= 1e6 && InTask.TaskData.ModelSize < 1e9)
+	{
+		DownloadSize = InTask.TaskData.ModelSize / 1e6;
+		DownloadSizeText->SetText(FText::Format(FText::FromString("{0} MB"), FText::AsNumber(DownloadSize, &FormattingOptions)));
+	}
+	else
+	{
+		DownloadSize = InTask.TaskData.ModelSize / 1e9;
+		DownloadSizeText->SetText(FText::Format(FText::FromString("{0} GB"), FText::AsNumber(DownloadSize, &FormattingOptions)));
+	}
+}
+
 
 FReply SSketchfabAssetWindow::DownloadModel()
 {

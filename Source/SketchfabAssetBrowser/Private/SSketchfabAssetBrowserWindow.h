@@ -60,18 +60,23 @@ public:
 
 	//AssetView 
 	void OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod);
+	void OnAssetsSelected(const FSketchfabAssetData &SelectedAsset);
 	TSharedPtr<SWidget> OnGetAssetContextMenu(const TArray<FSketchfabAssetData>& SelectedAssets);
 
 public:
 	void Search();
 	void GetUserData();
 	void GetCategories();
+	void GetModelLicence(const FString &ModelUID);
 
 private:
 	void Search(const FString &url);
 	void DownloadModel(const FString &ModelUID, const FDateTime &ModelPublishedAt);
 	void ShowModelWindow(const FSketchfabAssetData& AssetData);
 	void DoLoginLogout(const FString &url);
+	void GetModelSize(const FString &ModelUID);
+
+	FString GetModelZipFileName(const FString &ModelUID);
 
 private: 	
 	//Search Options
@@ -145,6 +150,7 @@ private:
 	void OnUserData(const FSketchfabTask& InTask);
 	void OnUserThumbnailDownloaded(const FSketchfabTask& InTask);
 	void OnCategories(const FSketchfabTask& InTask);
+	void OnGetModelSize(const FSketchfabTask& InTask);
 
 	void OnTaskFailed(const FSketchfabTask& InTask);
 	void OnDownloadFailed(const FSketchfabTask& InTask);

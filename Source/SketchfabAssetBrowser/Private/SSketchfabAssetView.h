@@ -338,6 +338,12 @@ struct FAssetViewCreation : public FAssetViewAsset, public FGCObject
 };
 */
 
+// Additional data
+struct LicenceDataInfo
+{
+	FString LicenceType;
+	FString LicenceInfo;
+};
 
 class SAssetTileView;
 class SSketchfabAssetView : public SCompoundWidget
@@ -396,6 +402,9 @@ public:
 	void NeedRefresh();
 	void DownloadProgress(const FString& ModelUID, float progress);
 	void FlushThumbnails();
+
+	void SetLicence(const FString& ModelUID, const FString &LicenceType, const FString &LicenceInfo);
+	bool HasLicence(const FString& ModelUID);
 
 	/** Returns all the asset data objects in items currently selected in the view */
 	TArray<FSketchfabAssetData> GetSelectedAssets() const;
@@ -568,6 +577,9 @@ private:
 	bool bNeedsRefresh;
 	bool bFlushThumbnails;
 
+	/** Licensing information from the ModelInfo call */
+	TMap<FString, LicenceDataInfo> LicenceData;
+
 	/** Progress information for ModelUID download. Gets set on the RelevantThumbnails */
 	TMap<FString, float> DownloadProgressData;
 
@@ -596,6 +608,27 @@ private:
 	template <typename T>
 	static TSharedRef<SWidget> CreateListTileItemContents(T* const InTileOrListItem, const TSharedRef<SWidget>& InThumbnail, FName& OutItemShadowBorder);
 };
+
+
+//TODO: 
+//Copy code from FFlipbookKeyFrameDragDropOp
+class FSketchfabDragDropOperation : public FDragDropOperation
+{
+public:
+	DRAG_DROP_OPERATOR_TYPE(FSketchfabDragDropOperation, FDragDropOperation)
+
+	FSketchfabDragDropOperation();
+	virtual TSharedPtr<SWidget> GetDefaultDecorator() const override;
+	virtual void OnDragged(const class FDragDropEvent& DragDropEvent);
+	virtual void Construct() override;
+
+public:
+	TSharedPtr<FSketchfabAssetThumbnailPool> AssetThumbnailPool;
+	TArray<FSketchfabAssetData> DraggedAssets;
+	TArray<FString> DraggedAssetPaths;
+};
+
+
 
 FString GetSketchfabCacheDir();
 FString GetSketchfabAssetZipPath(const FSketchfabAssetData &AssetData);

@@ -334,8 +334,8 @@ FReply SSketchfabAssetView::OnDraggingAssetItem(const FGeometry& MyGeometry, con
 {
 	if (bAllowDragging)
 	{
-		TArray<FSketchfabAssetData> DraggedAssets;
-		TArray<FString> DraggedAssetPaths;
+		TSharedRef<FSketchfabDragDropOperation> Operation = MakeShareable(new FSketchfabDragDropOperation);
+		Operation->AssetThumbnailPool = AssetThumbnailPool;
 
 		// Work out which assets to drag
 		{
@@ -345,23 +345,30 @@ FReply SSketchfabAssetView::OnDraggingAssetItem(const FGeometry& MyGeometry, con
 				// Skip invalid assets and redirectors
 				if (AssetData.IsValid() && HasSketchAssetZipFile(AssetData))
 				{
-					DraggedAssets.Add(AssetData);
-					DraggedAssetPaths.Add(GetSketchfabAssetZipPath(AssetData));
+					FSketchfabAssetData DataCopy = AssetData;
+					LicenceDataInfo *data = LicenceData.Find(AssetData.ModelUID.ToString());
+					if (data)
+					{
+						DataCopy.LicenceInfo = data->LicenceInfo;
+						DataCopy.LicenceType = data->LicenceType;
+					}
+
+					Operation->DraggedAssets.Add(DataCopy);
+					Operation->DraggedAssetPaths.Add(GetSketchfabAssetZipPath(DataCopy));
 				}
 			}
 		}
 
 		// Use the custom drag handler?
-		if (DraggedAssets.Num() > 0 && FEditorDelegates::OnAssetDragStarted.IsBound())
+		if (Operation->DraggedAssets.Num() > 0 && FEditorDelegates::OnAssetDragStarted.IsBound())
 		{
-			//FEditorDelegates::OnAssetDragStarted.Broadcast(DraggedAssets, nullptr);
 			return FReply::Handled();
 		}
 
-		// Use the standard drag handler?
-		if ((DraggedAssets.Num() > 0 || DraggedAssetPaths.Num() > 0) && MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
-		{			
-			return FReply::Handled().BeginDragDrop(FExternalDragOperation::NewFiles(DraggedAssetPaths));
+		if ((Operation->DraggedAssets.Num() > 0 || Operation->DraggedAssetPaths.Num() > 0) && MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+		{
+			Operation->Construct();
+			return FReply::Handled().BeginDragDrop(Operation);
 		}
 	}
 
@@ -496,6 +503,34 @@ void SSketchfabAssetView::DownloadProgress(const FString& ModelUID, float progre
 	DownloadProgressData.Add(ModelUID, progress);
 }
 
+bool SSketchfabAssetView::HasLicence(const FString& ModelUID)
+{
+	LicenceDataInfo *data = LicenceData.Find(ModelUID);
+	if (data && !data->LicenceType.IsEmpty())
+	{ 
+		return true;
+	}
+	return false;
+}
+
+void SSketchfabAssetView::SetLicence(const FString& ModelUID, const FString &LicenceType, const FString &LicenceInfo)
+{
+	LicenceDataInfo *data = LicenceData.Find(ModelUID);
+	if (data)
+	{
+		data->LicenceType = LicenceType;
+		data->LicenceInfo = LicenceInfo;
+	}
+	else
+	{
+		LicenceDataInfo data;
+		data.LicenceType = LicenceType;
+		data.LicenceInfo = LicenceInfo;
+		LicenceData.Add(ModelUID, data);
+	}
+}
+
+
 void SSketchfabAssetView::ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Data)
 {
 	FSketchfabAssetData NewAssetData;
@@ -507,6 +542,8 @@ void SSketchfabAssetView::ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Dat
 	NewAssetData.ThumbnailHeight = Data->ThumbnailHeight;
 	NewAssetData.AuthorName = FName(*Data->ModelAuthor);
 	NewAssetData.ModelPublishedAt = Data->ModelPublishedAt;
+	NewAssetData.LicenceInfo = Data->LicenceInfo;
+	NewAssetData.LicenceType = Data->LicenceType;
 
 	TSharedPtr<FAssetViewItem> NewItem = MakeShareable(new FAssetViewAsset(NewAssetData));
 
@@ -823,7 +860,6 @@ void SSketchfabAssetView::UpdateThumbnails()
 				}
 			}
 		}
-
 	}
 }
 
@@ -1052,6 +1088,71 @@ TArray<FSketchfabAssetData> SSketchfabAssetView::GetSelectedAssets() const
 	}
 
 	return SelectedAssets;
+}
+
+//==========================================================================
+
+FSketchfabDragDropOperation::FSketchfabDragDropOperation() 
+{
+}
+
+TSharedPtr<SWidget> FSketchfabDragDropOperation::GetDefaultDecorator() const
+{
+	if (AssetThumbnailPool.IsValid() && DraggedAssets.Num() > 0)
+	{
+		FSlateDynamicImageBrush* Texture = NULL;
+		const FSketchfabAssetData &AssetData = DraggedAssets[0];
+		AssetThumbnailPool->AccessTexture(AssetData, AssetData.ThumbnailWidth, AssetData.ThumbnailHeight, &Texture);
+
+		// The viewport for the rendered thumbnail, if it exists
+		if (Texture)
+		{
+			TSharedRef<SBorder> RootNode = SNew(SBorder)
+			.BorderImage(FEditorStyle::GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.1f, 1.f))
+			.Padding(4)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.MaxHeight(127)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					[
+						SNew(SBox)
+						.HeightOverride(127)
+						.WidthOverride(127)
+						[
+							SNew(SScaleBox)
+							.StretchDirection(EStretchDirection::Both)
+							.Stretch(EStretch::ScaleToFill)
+							[
+								SNew(SImage).Image(Texture)
+							]
+						]
+					]
+				]
+			];
+
+			return RootNode;
+		}
+	}
+	return SNew(SImage).Image(FEditorStyle::GetDefaultBrush());
+}
+
+void FSketchfabDragDropOperation::OnDragged(const class FDragDropEvent& DragDropEvent)
+{
+	if (CursorDecoratorWindow.IsValid())
+	{
+		CursorDecoratorWindow->MoveWindowTo(DragDropEvent.GetScreenSpacePosition());
+	}
+}
+
+void FSketchfabDragDropOperation::Construct()
+{
+	MouseCursor = EMouseCursor::GrabHandClosed;
+	FDragDropOperation::Construct();
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -190,7 +190,7 @@ public:
 		[
 			SAssignNew(AssetColorStripWidget, SBorder)
 			.BorderImage(FEditorStyle::GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(AssetColor)
+			.BorderBackgroundColor(this, &SSketchfabAssetThumbnail::GetAssetColor)
 			.Padding(this, &SSketchfabAssetThumbnail::GetAssetColorStripPadding)
 		];
 
@@ -335,6 +335,21 @@ private:
 	{
 		// The strip is 2.5% the height of the thumbnail, but at least 4 units tall
 		return FMath::Max(FMath::CeilToFloat(WidthLastFrame*0.025f), 4.0f);
+	}
+
+	FSlateColor SSketchfabAssetThumbnail::GetAssetColor() const
+	{
+		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
+		const float Height = GetAssetColorStripHeight();
+		float progress = AssetData.DownloadProgress;
+		if (progress < 1e-9)
+		{
+			return AssetColor;
+		}
+		else
+		{
+			return FLinearColor(0.2, 0.2, 0.2);
+		}
 	}
 
 	FMargin GetAssetColorStripPadding() const

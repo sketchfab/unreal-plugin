@@ -28,10 +28,166 @@
 #include "SketchfabRESTClient.h"
 #include "SComboButton.h"
 #include "MultiBoxBuilder.h"
+#include "AssetToolsModule.h"
+#include "IWebBrowserCookieManager.h"
+#include "WebBrowserModule.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
 DEFINE_LOG_CATEGORY(LogSketchfabAssetBrowserWindow);
+
+
+
+class SAcceptLicenseWindow : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SAcceptLicenseWindow)
+	{}
+
+	SLATE_ARGUMENT(FSketchfabAssetData, AssetData)
+
+	SLATE_ARGUMENT(TSharedPtr<SWindow>, WidgetWindow)
+		SLATE_END_ARGS()
+
+public:
+	void Construct(const FArguments& InArgs)
+	{
+		AssetData = InArgs._AssetData;
+		Window = InArgs._WidgetWindow;
+		bShouldImport = false;
+
+		ChildSlot
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0, 0, 0, 2)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(2,2,2,10)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString("You must accept the following license before using this model"))
+					.Justification(ETextJustify::Center)
+					.AutoWrapText(true)
+					.MinDesiredWidth(400.0f)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(2)
+				[
+					SNew(SBorder)
+					.BorderImage(FEditorStyle::GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.05f, 1.f))
+					.Padding(FMargin(2))
+					[
+						SNew(SBox)
+						.MinDesiredHeight(200.0f)
+						.MinDesiredWidth(400.0f)
+						[
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0, 0, 0, 4)
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("License Information"))
+								.Font(FEditorStyle::GetFontStyle(TEXT("PropertyWindow.BoldFont")))
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0, 0, 0, 2)
+							[
+								SNew(STextBlock)
+								.AutoWrapText(true)
+								.Text(FText::FromString(AssetData.LicenceType))
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0, 0, 0, 2)
+							[
+								SNew(STextBlock)
+								.AutoWrapText(true)
+								.Text(FText::FromString(AssetData.LicenceInfo))
+							]
+						]
+					]
+				]
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Center)
+			.Padding(2)
+			[
+				SNew(SUniformGridPanel)
+				.SlotPadding(2)
+				+ SUniformGridPanel::Slot(0, 0)
+				[
+					SNew(SButton)
+					.HAlign(HAlign_Center)
+					.Text(LOCTEXT("SAcceptLicenseWindow_Accept", "Accept"))
+					.OnClicked(this, &SAcceptLicenseWindow::OnImport)
+				]
+				+ SUniformGridPanel::Slot(1, 0)
+				[
+					SNew(SButton)
+					.HAlign(HAlign_Center)
+					.Text(LOCTEXT("SAcceptLicenseWindow_Cancel", "Cancel"))
+					.OnClicked(this, &SAcceptLicenseWindow::OnCancel)
+				]
+			]
+		];
+	}
+
+	virtual bool SupportsKeyboardFocus() const override { return true; }
+
+	FReply OnImport()
+	{
+		bShouldImport = true;
+		if (Window.IsValid())
+		{
+			Window.Pin()->RequestDestroyWindow();
+		}
+		return FReply::Handled();
+	}
+
+
+	FReply OnCancel()
+	{
+		bShouldImport = false;
+		if (Window.IsValid())
+		{
+			Window.Pin()->RequestDestroyWindow();
+		}
+		return FReply::Handled();
+	}
+
+	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override
+	{
+		if (InKeyEvent.GetKey() == EKeys::Escape)
+		{
+			return OnCancel();
+		}
+
+		return FReply::Unhandled();
+	}
+
+	bool ShouldImport() const
+	{
+		return bShouldImport;
+	}
+
+private:
+	TWeakPtr< SWindow > Window;
+	FSketchfabAssetData AssetData;
+	bool bShouldImport;
+};
+
+//===========================================================================
 
 SSketchfabAssetBrowserWindow::~SSketchfabAssetBrowserWindow()
 {
@@ -127,7 +283,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 
 
 
-	TSharedPtr<SBox> DetailsViewBox;
 	ChildSlot
 	[
 		SNew(SVerticalBox)
@@ -140,14 +295,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
 				SNew(SVerticalBox)
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.Padding(2)
-				[
-					SAssignNew(DetailsViewBox, SBox)
-					.MaxDesiredHeight(450.0f)
-					.MinDesiredWidth(550.0f)
-				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
 				.HAlign(HAlign_Right)
@@ -428,6 +575,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					SAssignNew(AssetViewPtr, SSketchfabAssetView)
 					.ThumbnailLabel(ESketchfabThumbnailLabel::AssetName)
 					.ThumbnailScale(0.4f)
+					.OnAssetSelected(this, &SSketchfabAssetBrowserWindow::OnAssetsSelected)
 					.OnAssetsActivated(this, &SSketchfabAssetBrowserWindow::OnAssetsActivated)
 					.OnGetAssetContextMenu(this, &SSketchfabAssetBrowserWindow::OnGetAssetContextMenu)
 					.AllowDragging(true)
@@ -451,6 +599,11 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	OnSearchPressed();
 }
 
+FString SSketchfabAssetBrowserWindow::GetModelZipFileName(const FString &ModelUID)
+{
+	return CacheFolder + ModelUID + ".zip";
+}
+
 void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const FDateTime &ModelPublishedAt)
 {
 	if (LoggedInUser.IsEmpty())
@@ -467,9 +620,8 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const 
 		return;
 	}
 
-	FString fileName = CacheFolder + ModelUID + ".zip";
+	FString fileName = GetModelZipFileName(ModelUID);
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-
 	bool download = ShouldDownloadFile(fileName, ModelPublishedAt);
 	if (!download)
 		return;
@@ -481,6 +633,9 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const 
 	}
 
 	ModelsDownloading.Add(ModelUID);
+
+	AssetViewPtr->DownloadProgress(ModelUID, 1e-8);
+	AssetViewPtr->NeedRefresh();
 
 	FSketchfabTaskData TaskData;
 	TaskData.Token = Token;
@@ -495,12 +650,45 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const 
 	FSketchfabRESTClient::Get()->AddTask(Task);
 }
 
+void SSketchfabAssetBrowserWindow::GetModelSize(const FString &ModelUID)
+{
+	if (LoggedInUser.IsEmpty() || Token.IsEmpty() || ModelUID.IsEmpty())
+	{
+		return;
+	}
+
+	FSketchfabTaskData TaskData;
+	TaskData.Token = Token;
+	TaskData.CacheFolder = CacheFolder;
+	TaskData.ModelUID = ModelUID;
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETMODELLINK);
+	Task->OnModelLink().BindRaw(this, &SSketchfabAssetBrowserWindow::OnGetModelSize);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
+}
+
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
 {
 	if (ActivatedAssets.Num() > 0)
 	{
 		ShowModelWindow(ActivatedAssets[0]);
 	}
+}
+
+void SSketchfabAssetBrowserWindow::GetModelLicence(const FString &ModelUID)
+{
+	//Get the model info to pre-fetch get the license data
+	if (!AssetViewPtr->HasLicence(ModelUID))
+	{
+		GetModelInfo(ModelUID);
+	}
+}
+
+void SSketchfabAssetBrowserWindow::OnAssetsSelected(const FSketchfabAssetData &SelectedAsset)
+{
 }
 
 FReply SSketchfabAssetBrowserWindow::OnDownloadSelected()
@@ -745,8 +933,11 @@ FReply SSketchfabAssetBrowserWindow::OnLogout()
 	Token = "";
 	LoggedInUser = "";
 
-	FString url = "https://sketchfab.com/logout";
-	DoLoginLogout(url);
+	TSharedPtr<IWebBrowserCookieManager> cookieMan = IWebBrowserModule::Get().GetSingleton()->GetCookieManager();
+	cookieMan->DeleteCookies("sketchfab.com");
+
+	//FString url = "https://sketchfab.com/logout";
+	//DoLoginLogout(url);
 	return FReply::Handled();
 }
 
@@ -936,6 +1127,7 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 	FSlateApplication::Get().AddWindowAsNativeChild(ModelWindow, CurrentWindow.ToSharedRef());
 
 	GetModelInfo(AssetData.ModelUID.ToString());
+	GetModelSize(AssetData.ModelUID.ToString());
 }
 
 
@@ -1148,6 +1340,8 @@ void SSketchfabAssetBrowserWindow::OnThumbnailDownloaded(const FSketchfabTask& I
 
 void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 {
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
 	for (int32 Index = 0; Index < InTask.SearchData.Num(); Index++)
 	{
 		TSharedPtr<FSketchfabTaskData> Data = InTask.SearchData[Index];
@@ -1170,10 +1364,25 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 			Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
 			FSketchfabRESTClient::Get()->AddTask(Task);
 		}
+
+		//Prefetch license info for models already downloaded
+		FString fileName = GetModelZipFileName(Data->ModelUID);
+		if (PlatformFile.FileExists(*FileName))
+		{
+			GetModelLicence(Data->ModelUID);
+		}
 	}
 
 	AssetViewPtr->NeedRefresh();
 	NextURL = InTask.TaskData.NextURL;
+}
+
+void SSketchfabAssetBrowserWindow::OnGetModelSize(const FSketchfabTask& InTask)
+{
+	if (AssetWindow.IsValid())
+	{
+		AssetWindow->SetFileSize(InTask);
+	}
 }
 
 void SSketchfabAssetBrowserWindow::OnModelLink(const FSketchfabTask& InTask)
@@ -1239,7 +1448,11 @@ void SSketchfabAssetBrowserWindow::OnGetModelInfo(const FSketchfabTask& InTask)
 	{
 		GetBigThumbnail(InTask.TaskData);
 	}
+
+	//This is a bit of a hack to get the license data into the drag and drop window. 
+	AssetViewPtr->SetLicence(InTask.TaskData.ModelUID, InTask.TaskData.LicenceType, InTask.TaskData.LicenceInfo);
 }
+
 void SSketchfabAssetBrowserWindow::OnGetBigThumbnail(const FSketchfabTask& InTask)
 {
 	if (AssetWindow.IsValid())
@@ -1271,16 +1484,84 @@ bool SSketchfabAssetBrowserWindow::ShouldDownloadFile(const FString &FileName, c
 // Content Browser Delegate Callbacks
 bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndDropExtender::FPayload &PayLoad)
 {
+	if (PayLoad.DragDropOp.IsValid() && PayLoad.DragDropOp->IsOfType<FSketchfabDragDropOperation>())
+	{
+		TSharedPtr<FSketchfabDragDropOperation> DragDropOp = StaticCastSharedPtr<FSketchfabDragDropOperation>(PayLoad.DragDropOp);
+
+		DragDropOp->SetDecoratorVisibility(false);
+
+		//Skip if we haven't yet got the licence information
+		if (DragDropOp->DraggedAssets[0].LicenceInfo.IsEmpty())
+		{
+			return true;
+		}
+
+		TSharedPtr<SWindow> ParentWindow;
+
+		if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
+		{
+			IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
+			ParentWindow = MainFrame.GetParentWindow();
+		}
+
+		TSharedRef<SWindow> Window = SNew(SWindow)
+			.Title(LOCTEXT("SketchfabAcceptLicenseWindow", "License Acceptance"))
+			.SizingRule(ESizingRule::Autosized);
+
+
+		TSharedPtr<SAcceptLicenseWindow> AcceptLicenceWindow;
+		Window->SetContent
+		(
+			SAssignNew(AcceptLicenceWindow, SAcceptLicenseWindow)
+			.AssetData(DragDropOp->DraggedAssets[0])
+			.WidgetWindow(Window)
+		);
+
+		FSlateApplication::Get().AddModalWindow(Window, ParentWindow, false);
+
+		if (AcceptLicenceWindow->ShouldImport())
+		{
+			TArray<FString> Assets;
+			Assets.Add(DragDropOp->DraggedAssetPaths[0]);
+
+			FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
+			TArray<UObject*> AddedFiles = AssetToolsModule.Get().ImportAssets(Assets, PayLoad.PackagePaths[0].ToString());
+
+			//Now Rename the files
+			if (AddedFiles.Num() == 1)
+			{
+				FString Name = DragDropOp->DraggedAssets[0].ModelName.ToString();
+				AddedFiles[0]->Rename(*Name);
+			}
+		}
+
+		return true;
+	}
+
 	return false;
 }
 
 bool SSketchfabAssetBrowserWindow::OnContentBrowserDragOver(const FAssetViewDragAndDropExtender::FPayload &PayLoad)
 {
+	if (PayLoad.DragDropOp.IsValid() && PayLoad.DragDropOp->IsOfType<FSketchfabDragDropOperation>())
+	{
+		TSharedPtr<FSketchfabDragDropOperation> DragDropOp = StaticCastSharedPtr<FSketchfabDragDropOperation>(PayLoad.DragDropOp);
+		DragDropOp->SetCursorOverride(EMouseCursor::Hand);
+		return true;
+	}
+
 	return false;
 }
 
 bool SSketchfabAssetBrowserWindow::OnContentBrowserDragLeave(const FAssetViewDragAndDropExtender::FPayload &PayLoad)
 {
+	if (PayLoad.DragDropOp.IsValid() && PayLoad.DragDropOp->IsOfType<FSketchfabDragDropOperation>())
+	{
+		TSharedPtr<FSketchfabDragDropOperation> DragDropOp = StaticCastSharedPtr<FSketchfabDragDropOperation>(PayLoad.DragDropOp);
+		DragDropOp->SetCursorOverride(EMouseCursor::Default);
+		return true;
+	}
+
 	return false;
 }
 
