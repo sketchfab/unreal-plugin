@@ -219,7 +219,7 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 						.HAlign(EHorizontalAlignment::HAlign_Right)
 						[
 							SAssignNew(DownloadSizeText, STextBlock)
-							.Text(FText::FromString(""))
+							.Text(GetFileSize())
 						]
 					]
 				]
@@ -315,31 +315,31 @@ void SSketchfabAssetWindow::SetThumbnail(const FSketchfabTask& InTask)
 	}
 }
 
-void SSketchfabAssetWindow::SetFileSize(const FSketchfabTask& InTask)
+FText SSketchfabAssetWindow::GetFileSize()
 {
 	FNumberFormattingOptions FormattingOptions;
 	FormattingOptions.SetUseGrouping(false);
 	FormattingOptions.SetMaximumFractionalDigits(2);
+	float modelSize = AssetData.ModelSize;
 
-	if (InTask.TaskData.ModelSize < 1e3)
+	if (modelSize < 1e3)
 	{
-		DownloadSize = InTask.TaskData.ModelSize;
-		DownloadSizeText->SetText(FText::Format(FText::FromString("{0} Bytes"), FText::AsNumber(DownloadSize)));
+		return FText::Format(FText::FromString("{0} Bytes"), FText::AsNumber(modelSize));
 	}
-	else if (InTask.TaskData.ModelSize >= 1e3 && InTask.TaskData.ModelSize < 1e6)
+	else if (modelSize >= 1e3 && modelSize < 1e6)
 	{
-		DownloadSize = InTask.TaskData.ModelSize / 1e3;
-		DownloadSizeText->SetText(FText::Format(FText::FromString("{0} KB"), FText::AsNumber(DownloadSize, &FormattingOptions)));
+		modelSize = modelSize / 1e3;
+		return FText::Format(FText::FromString("{0} KB"), FText::AsNumber(modelSize, &FormattingOptions));
 	}
-	else if (InTask.TaskData.ModelSize >= 1e6 && InTask.TaskData.ModelSize < 1e9)
+	else if (modelSize >= 1e6 && modelSize < 1e9)
 	{
-		DownloadSize = InTask.TaskData.ModelSize / 1e6;
-		DownloadSizeText->SetText(FText::Format(FText::FromString("{0} MB"), FText::AsNumber(DownloadSize, &FormattingOptions)));
+		modelSize = modelSize / 1e6;
+		return FText::Format(FText::FromString("{0} MB"), FText::AsNumber(modelSize, &FormattingOptions));
 	}
 	else
 	{
-		DownloadSize = InTask.TaskData.ModelSize / 1e9;
-		DownloadSizeText->SetText(FText::Format(FText::FromString("{0} GB"), FText::AsNumber(DownloadSize, &FormattingOptions)));
+		modelSize = modelSize / 1e9;
+		return FText::Format(FText::FromString("{0} GB"), FText::AsNumber(modelSize, &FormattingOptions));
 	}
 }
 

@@ -147,7 +147,7 @@ public:
 		return false;
 	}
 
-	const FSlateBrush* SAssetViewItem::GetSCCStateImage() const
+	const FSlateBrush* GetSCCStateImage() const
 	{
 		//return ThumbnailEditMode.Get() ? FEditorStyle::GetNoBrush() : SCCStateBrush;
 		return FEditorStyle::GetNoBrush();

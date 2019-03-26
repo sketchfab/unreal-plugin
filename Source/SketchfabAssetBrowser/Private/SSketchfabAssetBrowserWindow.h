@@ -45,6 +45,9 @@ public:
 	FReply OnNext();
 	FReply OnDownloadSelected();
 	FReply OnClearCache();
+	FReply CheckLatestPluginVersion();
+	FReply GetLatestPluginVersion();
+	FReply OnUpgradeToPro();
 
 	//Search Box
 	FReply OnSearchPressed();
@@ -52,8 +55,10 @@ public:
 	void OnSearchBoxChanged(const FText& InSearchText);
 	void OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo);
 
-	//Login Button
+	//Login
+	FText GetLoginText() const;
 	FText GetLoginButtonText() const;
+	FText GetMyModelText() const;
 
 	//Browser Window
 	void OnUrlChanged(const FText &url);
@@ -98,12 +103,22 @@ private:
 		FACECOUNT_UNDEFINED,
 	};
 
+	void setDefaultParams(bool myModels);
+	bool IsSearchMyModelsAvailable() const;
+	EVisibility ShouldDisplayUpgradeToPro() const;
+	ECheckBoxState IsSearchMyModelsChecked() const;
+	void OnSearchMyModelsCheckStateChanged(ECheckBoxState NewState);
+
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
 
 	ECheckBoxState IsSearchStaffPickedChecked() const;
 	void OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState);
 
+	EVisibility GetNewVersionButtonVisibility() const;
+	FText GetCurrentVersionText() const;
+
+	bool bSearchMyModels;
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
 
@@ -142,6 +157,7 @@ private:
 	FString Token;
 
 	//SketchfabRESTClient callbacks
+	void OnCheckLatestVersion(const FSketchfabTask& InTask);
 	void OnSearch(const FSketchfabTask& InTask);
 	void OnThumbnailDownloaded(const FSketchfabTask& InTask);
 	void OnModelLink(const FSketchfabTask& InTask);
@@ -186,13 +202,23 @@ private:
 	/** The text box used to search for assets */
 	TSharedPtr<SSketchfabAssetSearchBox> SearchBoxPtr;
 
+	FString CurrentPluginVersion;
+
+	FString LatestPluginVersion;
+
 	FString QuerySearchText;
 
 	FString CacheFolder;
 
 	FString NextURL;
 
-	FString LoggedInUser;
+	FString LoggedInUserDisplayName;
+
+	FString LoggedInUserName;
+
+	FString LoggedInUserAccountType;
+
+	bool IsLoggedUserPro;
 
 	TSet<FString> ModelsDownloading;
 };

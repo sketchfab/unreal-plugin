@@ -8,7 +8,7 @@
 	"CreatedBy" : "Sketchfab, Inc.",
 	"CreatedByURL" : "https://sketchfab.com",
 	"DocsURL" : "",
-	"MarketplaceURL" : "https://sketchfab.com/store",
+	"MarketplaceURL" : "",
 	"SupportURL" : "https://forum.sketchfab.com/",
 	"EnabledByDefault" : true,
 	"CanContainContent" : false,
@@ -43,5 +43,5 @@
 				"Win32"
 			]
 		}
-	]                                                  
+	]
 }

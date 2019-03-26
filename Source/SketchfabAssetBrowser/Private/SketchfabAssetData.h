@@ -36,6 +36,7 @@ public:
 	bool Animated;
 	FString LicenceType;
 	FString LicenceInfo;
+	float ModelSize;
 
 public:
 	/** Default constructor */

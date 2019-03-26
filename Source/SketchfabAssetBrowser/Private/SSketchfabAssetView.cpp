@@ -179,23 +179,6 @@ void SSketchfabAssetView::Construct(const FArguments& InArgs)
 				AssetDiscoveryIndicator
 			]
 			*/
-
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Right)
-			.VAlign(VAlign_Bottom)
-			.Padding(FMargin(8, 0))
-			[
-				SNew(SBorder)
-				.BorderImage(FEditorStyle::GetBrush("ErrorReporting.EmptyBox"))
-				/*
-				.BorderBackgroundColor(this, &SAssetView::GetQuickJumpColor)
-				.Visibility(this, &SAssetView::IsQuickJumpVisible)
-				[
-					SNew(STextBlock)
-					.Text(this, &SAssetView::GetQuickJumpTerm)
-				]
-				*/
-			]
 		]
 	];
 
@@ -544,6 +527,7 @@ void SSketchfabAssetView::ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Dat
 	NewAssetData.ModelPublishedAt = Data->ModelPublishedAt;
 	NewAssetData.LicenceInfo = Data->LicenceInfo;
 	NewAssetData.LicenceType = Data->LicenceType;
+	NewAssetData.ModelSize = Data->ModelSize;
 
 	TSharedPtr<FAssetViewItem> NewItem = MakeShareable(new FAssetViewAsset(NewAssetData));
 

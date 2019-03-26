@@ -337,7 +337,7 @@ private:
 		return FMath::Max(FMath::CeilToFloat(WidthLastFrame*0.025f), 4.0f);
 	}
 
-	FSlateColor SSketchfabAssetThumbnail::GetAssetColor() const
+	FSlateColor GetAssetColor() const
 	{
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
 		const float Height = GetAssetColorStripHeight();

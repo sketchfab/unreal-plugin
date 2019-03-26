@@ -21,6 +21,9 @@ enum SketchfabRESTState
 {
 	SRS_UNKNOWN,
 	SRS_FAILED,
+	SRS_CHECK_LATEST_VERSION,
+	SRS_CHECK_LATEST_VERSION_PROCESSING,
+	SRS_CHECK_LATEST_VERSION_DONE,
 	SRS_SEARCH,
 	SRS_SEARCH_PROCESSING,
 	SRS_SEARCH_DONE,
@@ -63,8 +66,42 @@ struct FSketchfabCategory
 	}
 };
 
+/** Sketchfab plans (to determine which features can be accessed)**/
+enum SketchfabAccountType
+{
+	ACCOUNT_BASIC,
+	ACCOUNT_PRO,
+	ACCOUNT_PREMIUM,
+	ACCOUNT_BUSINESS,
+	ACCOUNT_ENTERPRISE,
+};
+
+struct FSketchfabSession
+{
+	/** The Logged in user name */
+	FString UserName;
+
+	/** The Logged in user display name */
+	FString UserDisplayName;
+
+	/** The type of user account */
+	SketchfabAccountType UserPlan;
+
+	/** The Logged in user id */
+	FString UserUID;
+
+	/** The Logged in user Thumbnail download URL */
+	FString UserThumbnaillURL;
+
+	/** The Logged in user Thumbnail download UID */
+	FString UserThumbnaillUID;
+};
+
 struct FSketchfabTaskData
 {
+	/** Latest version of the plugin **/
+	FString LatestPluginVersion;
+
 	/** Path to zip file containing resulting geometry */
 	FString OutputZipFilePath;
 
@@ -129,17 +166,8 @@ struct FSketchfabTaskData
 	/** The Cache folder for downloaded content */
 	FString CacheFolder;
 
-	/** The Logged in user name */
-	FString UserName;
-
-	/** The Logged in user id */
-	FString UserUID;
-
-	/** The Logged in user Thumbnail download URL */
-	FString UserThumbnaillURL;
-
-	/** The Logged in user Thumbnail download UID */
-	FString UserThumbnaillUID;
+	/** Current user session */
+	FSketchfabSession UserSession;
 
 	/** The Next Page URL to get */
 	FString NextURL;
@@ -187,6 +215,7 @@ public:
 
 	/*~ Events */
 	FSketchfabTaskDelegate& OnTaskFailed() { return OnTaskFailedDelegate; }
+	FSketchfabTaskDelegate& OnCheckLatestVersion() { return OnCheckLatestVersionDelegate; }
 	FSketchfabTaskDelegate& OnSearch() { return OnSearchDelegate; }
 	FSketchfabTaskDelegate& OnThumbnailDownloaded() { return OnThumbnailDownloadedDelegate; }
 	FSketchfabTaskDelegate& OnModelLink() { return OnModelLinkDelegate; }
@@ -200,6 +229,7 @@ public:
 	void EnableDebugLogging();
 
 	//~Being Rest methods
+	void CheckLatestPluginVersion();
 	void Search();
 	void GetThumbnail();
 	void GetModelLink();
@@ -214,6 +244,7 @@ public:
 	void DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 BytesSent, int32 BytesReceived);
 
 	//~Being Response methods
+	void Check_Latest_Version_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void Search_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetThumbnail_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetModelLink_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
@@ -250,6 +281,7 @@ private:
 
 	//~ Delegates Begin
 	FSketchfabTaskDelegate OnTaskFailedDelegate;
+	FSketchfabTaskDelegate OnCheckLatestVersionDelegate;
 	FSketchfabTaskDelegate OnSearchDelegate;
 	FSketchfabTaskDelegate OnThumbnailDownloadedDelegate;
 	FSketchfabTaskDelegate OnModelLinkDelegate;
