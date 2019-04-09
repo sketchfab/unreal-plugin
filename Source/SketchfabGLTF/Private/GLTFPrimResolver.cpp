@@ -40,7 +40,7 @@ void UGLTFPrimResolver::FindPrimsToImport_Recursive(FGLTFImportContext& ImportCo
 
 	FMatrix local = GLTFToUnreal::ConvertMatrix(*Prim);
 	ParentMat = local * ParentMat;
-	
+
 	if (Prim->mesh >= 0 && Prim->mesh < ImportContext.Model->meshes.size())
 	{
 		FGLTFPrimToImport NewPrim;

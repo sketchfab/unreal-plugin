@@ -57,7 +57,7 @@ struct FSketchfabCategory
 	FString slug;
 	bool active;
 
-	FSketchfabCategory() 
+	FSketchfabCategory()
 	{
 		active = false;
 	}
@@ -77,7 +77,7 @@ struct FSketchfabTaskData
 	/** Supports Dithered Transition */
 	bool bDitheredTransition;
 
-    // Whether or not emissive should be outputted  
+    // Whether or not emissive should be outputted
 	bool bEmissive;
 
 	//========================================================================
@@ -197,7 +197,7 @@ public:
 	FSketchfabTaskDelegate& OnCategories() { return OnCategoriesDelegate; }
 	FSketchfabTaskDelegate& OnModelInfo() { return OnModelInfoDelegate; }
 
-	void EnableDebugLogging();	
+	void EnableDebugLogging();
 
 	//~Being Rest methods
 	void Search();
@@ -230,7 +230,7 @@ public:
 
 	/** All the data for every model found in a search call */
 	TArray<TSharedPtr< struct FSketchfabTaskData>> SearchData;
-	
+
 private:
 	/** Task State */
 	SketchfabRESTState State;

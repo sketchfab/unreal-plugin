@@ -1,6 +1,6 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#pragma once 
+#pragma once
 
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
@@ -47,7 +47,7 @@ public:
 	EGLTFMeshImportType MeshImportType;
 
 	/**
-	 * If checked, To enforce unique asset paths, all assets will be created in directories that match with their mesh path 
+	 * If checked, To enforce unique asset paths, all assets will be created in directories that match with their mesh path
 	 * e.g a GLTF node /scene/node/mymesh will generate the path in the game directory "/Game/myassets/" with a mesh asset called "mymesh" within that path.
 	 */
 	UPROPERTY(config, EditAnywhere, Category=Mesh)
@@ -98,7 +98,7 @@ public:
 	/** The path where new assets are imported */
 	UPROPERTY(config, EditAnywhere, Category=Mesh, meta=(ContentDir, EditCondition = bImportMeshes))
 	FDirectoryPath PathForAssets;
-	 
+
 	/** What should happen with existing assets */
 	UPROPERTY(config, EditAnywhere, Category=Mesh, meta = (EditCondition=bImportMeshes))
 	EExistingAssetPolicy ExistingAssetPolicy;

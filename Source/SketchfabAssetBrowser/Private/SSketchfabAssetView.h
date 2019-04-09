@@ -217,7 +217,7 @@ public:
 
 		LastGeometry = AllottedGeometry;
 
-		// Set cached wrap text width based on new "LastGeometry" value. 
+		// Set cached wrap text width based on new "LastGeometry" value.
 		// We set this only when changed because binding a delegate to text wrapping attributes is expensive
 		if (PrevSizeX != AllottedGeometry.Size.X && InlineRenameWidget.IsValid())
 		{
@@ -294,7 +294,7 @@ private:
 	/** Returns the size of the source control state box widget */
 	FOptionalSize GetSCCImageSize() const;
 
-	bool IsNameReadOnly() const 
+	bool IsNameReadOnly() const
 	{
 		return true;
 	}
@@ -610,7 +610,7 @@ private:
 };
 
 
-//TODO: 
+//TODO:
 //Copy code from FFlipbookKeyFrameDragDropOp
 class FSketchfabDragDropOperation : public FDragDropOperation
 {

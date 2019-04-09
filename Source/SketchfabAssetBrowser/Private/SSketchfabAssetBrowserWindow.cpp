@@ -360,7 +360,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				[
 					SNew(SHorizontalBox)
 
-					// Search Text 
+					// Search Text
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					.VAlign(VAlign_Center)
@@ -438,7 +438,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 							SNew(STextBlock)
 							.Text(this, &SSketchfabAssetBrowserWindow::GetCategoryComboText)
 						]
-					]	
+					]
 				]
 
 				+ SUniformGridPanel::Slot(1, 0)
@@ -462,7 +462,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Staff Picked", "Staff Picked" ) )
 					]
 				]
-				
+
 				+ SUniformGridPanel::Slot(3, 0)
 				[
 					SNew(SHorizontalBox)
@@ -486,7 +486,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 							SNew(STextBlock)
 							.Text(this, &SSketchfabAssetBrowserWindow::GetFaceCountComboText)
 						]
-					]	
+					]
 				]
 
 				+ SUniformGridPanel::Slot(4, 0)
@@ -512,7 +512,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 							SNew(STextBlock)
 							.Text(this, &SSketchfabAssetBrowserWindow::GetSortByComboText)
 						]
-					]	
+					]
 				]
 			]
 		]
@@ -594,7 +594,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		FAssetViewDragAndDropExtender::FOnDragLeaveDelegate::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnContentBrowserDragLeave)
 	);
 	ExtenderList.Add(DragAndDrop);
-	
+
 	GetCategories();
 	OnSearchPressed();
 }
@@ -883,7 +883,7 @@ FReply SSketchfabAssetBrowserWindow::OnLogin()
 	DoLoginLogout(url);
 	return FReply::Handled();
 }
-	
+
 void SSketchfabAssetBrowserWindow::DoLoginLogout(const FString &url)
 {
 	if (OAuthWindowPtr.IsValid())
@@ -1003,7 +1003,7 @@ void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
 {
 	FString data = url.ToString();
 
-	//If successfully logging in and access given based on the client_id then my redirect URL will be sent here along with 
+	//If successfully logging in and access given based on the client_id then my redirect URL will be sent here along with
 	//an authorization code. I then get the code from the URL and use that to request an Access Token, which will have an expiration time.
 	//I then store this Access Token and the expiration time and use the token for all further communication with the server.
 
@@ -1449,7 +1449,7 @@ void SSketchfabAssetBrowserWindow::OnGetModelInfo(const FSketchfabTask& InTask)
 		GetBigThumbnail(InTask.TaskData);
 	}
 
-	//This is a bit of a hack to get the license data into the drag and drop window. 
+	//This is a bit of a hack to get the license data into the drag and drop window.
 	AssetViewPtr->SetLicence(InTask.TaskData.ModelUID, InTask.TaskData.LicenceType, InTask.TaskData.LicenceInfo);
 }
 

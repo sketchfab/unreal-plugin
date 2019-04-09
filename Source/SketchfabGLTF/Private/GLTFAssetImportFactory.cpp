@@ -9,7 +9,7 @@
 #include "Engine/StaticMesh.h"
 #include "Paths.h"
 #include "JsonObjectConverter.h"
-#include "ZipFileFunctionLibrary.h" 
+#include "ZipFileFunctionLibrary.h"
 
 void FGLTFAssetImportContext::Init(UObject* InParent, const FString& InName, const FString& InBasePath, class tinygltf::Model* InModel)
 {

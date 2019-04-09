@@ -52,7 +52,7 @@ private:
 
 
 	void Wait(const float InSeconds, const float InSleepTime = 0.1f);
-	
+
 	void EnusureCompletion();
 
 	/** Checks if there's been any Stop requests */
@@ -67,9 +67,9 @@ private:
 	static FSketchfabRESTClient* Runnable;
 
 	/*Critical Section*/
-	FCriticalSection CriticalSectionData;	
+	FCriticalSection CriticalSectionData;
 
-	FThreadSafeCounter StopTaskCounter;	
+	FThreadSafeCounter StopTaskCounter;
 
 	/* a local buffer as to limit the number of concurrent jobs. */
 	TArray<TSharedPtr< class FSketchfabTask>> JobsBuffer;

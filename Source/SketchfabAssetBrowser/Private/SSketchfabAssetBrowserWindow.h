@@ -1,6 +1,6 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#pragma once 
+#pragma once
 
 #include "ISketchfabAssetBrowser.h"
 #include "SSketchfabAssetView.h"
@@ -45,20 +45,20 @@ public:
 	FReply OnNext();
 	FReply OnDownloadSelected();
 	FReply OnClearCache();
-	
+
 	//Search Box
 	FReply OnSearchPressed();
 	bool SetSearchBoxText(const FText& InSearchText);
 	void OnSearchBoxChanged(const FText& InSearchText);
 	void OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo);
 
-	//Login Button 
+	//Login Button
 	FText GetLoginButtonText() const;
 
 	//Browser Window
 	void OnUrlChanged(const FText &url);
 
-	//AssetView 
+	//AssetView
 	void OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod);
 	void OnAssetsSelected(const FSketchfabAssetData &SelectedAsset);
 	TSharedPtr<SWidget> OnGetAssetContextMenu(const TArray<FSketchfabAssetData>& SelectedAssets);
@@ -78,7 +78,7 @@ private:
 
 	FString GetModelZipFileName(const FString &ModelUID);
 
-private: 	
+private:
 	//Search Options
 	enum ESortBy {
 		SORTBY_Relevance,

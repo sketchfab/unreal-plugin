@@ -82,7 +82,7 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 		]
 	];
 
-	
+
 
 
 
@@ -90,7 +90,7 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 	{
 		FSlateDynamicImageBrush* Texture = NULL;
 		AssetThumbnailPool->AccessTexture(AssetData, AssetData.ThumbnailWidth, AssetData.ThumbnailHeight, &Texture);
-		
+
 		// The viewport for the rendered thumbnail, if it exists
 		if (Texture)
 		{
@@ -287,7 +287,7 @@ void SSketchfabAssetWindow::SetModelInfo(const FSketchfabTask& InTask)
 		FaceCountText->SetText(FText::Format(FaceCountKiloBytes, FText::AsNumber(InTask.TaskData.ModelFaceCount / 1000.0, &FormattingOptions)));
 	}
 
-	
+
 	if (InTask.TaskData.AnimationCount > 0)
 	{
 		AnimatedText->SetText(FText::FromString("Yes"));

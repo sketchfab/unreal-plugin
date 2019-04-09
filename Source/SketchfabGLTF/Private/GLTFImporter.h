@@ -1,6 +1,6 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#pragma once 
+#pragma once
 
 #include "GLTFImportOptions.h"
 #include "TokenizedMessage.h"
@@ -23,7 +23,7 @@ USTRUCT()
 struct FGLTFImportContext
 {
 	GENERATED_BODY()
-	
+
 	/** Mapping of path to imported assets  */
 	TMap<FString, UObject*> PathToImportAssetMap;
 
