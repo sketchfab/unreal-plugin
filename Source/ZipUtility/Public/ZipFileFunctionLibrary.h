@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ZipUtilityInterface.h"
+#include "Engine/Classes/Kismet/BlueprintFunctionLibrary.h"
 #include "ZipFileFunctionLibrary.generated.h"
 
 UENUM(BlueprintType)

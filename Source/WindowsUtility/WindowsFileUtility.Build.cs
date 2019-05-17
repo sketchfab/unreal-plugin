@@ -9,14 +9,13 @@ public class WindowsFileUtility : ModuleRules
     {
         PublicIncludePaths.AddRange(
             new string[] {
-                "WindowsFileUtility/Public"
 				// ... add public include paths required here ...
 			}
             );
 
         PrivateIncludePaths.AddRange(
             new string[] {
-                "WindowsFileUtility/Private",
+                "WindowsUtility/Private",
 				// ... add other private include paths required here ...
 			}
             );
@@ -46,6 +45,8 @@ public class WindowsFileUtility : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
             );
+
+        PrivatePCHHeaderFile = "Private/WindowsFileUtilityPrivatePCH.h";
     }
     
 }

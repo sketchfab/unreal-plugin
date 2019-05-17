@@ -16,7 +16,7 @@ namespace UnrealBuildTool.Rules
 
 			PrivateIncludePaths.AddRange(
 				new string[] {
-                    "UGLTFPlugin/Private",
+                    "SketchfabGLTF/Private",
 					// ... add other private include paths required here ...
 				}
                 );
@@ -57,6 +57,8 @@ namespace UnrealBuildTool.Rules
 					// ... add any modules that your module loads dynamically here ...
 				}
 				);
-		}
+
+            PrivatePCHHeaderFile = "Private/GLTFImporterPrivatePCH.h";
+        }
 	}
 }

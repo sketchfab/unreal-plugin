@@ -1,6 +1,5 @@
 #pragma once
 
-#include "WindowsFileUtilityPrivatePCH.h"
 #include "WFULambdaRunnable.h"
 
 uint64 WFULambdaRunnable::ThreadNumber = 0;

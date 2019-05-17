@@ -195,6 +195,7 @@ private:
 	TWeakPtr<SWindow> Window;
 
 	TSharedPtr<SWindow> OAuthWindowPtr;
+	bool isOauthWindowClosed = false;
 	TSharedPtr<SSketchfabAssetWindow> AssetWindow;
 
 	TSharedPtr<STextBlock> FaceCountText;

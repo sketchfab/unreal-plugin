@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ZipUtilityInterface.h"
+#include "ZipFileFunctionLibrary.h"
 #include "ZipFileFunctionInternalCallback.generated.h"
 
 UCLASS(ClassGroup = ZipUtility)

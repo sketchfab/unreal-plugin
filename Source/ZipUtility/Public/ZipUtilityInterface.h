@@ -1,8 +1,9 @@
 // Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-
+#include "Interface.h"
 #include "ZipUtilityInterface.generated.h"
+
 
 UENUM(BlueprintType)
 enum EZipUtilityCompletionState

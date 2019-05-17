@@ -1,7 +1,5 @@
-
-#include "WindowsFileUtilityPrivatePCH.h"
-#include "WindowsFileUtilityFunctionLibrary.h"
 #include "WFUFolderWatchLambdaDelegate.h"
+#include "WindowsFileUtilityFunctionLibrary.h"
 
 UWFUFolderWatchLambdaDelegate::UWFUFolderWatchLambdaDelegate()
 {

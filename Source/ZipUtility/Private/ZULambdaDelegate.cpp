@@ -1,8 +1,8 @@
 
-#include "ZipUtilityPrivatePCH.h"
+#include "ZULambdaDelegate.h"
 #include "WindowsFileUtilityFunctionLibrary.h"
 #include "ZipFileFunctionLibrary.h"
-#include "ZULambdaDelegate.h"
+
 
 UZULambdaDelegate::UZULambdaDelegate()
 {

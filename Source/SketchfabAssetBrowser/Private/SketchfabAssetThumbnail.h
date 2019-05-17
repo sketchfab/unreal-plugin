@@ -9,6 +9,7 @@
 #include "Rendering/RenderingCommon.h"
 #include "Widgets/SWidget.h"
 #include "TickableEditorObject.h"
+#include "DeferredCleanupSlateBrush.h"
 
 class AActor;
 class FSketchfabAssetThumbnailPool;
@@ -83,7 +84,7 @@ public:
 	 */
 	virtual FSlateShaderResource* GetViewportRenderTargetTexture() const override;
 
-	FSlateDynamicImageBrush* GetImageBrush() const;
+	FDeferredCleanupSlateBrush* GetImageBrush() const;
 
 	/**
 	 * Returns true if the viewport should be vsynced.
@@ -185,7 +186,7 @@ public:
 	 * @param Height The height of the thumbnail
 	 * @return The thumbnail for the asset or NULL if one could not be produced
 	 */
-	FSlateTexture2DRHIRef* AccessTexture( const FSketchfabAssetData& AssetData, uint32 Width, uint32 Height, FSlateDynamicImageBrush **Image);
+	FSlateTexture2DRHIRef* AccessTexture(const FSketchfabAssetData& AssetData, uint32 Width, uint32 Height, FDeferredCleanupSlateBrush **Image);
 
 	/**
 	 * Adds a referencer to keep textures around as long as they are needed
@@ -233,7 +234,7 @@ private:
 		FSketchfabAssetData AssetData;
 
 		UTexture2D* ModelTexture;
-		FSlateDynamicImageBrush* ModelImageBrush;
+		TSharedPtr<FDeferredCleanupSlateBrush> ModelImageBrush;
 
 		/** The time since last access */
 		float LastAccessTime;

@@ -88,9 +88,8 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 
 	if (AssetThumbnailPool.IsValid())
 	{
-		FSlateDynamicImageBrush* Texture = NULL;
+		FDeferredCleanupSlateBrush* Texture = NULL;
 		AssetThumbnailPool->AccessTexture(AssetData, AssetData.ThumbnailWidth, AssetData.ThumbnailHeight, &Texture);
-
 		// The viewport for the rendered thumbnail, if it exists
 		if (Texture)
 		{
@@ -114,7 +113,7 @@ void SSketchfabAssetWindow::Construct(const FArguments& InArgs)
 						.StretchDirection(EStretchDirection::Both)
 						.Stretch(EStretch::ScaleToFill)
 						[
-							SAssignNew(ModelImage,SImage).Image(Texture)
+							SAssignNew(ModelImage,SImage).Image(Texture->GetSlateBrush())
 						]
 					]
 				]
@@ -306,12 +305,13 @@ void SSketchfabAssetWindow::SetThumbnail(const FSketchfabTask& InTask)
 {
 	FSketchfabAssetData dataAdjusted = AssetData;
 	dataAdjusted.ThumbUID = FName(*InTask.TaskData.ThumbnailUID_1024);
-	FSlateDynamicImageBrush* Texture = NULL;
+	FDeferredCleanupSlateBrush* Texture = NULL;
 	AssetThumbnailPool->AccessTexture(dataAdjusted, InTask.TaskData.ThumbnailWidth_1024, InTask.TaskData.ThumbnailHeight_1024, &Texture);
+
 
 	if (ModelImage.IsValid() && Texture)
 	{
-		ModelImage->SetImage(Texture);
+		ModelImage->SetImage(Texture->GetSlateBrush());
 	}
 }
 

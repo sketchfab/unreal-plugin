@@ -1075,44 +1075,53 @@ void SSketchfabAssetBrowserWindow::DoLoginLogout(const FString &url)
 {
 	if (OAuthWindowPtr.IsValid())
 	{
-		OAuthWindowPtr->BringToFront();
-	}
-	else
-	{
-		TSharedPtr<SWindow> ParentWindow;
-
-		if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
+		if (!isOauthWindowClosed)
 		{
-			IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-			ParentWindow = MainFrame.GetParentWindow();
+			OAuthWindowPtr->BringToFront();
+			return;
 		}
-
-		OAuthWindowPtr = SNew(SWindow)
-			.Title(LOCTEXT("SketchfabAssetBrowser_LoginWindow", "Sketchfab Login Window"))
-			.SizingRule(ESizingRule::FixedSize)
-			.ClientSize(FVector2D(400, 600));
-
-		OAuthWindowPtr->SetOnWindowClosed(FOnWindowClosed::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnOAuthWindowClosed));
-
-		TSharedPtr<SOAuthWebBrowser> OAuthBrowser;
-		OAuthWindowPtr->SetContent
-		(
-			SAssignNew(OAuthBrowser, SOAuthWebBrowser)
-			.ParentWindow(OAuthWindowPtr)
-			.InitialURL(url)
-			.OnUrlChanged(this, &SSketchfabAssetBrowserWindow::OnUrlChanged)
-		);
-
-		FWidgetPath WidgetPath;
-		TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
-		FSlateApplication::Get().AddWindowAsNativeChild(OAuthWindowPtr.ToSharedRef(), CurrentWindow.ToSharedRef());
+		else
+		{
+			OAuthWindowPtr.Reset();
+		}
 	}
 
+
+	TSharedPtr<SWindow> ParentWindow;
+
+	if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
+	{
+		IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
+		ParentWindow = MainFrame.GetParentWindow();
+	}
+	isOauthWindowClosed = false;
+	OAuthWindowPtr = SNew(SWindow)
+		.Title(LOCTEXT("SketchfabAssetBrowser_LoginWindow", "Sketchfab Login Window"))
+		.SizingRule(ESizingRule::FixedSize)
+		.ClientSize(FVector2D(400, 600));
+
+	OAuthWindowPtr->SetOnWindowClosed(FOnWindowClosed::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnOAuthWindowClosed));
+
+	TSharedPtr<SOAuthWebBrowser> OAuthBrowser;
+	OAuthWindowPtr->SetContent
+	(
+		SAssignNew(OAuthBrowser, SOAuthWebBrowser)
+		.ParentWindow(OAuthWindowPtr)
+		.InitialURL(url)
+		.OnUrlChanged(this, &SSketchfabAssetBrowserWindow::OnUrlChanged)
+	);
+
+	FWidgetPath WidgetPath;
+	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
+	FSlateApplication::Get().AddWindowAsNativeChild(OAuthWindowPtr.ToSharedRef(), CurrentWindow.ToSharedRef());
 }
 
 void SSketchfabAssetBrowserWindow::OnOAuthWindowClosed(const TSharedRef<SWindow>& InWindow)
 {
-	OAuthWindowPtr = NULL;
+	//FIXME (AurL): this is a dirty hack to fix OAuth window. There should be a better way to handle it's creation/destruction
+	// Symptoms: Calling RequestDestroyWindow and then reseting the TSharedPtr here causes crash (data deletion occurs after call to this function)
+	// Using DestroyWindowImmediately() doesn't crash but the OAuth window is still grabbing the focus and parent windows widgets are not accessible in its area
+	isOauthWindowClosed = true;
 }
 
 FReply SSketchfabAssetBrowserWindow::OnLogout()
@@ -1263,13 +1272,12 @@ void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
 
 		if (accesstoken.Len() != 0)
 		{
+			Token = accesstoken;
+			GetUserData();
 			if (OAuthWindowPtr.IsValid())
 			{
 				OAuthWindowPtr->RequestDestroyWindow();
 			}
-
-			Token = accesstoken;
-			GetUserData();
 		}
 		return;
 	}
@@ -1280,6 +1288,7 @@ void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
 		if (OAuthWindowPtr.IsValid())
 		{
 			OAuthWindowPtr->RequestDestroyWindow();
+			OAuthWindowPtr = NULL;
 		}
 	}
 	return;
