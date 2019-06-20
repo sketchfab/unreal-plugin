@@ -601,6 +601,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						SNew(SButton)
 						.HAlign(HAlign_Center)
 						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Load more"))
+						.IsEnabled(this, &SSketchfabAssetBrowserWindow::hasMoreResults)
 						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
 					]
 				]
@@ -1142,6 +1143,10 @@ bool SSketchfabAssetBrowserWindow::OnLogoutEnabled() const
 	return !OnLoginEnabled();
 }
 
+bool SSketchfabAssetBrowserWindow::hasMoreResults() const
+{
+	return !NextURL.IsEmpty();
+}
 
 FReply SSketchfabAssetBrowserWindow::OnCancel()
 {

@@ -41,6 +41,8 @@ public:
 	bool OnLoginEnabled() const;
 	bool OnLogoutEnabled() const;
 
+	bool hasMoreResults() const;
+
 	FReply OnCancel();
 	FReply OnNext();
 	FReply OnDownloadSelected();
