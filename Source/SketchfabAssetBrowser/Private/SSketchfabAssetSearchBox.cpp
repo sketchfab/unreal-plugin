@@ -188,7 +188,7 @@ void SSketchfabAssetSearchBox::HandleTextCommitted(const FText& NewText, ETextCo
 		{
 			// otherwise, set the typed text
 			CommittedText = NewText;
-		}	
+		}
 	}
 
 	// Set the text and execute the delegate
@@ -209,7 +209,7 @@ void SSketchfabAssetSearchBox::OnSelectionChanged( TSharedPtr<FString> NewValue,
 	{
 		SetText( FText::FromString( *NewValue.Get() ));
 		SuggestionBox->SetIsOpen(false, false);
-		FocusEditBox();		
+		FocusEditBox();
 	}
 }
 

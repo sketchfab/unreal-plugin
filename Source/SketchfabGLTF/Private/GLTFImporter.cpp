@@ -44,7 +44,7 @@
 #include "ARFilter.h"
 #include "Factories/MaterialImportHelpers.h"
 #include "EditorFramework/AssetImportData.h"
-#include "RawMesh.h" 
+#include "RawMesh.h"
 
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
@@ -293,7 +293,7 @@ UObject* UGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const TA
 		singleStaticMesh->PostEditChange();
 	}
 
-	// Return the first one on success.  
+	// Return the first one on success.
 	return ImportContext.PathToImportAssetMap.Num() ? ImportContext.PathToImportAssetMap.CreateIterator().Value() : nullptr;
 }
 
@@ -556,7 +556,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, tiny
 		if (alphaModeProp != Mat->additionalValues.end())
 		{
 			tinygltf::Parameter &param = alphaModeProp->second;
-			if (param.string_value == "BLEND") 
+			if (param.string_value == "BLEND")
 			{
 				UnrealMaterial->BlendMode = BLEND_Translucent;
 				UnrealMaterial->TranslucencyLightingMode = TLM_Surface;
@@ -1149,7 +1149,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 		}
 	}
 
-	// Find the image and add it to the material 
+	// Find the image and add it to the material
 	const auto &property = map->find(MaterialProperty);
 	if (property != map->end())
 	{
@@ -1200,10 +1200,10 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 							UTexture* UnrealTexture = ImportTexture(ImportContext, &img, samplerType, MaterialProperty);
 							if (UnrealTexture)
 							{
-								float ScaleU = 1.0;  
-								float ScaleV = 1.0; 
+								float ScaleU = 1.0;
+								float ScaleV = 1.0;
 
-								// and link it to the material 
+								// and link it to the material
 								UnrealTextureExpression = NewObject<UMaterialExpressionTextureSample>(UnrealMaterial);
 								if (UnrealTextureExpression)
 								{
@@ -1247,7 +1247,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				}
 
 				// Special case for normals (since there is no normalFactor like other channels)
-				// normals have a scale. 
+				// normals have a scale.
 				if (strcmp(MaterialProperty, "normalTexture") == 0)
 				{
 					const auto &textureScaleEntry = param.json_double_value.find("scale");
@@ -1269,7 +1269,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				}
 
 				// Special case for occlusion (since there is no occlusionFactor like other channels)
-				// occlusion has a strength. 
+				// occlusion has a strength.
 				else if (strcmp(MaterialProperty, "occlusionTexture") == 0)
 				{
 					const auto &textureStrengthEntry = param.json_double_value.find("strength");
@@ -1288,7 +1288,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 
 							CreateMultiplyExpression(UnrealMaterial, MaterialInput, strengthFactor, UnrealTextureExpression, ColorChannel_Red);
 
-							colorChannel = ColorChannel_All; 
+							colorChannel = ColorChannel_All;
 						}
 					}
 				}
@@ -1301,7 +1301,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				case PBRTYPE_Emissive:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, emissiveFactor, UnrealTextureExpression, colorChannel); break;
 				case PBRTYPE_Diffuse:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, diffuseFactor, UnrealTextureExpression, colorChannel); break;
 				case PBRTYPE_Specular:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, specularFactor, UnrealTextureExpression, colorChannel); break;
-				case PBRTYPE_Glossiness: 
+				case PBRTYPE_Glossiness:
 				{
 					//Add the OneMinus node to invert the glossiness channel for non prb materials
 					UMaterialExpressionOneMinus* OneMinus = CreateOneMinusExpression(UnrealMaterial, UnrealTextureExpression, colorChannel);

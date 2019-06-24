@@ -1,6 +1,6 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#pragma once 
+#pragma once
 
 #include "Factories/Factory.h"
 #include "GLTFImporter.h"

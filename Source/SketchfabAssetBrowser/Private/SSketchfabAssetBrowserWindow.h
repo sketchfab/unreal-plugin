@@ -1,6 +1,6 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#pragma once 
+#pragma once
 
 #include "ISketchfabAssetBrowser.h"
 #include "SSketchfabAssetView.h"
@@ -41,24 +41,31 @@ public:
 	bool OnLoginEnabled() const;
 	bool OnLogoutEnabled() const;
 
+	bool hasMoreResults() const;
+
 	FReply OnCancel();
 	FReply OnNext();
 	FReply OnDownloadSelected();
 	FReply OnClearCache();
-	
+	FReply CheckLatestPluginVersion();
+	FReply GetLatestPluginVersion();
+	FReply OnUpgradeToPro();
+
 	//Search Box
 	FReply OnSearchPressed();
 	bool SetSearchBoxText(const FText& InSearchText);
 	void OnSearchBoxChanged(const FText& InSearchText);
 	void OnSearchBoxCommitted(const FText& InSearchText, ETextCommit::Type CommitInfo);
 
-	//Login Button 
+	//Login
+	FText GetLoginText() const;
 	FText GetLoginButtonText() const;
+	FText GetMyModelText() const;
 
 	//Browser Window
 	void OnUrlChanged(const FText &url);
 
-	//AssetView 
+	//AssetView
 	void OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod);
 	void OnAssetsSelected(const FSketchfabAssetData &SelectedAsset);
 	TSharedPtr<SWidget> OnGetAssetContextMenu(const TArray<FSketchfabAssetData>& SelectedAssets);
@@ -78,7 +85,7 @@ private:
 
 	FString GetModelZipFileName(const FString &ModelUID);
 
-private: 	
+private:
 	//Search Options
 	enum ESortBy {
 		SORTBY_Relevance,
@@ -98,12 +105,22 @@ private:
 		FACECOUNT_UNDEFINED,
 	};
 
+	void setDefaultParams(bool myModels);
+	bool IsSearchMyModelsAvailable() const;
+	EVisibility ShouldDisplayUpgradeToPro() const;
+	ECheckBoxState IsSearchMyModelsChecked() const;
+	void OnSearchMyModelsCheckStateChanged(ECheckBoxState NewState);
+
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
 
 	ECheckBoxState IsSearchStaffPickedChecked() const;
 	void OnSearchStaffPickedCheckStateChanged(ECheckBoxState NewState);
 
+	EVisibility GetNewVersionButtonVisibility() const;
+	FText GetCurrentVersionText() const;
+
+	bool bSearchMyModels;
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
 
@@ -142,6 +159,7 @@ private:
 	FString Token;
 
 	//SketchfabRESTClient callbacks
+	void OnCheckLatestVersion(const FSketchfabTask& InTask);
 	void OnSearch(const FSketchfabTask& InTask);
 	void OnThumbnailDownloaded(const FSketchfabTask& InTask);
 	void OnModelLink(const FSketchfabTask& InTask);
@@ -186,13 +204,23 @@ private:
 	/** The text box used to search for assets */
 	TSharedPtr<SSketchfabAssetSearchBox> SearchBoxPtr;
 
+	FString CurrentPluginVersion;
+
+	FString LatestPluginVersion;
+
 	FString QuerySearchText;
 
 	FString CacheFolder;
 
 	FString NextURL;
 
-	FString LoggedInUser;
+	FString LoggedInUserDisplayName;
+
+	FString LoggedInUserName;
+
+	FString LoggedInUserAccountType;
+
+	bool IsLoggedUserPro;
 
 	TSet<FString> ModelsDownloading;
 };

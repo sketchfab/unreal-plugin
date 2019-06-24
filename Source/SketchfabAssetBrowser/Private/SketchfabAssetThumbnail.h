@@ -57,7 +57,7 @@ struct FSketchfabAssetThumbnailConfig
 
 
 /**
- * Interface for rendering a thumbnail in a slate viewport                   
+ * Interface for rendering a thumbnail in a slate viewport
  */
 class FSketchfabAssetThumbnail
 	: public ISlateViewport
@@ -74,12 +74,12 @@ public:
 	~FSketchfabAssetThumbnail();
 
 	/**
-	 * @return	The size of the viewport (thumbnail size)                   
+	 * @return	The size of the viewport (thumbnail size)
 	 */
 	virtual FIntPoint GetSize() const override;
 
 	/**
-	 * @return The texture used to display the viewports content                  
+	 * @return The texture used to display the viewports content
 	 */
 	virtual FSlateShaderResource* GetViewportRenderTargetTexture() const override;
 
@@ -91,7 +91,7 @@ public:
 	virtual bool RequiresVsync() const override { return false; }
 
 	/**
-	 * @return The object we are rendering the thumbnail for                
+	 * @return The object we are rendering the thumbnail for
 	 */
 	UObject* GetAsset() const;
 
@@ -101,7 +101,7 @@ public:
 	const FSketchfabAssetData& GetAssetData() const;
 
 	/**
-	 * Sets the asset to render the thumnail for 
+	 * Sets the asset to render the thumnail for
 	 *
 	 * @param InAsset	The new asset
 	 */
@@ -141,14 +141,14 @@ private:
 };
 
 /**
- * Utility class for keeping track of, rendering, and recycling thumbnails rendered in Slate              
+ * Utility class for keeping track of, rendering, and recycling thumbnails rendered in Slate
  */
 class FSketchfabAssetThumbnailPool : public FTickableEditorObject
 {
 public:
 
 	/**
-	 * Constructor 
+	 * Constructor
 	 *
 	 * @param InNumInPool						The number of thumbnails allowed in the pool
 	 * @param InAreRealTimeThumbnailsAllowed	Attribute that determines if thumbnails should be rendered in real-time
@@ -175,7 +175,7 @@ public:
 	 * Releases all rendering resources held by the pool
 	 */
 	void ReleaseResources();
-	
+
 	/**
 	 * Accesses the texture for an object.  If a thumbnail was recently rendered this function simply returns the thumbnail.  If it was not, it requests a new one be generated
 	 * No assumptions should be made about whether or not it was rendered
@@ -245,7 +245,7 @@ private:
 		uint32 Height;
 		~FThumbnailInfo();
 	};
-	
+
 	/** Key for looking up thumbnails in a map */
 	struct FThumbId
 	{

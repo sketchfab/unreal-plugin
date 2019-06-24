@@ -32,6 +32,8 @@
 #include "IWebBrowserCookieManager.h"
 #include "WebBrowserModule.h"
 
+#include "IPluginManager.h"
+
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
 DEFINE_LOG_CATEGORY(LogSketchfabAssetBrowserWindow);
@@ -198,15 +200,19 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 {
 	//IE C:/Users/user/AppData/Local/UnrealEngine/4.18/SketchfabCache/
 	CacheFolder = GetSketchfabCacheDir();
-
+	CheckLatestPluginVersion();
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 	if (!PlatformFile.DirectoryExists(*CacheFolder))
 	{
 		PlatformFile.CreateDirectory(*CacheFolder);
 	}
 
-	Window = InArgs._WidgetWindow;
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("Sketchfab");
+	FPluginDescriptor descriptor = Plugin->GetDescriptor();
+	CurrentPluginVersion = descriptor.VersionName;
 
+	Window = InArgs._WidgetWindow;
+	bSearchMyModels = false;
 	bSearchAnimated = false;
 	bSearchStaffPicked = true;
 
@@ -304,19 +310,18 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					.SlotPadding(2)
 					+ SUniformGridPanel::Slot(0, 0)
 					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
-						.IsEnabled(this, &SSketchfabAssetBrowserWindow::OnLoginEnabled)
+						SNew(STextBlock)
+						.Justification(ETextJustify::Center)
+						.Margin(FMargin(0.0f, 5.0f, 0.0f, 0.0f))
+						.Text(this, &SSketchfabAssetBrowserWindow::GetLoginText)
+						.MinDesiredWidth(200.0f)
 					]
 					+ SUniformGridPanel::Slot(1, 0)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center)
-						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Logout", "Logout"))
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogout)
-						.IsEnabled(this, &SSketchfabAssetBrowserWindow::OnLogoutEnabled)
+						.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
 					]
 				]
 			]
@@ -336,7 +341,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				.Padding(2)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString("Login to your Sketchfab account. Select a model and click Download Selected to download. Double click to view model information. After downloading you can import by click+dragging it into the content browser."))
+					.Text(FText::FromString("1. Login to your Sketchfab account.\n2. Select a model and click Download Selected to download (double click to view model information)\n3. After downloading you can import by click+dragging it into the content browser."))
 					.Justification(ETextJustify::Center)
 					.AutoWrapText(true)
 					.MinDesiredWidth(400.0f)
@@ -360,7 +365,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				[
 					SNew(SHorizontalBox)
 
-					// Search Text 
+					// Search Text
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					.VAlign(VAlign_Center)
@@ -390,7 +395,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					+SHorizontalBox::Slot()
 					.AutoWidth()
 					.VAlign(VAlign_Center)
-					.Padding(2.0f, 0.0f, 0.0f, 0.0f)
+					.Padding(2.0f, 0.0f, 2.0f, 0.0f)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Right)
@@ -400,6 +405,21 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						//.ToolTipText(LOCTEXT("SaveSearchButtonTooltip", "Save the current search as a dynamic collection."))
 						//.IsEnabled(this, &SContentBrowser::IsSaveSearchButtonEnabled)
 						.ContentPadding( FMargin(1, 1) )
+					]
+
+					// My models checkbox
+					+SHorizontalBox::Slot()
+					.AutoWidth()
+					.Padding(12.0f, 0.0f, 4.0f, 0.0f)
+					[
+						SNew(SCheckBox)
+						.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchMyModelsChecked)
+						.IsEnabled(this, &SSketchfabAssetBrowserWindow::IsSearchMyModelsAvailable)
+						.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::OnSearchMyModelsCheckStateChanged)
+						[
+							SNew(STextBlock)
+							.Text(this, &SSketchfabAssetBrowserWindow::GetMyModelText)
+						]
 					]
 				]
 			]
@@ -413,9 +433,12 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			.Padding(FMargin(3))
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
-				SNew(SUniformGridPanel)
-				.SlotPadding(2)
-				+ SUniformGridPanel::Slot(0, 0)
+				SNew(SHorizontalBox)
+
+				// Categories
+				+SHorizontalBox::Slot()
+				.MaxWidth(250.0f)
+				.Padding(12.0f, 0.0f, 4.0f, 0.0f)
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
@@ -438,10 +461,13 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 							SNew(STextBlock)
 							.Text(this, &SSketchfabAssetBrowserWindow::GetCategoryComboText)
 						]
-					]	
+					]
 				]
 
-				+ SUniformGridPanel::Slot(1, 0)
+				// Animated
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(12.0f, 0.0f, 4.0f, 0.0f)
 				[
 					SNew(SCheckBox)
 					.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked)
@@ -452,7 +478,10 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					]
 				]
 
-				+ SUniformGridPanel::Slot(2, 0)
+				// Staffpicked
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(12.0f, 0.0f, 4.0f, 0.0f)
 				[
 					SNew(SCheckBox)
 					.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchStaffPickedChecked)
@@ -462,8 +491,11 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						.Text( LOCTEXT("SSketchfabAssetBrowserWindow_Search_Staff Picked", "Staff Picked" ) )
 					]
 				]
-				
-				+ SUniformGridPanel::Slot(3, 0)
+
+				// Face count
+				+SHorizontalBox::Slot()
+				.MaxWidth(180.0f)
+				.Padding(12.0f, 0.0f, 4.0f, 0.0f)
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
@@ -486,33 +518,50 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 							SNew(STextBlock)
 							.Text(this, &SSketchfabAssetBrowserWindow::GetFaceCountComboText)
 						]
-					]	
+					]
+				]
+				// Sort by
+				+SHorizontalBox::Slot()
+				.Padding(12.0f, 0.0f, 0.0f, 0.0f)
+				[
+					SNew(SSpacer)
 				]
 
-				+ SUniformGridPanel::Slot(4, 0)
+				// Sort by
+				+SHorizontalBox::Slot()
+				.Padding(12.0f, 0.0f, 0.0f, 0.0f)
 				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot()
-					.Padding(2.0f, 6.0f)
-					.AutoWidth()
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.HAlign(HAlign_Right)
+					.Padding(0, 0, 0, 2)
 					[
-						SNew(STextBlock)
-						.Text(LOCTEXT("SortByComboMenu", "Sort By:"))
-					]
-					+ SHorizontalBox::Slot()
-					.Padding(2.0f, 2.0f)
-					.FillWidth(1.0f)
-					.HAlign(HAlign_Fill)
-					[
-						SAssignNew(SortByComboBox, SComboBox<TSharedPtr<FString>>)
-						.OptionsSource(&SortByComboList)
-						.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateSortByComboItem)
-						.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByComboChanged)
+						SNew(SHorizontalBox)
+						// Sort by
+						+ SHorizontalBox::Slot()
+						.Padding(2.0f, 6.0f)
+						.AutoWidth()
+						.HAlign(HAlign_Right)
 						[
 							SNew(STextBlock)
-							.Text(this, &SSketchfabAssetBrowserWindow::GetSortByComboText)
+							.Text(LOCTEXT("SortByComboMenu", "Sort By:"))
 						]
-					]	
+						+ SHorizontalBox::Slot()
+						.Padding(2.0f, 2.0f)
+						.MaxWidth(140.0f)
+						.HAlign(HAlign_Right)
+						[
+							SAssignNew(SortByComboBox, SComboBox<TSharedPtr<FString>>)
+							.OptionsSource(&SortByComboList)
+							.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateSortByComboItem)
+							.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleSortByComboChanged)
+							[
+								SNew(STextBlock)
+								.Text(this, &SSketchfabAssetBrowserWindow::GetSortByComboText)
+							]
+						]
+					]
 				]
 			]
 		]
@@ -539,24 +588,22 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Download", "Download Selected"))
 						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnDownloadSelected)
 					]
-
-					+ SUniformGridPanel::Slot(1, 0)
-					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_ClearCache", "Clear Cache"))
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnClearCache)
-					]
 				]
 
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
 				.Padding(2)
 				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Next"))
-					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Next", "Load more"))
+						.IsEnabled(this, &SSketchfabAssetBrowserWindow::hasMoreResults)
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnNext)
+					]
 				]
 			]
 		]
@@ -582,6 +629,93 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 				]
 			]
 		]
+
+		+ SVerticalBox::Slot()
+		.Padding(0, 2, 0, 2)
+		.AutoHeight()
+		[
+			SNew(SBorder)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				//.Padding(2)
+				[
+
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(STextBlock)
+						.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Light.ttf"), 16))
+						//.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.9f)) // send color and alpha R G B A
+						.Visibility(this, &SSketchfabAssetBrowserWindow::ShouldDisplayUpgradeToPro)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_UpgradeProTxt", "Gain full API access to your personal library of 3D models"))
+						.Justification(ETextJustify::Center)
+					]
+					+ SUniformGridPanel::Slot(0, 1)
+					.HAlign(HAlign_Center)
+					[
+					SNew(SButton)
+					.Visibility(this, &SSketchfabAssetBrowserWindow::ShouldDisplayUpgradeToPro)
+					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_UpgradeProBtn", "Upgrade to PRO"))
+					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnUpgradeToPro)
+					]
+				]
+			]
+		]
+
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0, 0, 0, 2)
+		[
+			SNew(SBorder)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.Padding(2)
+				[
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_ClearCache", "Clear Cache"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnClearCache)
+					]
+				]
+
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Right)
+				.Padding(2)
+				[
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Visibility(this, &SSketchfabAssetBrowserWindow::GetNewVersionButtonVisibility)
+						.Text(FText::FromString("Get new Version"))
+						.OnClicked(this, &SSketchfabAssetBrowserWindow::GetLatestPluginVersion)
+					]
+					+ SUniformGridPanel::Slot(1, 0)
+					[
+						SNew(STextBlock)
+						.Justification(ETextJustify::Center)
+						.Margin(FMargin(0.0, 4.0, 0.0, 2.0))
+						.Text(this, &SSketchfabAssetBrowserWindow::GetCurrentVersionText)
+					]
+				]
+			]
+		]
 	];
 
 
@@ -594,7 +728,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		FAssetViewDragAndDropExtender::FOnDragLeaveDelegate::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnContentBrowserDragLeave)
 	);
 	ExtenderList.Add(DragAndDrop);
-	
+
 	GetCategories();
 	OnSearchPressed();
 }
@@ -606,7 +740,7 @@ FString SSketchfabAssetBrowserWindow::GetModelZipFileName(const FString &ModelUI
 
 void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const FDateTime &ModelPublishedAt)
 {
-	if (LoggedInUser.IsEmpty())
+	if (LoggedInUserDisplayName.IsEmpty())
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("SSketchfabAssetBrowserWindow_ModelDoubleClick", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
 		if (Window.IsValid())
@@ -615,7 +749,7 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const 
 		}
 	}
 
-	if (LoggedInUser.IsEmpty() || Token.IsEmpty() || ModelUID.IsEmpty())
+	if (LoggedInUserDisplayName.IsEmpty() || Token.IsEmpty() || ModelUID.IsEmpty())
 	{
 		return;
 	}
@@ -650,40 +784,11 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const 
 	FSketchfabRESTClient::Get()->AddTask(Task);
 }
 
-void SSketchfabAssetBrowserWindow::GetModelSize(const FString &ModelUID)
-{
-	if (LoggedInUser.IsEmpty() || Token.IsEmpty() || ModelUID.IsEmpty())
-	{
-		return;
-	}
-
-	FSketchfabTaskData TaskData;
-	TaskData.Token = Token;
-	TaskData.CacheFolder = CacheFolder;
-	TaskData.ModelUID = ModelUID;
-	TaskData.StateLock = new FCriticalSection();
-
-	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
-	Task->SetState(SRS_GETMODELLINK);
-	Task->OnModelLink().BindRaw(this, &SSketchfabAssetBrowserWindow::OnGetModelSize);
-	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-	FSketchfabRESTClient::Get()->AddTask(Task);
-}
-
 void SSketchfabAssetBrowserWindow::OnAssetsActivated(const TArray<FSketchfabAssetData>& ActivatedAssets, EAssetTypeActivationMethod::Type ActivationMethod)
 {
 	if (ActivatedAssets.Num() > 0)
 	{
 		ShowModelWindow(ActivatedAssets[0]);
-	}
-}
-
-void SSketchfabAssetBrowserWindow::GetModelLicence(const FString &ModelUID)
-{
-	//Get the model info to pre-fetch get the license data
-	if (!AssetViewPtr->HasLicence(ModelUID))
-	{
-		GetModelInfo(ModelUID);
 	}
 }
 
@@ -693,7 +798,7 @@ void SSketchfabAssetBrowserWindow::OnAssetsSelected(const FSketchfabAssetData &S
 
 FReply SSketchfabAssetBrowserWindow::OnDownloadSelected()
 {
-	if (LoggedInUser.IsEmpty())
+	if (LoggedInUserDisplayName.IsEmpty())
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("SSketchfabAssetBrowserWindow_ModelDoubleClick", "Sketchfab_NotLoggedIn", "You must be logged in to download models."));
 		if (Window.IsValid())
@@ -729,12 +834,55 @@ TSharedPtr<SWidget> SSketchfabAssetBrowserWindow::OnGetAssetContextMenu(const TA
 	return NULL;
 }
 
+EVisibility SSketchfabAssetBrowserWindow::GetNewVersionButtonVisibility() const
+{
+	if (!LatestPluginVersion.IsEmpty() && LatestPluginVersion != CurrentPluginVersion)
+	{
+		return EVisibility::Visible;
+	}
+	else
+	{
+		return EVisibility::Hidden;
+	}
+}
+
+FText SSketchfabAssetBrowserWindow::GetCurrentVersionText() const
+{
+	FString versionState;
+	if(LatestPluginVersion.IsEmpty())
+	{
+		versionState = "";
+	}
+	else if (CurrentPluginVersion == LatestPluginVersion)
+	{
+		versionState = "(up to date)";
+	}
+	else
+	{
+		versionState = "(outdated)";
+	}
+
+	return FText::FromString("Sketchfab plugin version " + CurrentPluginVersion + " " + versionState);
+}
+
+FText SSketchfabAssetBrowserWindow::GetLoginText() const
+{
+	if (!LoggedInUserDisplayName.IsEmpty())
+	{
+		FString text = "Logged in as " + LoggedInUserDisplayName + " " + LoggedInUserAccountType;
+        return FText::FromString(text);
+	}
+	else
+	{
+		return LOCTEXT("SSketchfabAssetBrowserWindow_GetLoginText", "You're not logged in");
+	}
+}
+
 FText SSketchfabAssetBrowserWindow::GetLoginButtonText() const
 {
-	if (!LoggedInUser.IsEmpty())
+	if (!LoggedInUserDisplayName.IsEmpty())
 	{
-		FString text = LoggedInUser + " Logged In";
-		return FText::FromString(text);
+		return LOCTEXT("SSketchfabAssetBrowserWindow_OnLogin", "Logout");
 	}
 	else
 	{
@@ -742,11 +890,24 @@ FText SSketchfabAssetBrowserWindow::GetLoginButtonText() const
 	}
 }
 
+FText SSketchfabAssetBrowserWindow::GetMyModelText() const
+{
+	if(IsLoggedUserPro)
+	{
+		return LOCTEXT("SSketchfabAssetBrowserWindow_Search_MyModels", "My models" );
+	}
+	else
+	{
+		return LOCTEXT("SSketchfabAssetBrowserWindow_Search_MyModels", "My models (PRO only)" );
+	}
+}
+
 FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 {
 	AssetViewPtr->FlushThumbnails();
 
-	FString url = "https://api.sketchfab.com/v3/search?type=models&downloadable=true";
+	FString url = bSearchMyModels ? "https://api.sketchfab.com/v3/me/search?type=models&downloadable=true" : "https://api.sketchfab.com/v3/search?type=models&downloadable=true";
+
 	if (!QuerySearchText.IsEmpty())
 	{
 		TArray<FString> Array;
@@ -879,11 +1040,37 @@ void SSketchfabAssetBrowserWindow::OnSearchBoxCommitted(const FText& InSearchTex
 
 FReply SSketchfabAssetBrowserWindow::OnLogin()
 {
-	FString url = "https://sketchfab.com/oauth2/authorize/?state=123456789&response_type=token&client_id=lZklEgZh9G5LcFqiCUUXTzXyNIZaO7iX35iXODqO";
-	DoLoginLogout(url);
-	return FReply::Handled();
+	if (!LoggedInUserDisplayName.IsEmpty())
+	{
+		Token = "";
+		LoggedInUserName = "";
+		LoggedInUserDisplayName = "";
+
+		TSharedPtr<IWebBrowserCookieManager> cookieMan = IWebBrowserModule::Get().GetSingleton()->GetCookieManager();
+		cookieMan->DeleteCookies("sketchfab.com");
+
+		//FString url = "https://sketchfab.com/logout";
+		//DoLoginLogout(url);
+		return FReply::Handled();
+	}
+	else
+	{
+		FString url = "https://sketchfab.com/oauth2/authorize/?state=123456789&response_type=token&client_id=lZklEgZh9G5LcFqiCUUXTzXyNIZaO7iX35iXODqO";
+		DoLoginLogout(url);
+		return FReply::Handled();
+	}
+
 }
-	
+
+FReply SSketchfabAssetBrowserWindow::OnUpgradeToPro()
+{
+	{
+		FString url = "https://sketchfab.com/plans?utm_source=unreal-plugin&utm_medium=plugin&utm_campaign=download-api-pro-cta";
+		FPlatformMisc::OsExecute(TEXT("open"), *url);
+		return FReply::Handled();
+	}
+}
+
 void SSketchfabAssetBrowserWindow::DoLoginLogout(const FString &url)
 {
 	if (OAuthWindowPtr.IsValid())
@@ -931,7 +1118,8 @@ void SSketchfabAssetBrowserWindow::OnOAuthWindowClosed(const TSharedRef<SWindow>
 FReply SSketchfabAssetBrowserWindow::OnLogout()
 {
 	Token = "";
-	LoggedInUser = "";
+	LoggedInUserName = "";
+	LoggedInUserDisplayName = "";
 
 	TSharedPtr<IWebBrowserCookieManager> cookieMan = IWebBrowserModule::Get().GetSingleton()->GetCookieManager();
 	cookieMan->DeleteCookies("sketchfab.com");
@@ -943,7 +1131,7 @@ FReply SSketchfabAssetBrowserWindow::OnLogout()
 
 bool SSketchfabAssetBrowserWindow::OnLoginEnabled() const
 {
-	if (Token.IsEmpty() || LoggedInUser.IsEmpty())
+	if (Token.IsEmpty() || LoggedInUserDisplayName.IsEmpty())
 	{
 		return true;
 	}
@@ -955,6 +1143,10 @@ bool SSketchfabAssetBrowserWindow::OnLogoutEnabled() const
 	return !OnLoginEnabled();
 }
 
+bool SSketchfabAssetBrowserWindow::hasMoreResults() const
+{
+	return !NextURL.IsEmpty();
+}
 
 FReply SSketchfabAssetBrowserWindow::OnCancel()
 {
@@ -997,13 +1189,33 @@ FReply SSketchfabAssetBrowserWindow::OnClearCache()
 	return FReply::Handled();
 }
 
+FReply SSketchfabAssetBrowserWindow::CheckLatestPluginVersion()
+{
+	FSketchfabTaskData TaskData;
+	TaskData.StateLock = new FCriticalSection();
 
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_CHECK_LATEST_VERSION);
+	Task->OnCheckLatestVersion().BindRaw(this, &SSketchfabAssetBrowserWindow::OnCheckLatestVersion);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
+	Task->CheckLatestPluginVersion();
+	FSketchfabRESTClient::Get()->AddTask(Task);
+
+	return FReply::Handled();
+}
+
+FReply SSketchfabAssetBrowserWindow::GetLatestPluginVersion()
+{
+	FString Command = "https://github.com/sketchfab/Sketchfab-Unreal/releases/latest";
+	FPlatformMisc::OsExecute(TEXT("open"), *Command);
+	return FReply::Handled();
+}
 
 void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
 {
 	FString data = url.ToString();
 
-	//If successfully logging in and access given based on the client_id then my redirect URL will be sent here along with 
+	//If successfully logging in and access given based on the client_id then my redirect URL will be sent here along with
 	//an authorization code. I then get the code from the URL and use that to request an Access Token, which will have an expiration time.
 	//I then store this Access Token and the expiration time and use the token for all further communication with the server.
 
@@ -1083,6 +1295,46 @@ FReply SSketchfabAssetBrowserWindow::OnKeyDown(const FGeometry& MyGeometry, cons
 	return FReply::Unhandled();
 }
 
+bool SSketchfabAssetBrowserWindow::IsSearchMyModelsAvailable() const
+{
+	return LoggedInUserName != "";
+}
+
+EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayUpgradeToPro() const
+{
+	return bSearchMyModels && LoggedInUserName != "" && !IsLoggedUserPro ? EVisibility::Visible : EVisibility::Collapsed;
+}
+
+ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchMyModelsChecked() const
+{
+	return bSearchMyModels ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+}
+
+void SSketchfabAssetBrowserWindow::setDefaultParams(bool myModels)
+{
+	bSearchStaffPicked = !myModels;
+	bSearchAnimated = false;
+
+	// Restore Sort By
+	CurrentSortByString = *SortByComboList[0].Get();
+	SortByIndex = (int32)SORTBY_MostRecent;
+
+	// Restore Category
+	CurrentCategoryString = *CategoryComboList[0].Get();
+	CategoryIndex = 0;
+
+	// Restore Face Count
+	CurrentFaceCountString = *FaceCountComboList[0].Get();
+	FaceCountIndex = (int32)FACECOUNT_ALL;
+}
+
+void SSketchfabAssetBrowserWindow::OnSearchMyModelsCheckStateChanged(ECheckBoxState NewState)
+{
+	bSearchMyModels = (NewState == ECheckBoxState::Checked);
+	setDefaultParams(bSearchMyModels);
+	OnSearchPressed();
+}
+
 ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked() const
 {
 	return bSearchAnimated ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
@@ -1127,7 +1379,6 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 	FSlateApplication::Get().AddWindowAsNativeChild(ModelWindow, CurrentWindow.ToSharedRef());
 
 	GetModelInfo(AssetData.ModelUID.ToString());
-	GetModelSize(AssetData.ModelUID.ToString());
 }
 
 
@@ -1314,18 +1565,33 @@ void SSketchfabAssetBrowserWindow::OnTaskFailed(const FSketchfabTask& InTask)
 
 void SSketchfabAssetBrowserWindow::OnUserData(const FSketchfabTask& InTask)
 {
-	LoggedInUser = InTask.TaskData.UserName;
-
-	//Download the users thumbnail
-
-	FSketchfabTaskData TaskData = InTask.TaskData;
-	TaskData.StateLock = new FCriticalSection();
-
-	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
-	Task->SetState(SRS_GETUSERTHUMB);
-	Task->OnUserThumbnail().BindRaw(this, &SSketchfabAssetBrowserWindow::OnUserThumbnailDownloaded);
-	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-	FSketchfabRESTClient::Get()->AddTask(Task);
+	LoggedInUserName = InTask.TaskData.UserSession.UserName;
+	LoggedInUserDisplayName = InTask.TaskData.UserSession.UserDisplayName;
+	if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_PRO)
+	{
+		LoggedInUserAccountType = "(PRO)";
+		IsLoggedUserPro = true;
+	}
+	else if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_PREMIUM)
+	{
+		LoggedInUserAccountType = "(PREMIUM)";
+		IsLoggedUserPro = true;
+	}
+	else if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_BUSINESS)
+	{
+		LoggedInUserAccountType = "(BIZ)";
+		IsLoggedUserPro = true;
+	}
+	else if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_ENTERPRISE)
+	{
+		LoggedInUserAccountType = "(ENT)";
+		IsLoggedUserPro = true;
+	}
+	else
+	{
+		LoggedInUserAccountType = "(FREE)";
+		IsLoggedUserPro = false;
+	}
 }
 
 void SSketchfabAssetBrowserWindow::OnUserThumbnailDownloaded(const FSketchfabTask& InTask)
@@ -1336,6 +1602,11 @@ void SSketchfabAssetBrowserWindow::OnUserThumbnailDownloaded(const FSketchfabTas
 void SSketchfabAssetBrowserWindow::OnThumbnailDownloaded(const FSketchfabTask& InTask)
 {
 	AssetViewPtr->NeedRefresh();
+}
+
+void SSketchfabAssetBrowserWindow::OnCheckLatestVersion(const FSketchfabTask& InTask)
+{
+	LatestPluginVersion = InTask.TaskData.LatestPluginVersion;
 }
 
 void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
@@ -1364,25 +1635,11 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 			Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
 			FSketchfabRESTClient::Get()->AddTask(Task);
 		}
-
-		//Prefetch license info for models already downloaded
-		FString fileName = GetModelZipFileName(Data->ModelUID);
-		if (PlatformFile.FileExists(*FileName))
-		{
-			GetModelLicence(Data->ModelUID);
-		}
 	}
 
 	AssetViewPtr->NeedRefresh();
-	NextURL = InTask.TaskData.NextURL;
-}
 
-void SSketchfabAssetBrowserWindow::OnGetModelSize(const FSketchfabTask& InTask)
-{
-	if (AssetWindow.IsValid())
-	{
-		AssetWindow->SetFileSize(InTask);
-	}
+	NextURL = InTask.TaskData.NextURL;
 }
 
 void SSketchfabAssetBrowserWindow::OnModelLink(const FSketchfabTask& InTask)
@@ -1449,7 +1706,7 @@ void SSketchfabAssetBrowserWindow::OnGetModelInfo(const FSketchfabTask& InTask)
 		GetBigThumbnail(InTask.TaskData);
 	}
 
-	//This is a bit of a hack to get the license data into the drag and drop window. 
+	//This is a bit of a hack to get the license data into the drag and drop window.
 	AssetViewPtr->SetLicence(InTask.TaskData.ModelUID, InTask.TaskData.LicenceType, InTask.TaskData.LicenceInfo);
 }
 

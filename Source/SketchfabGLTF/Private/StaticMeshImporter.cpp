@@ -3,7 +3,7 @@
 #include "StaticMeshImporter.h"
 #include "GLTFImporter.h"
 #include "GLTFConversionUtils.h"
-#include "RawMesh.h" 
+#include "RawMesh.h"
 #include "MeshUtilities.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/Material.h"
@@ -34,7 +34,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 		ImportedMesh->StaticMaterials.Empty();
 		ImportContext.MaterialMap.Empty();
 	}
-	
+
 	ensure(ImportedMesh);
 
 
@@ -414,7 +414,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 			RawTriangles.FaceMaterialIndices.Add(*staticMaterialIndex);
 
 			// Phong Smoothing
-			RawTriangles.FaceSmoothingMasks.Add(0xFFFFFFFF); 
+			RawTriangles.FaceSmoothingMasks.Add(0xFFFFFFFF);
 		}
 
 	}

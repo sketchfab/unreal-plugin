@@ -6,7 +6,7 @@
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
-
+#include <Misc/EngineVersion.h>
 #define HOSTNAME "http://127.0.0.1"
 #define PORT ":55002"
 
@@ -130,6 +130,29 @@ void FSketchfabTask::AddAuthorization(TSharedRef<IHttpRequest> Request)
 }
 
 /*Http call*/
+void FSketchfabTask::CheckLatestPluginVersion()
+{
+	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	request->SetURL("https://api.github.com/repos/sketchfab/Sketchfab-Unreal/releases");
+	request->SetVerb(TEXT("GET"));
+	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
+	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::Check_Latest_Version_Response);
+
+	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
+
+	if (!request->ProcessRequest())
+	{
+		SetState(SRS_FAILED);
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
+	}
+	else
+	{
+		DebugHttpRequestCounter.Increment();
+		PendingRequests.Add(request, request->GetURL());
+		SetState(SRS_CHECK_LATEST_VERSION_PROCESSING);
+	}
+
+}
 void FSketchfabTask::Search()
 {
 	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
@@ -188,6 +211,82 @@ void GetThumnailData(TSharedPtr<FJsonObject> JsonObject, int32 size, FString &th
 			outWidth = width;
 			outHeight = height;
 		}
+	}
+}
+
+void FSketchfabTask::Check_Latest_Version_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	DebugHttpRequestCounter.Decrement();
+	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+	{
+		if (this == nullptr)
+		{
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
+			SetState(SRS_FAILED);
+			return;
+		}
+
+		FString data = Response->GetContentAsString();
+		if (data.IsEmpty())
+		{
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("CheckLatestVersion_Response content was empty"));
+			SetState(SRS_FAILED);
+		}
+		else
+		{
+			//Create a pointer to hold the json serialized data
+			TArray<TSharedPtr<FJsonValue>> results;
+
+			//Create a reader pointer to read the json data
+			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+
+			//Deserialize the json data given Reader and the actual object to deserialize
+			int separatorIndex = -1;
+			if (FJsonSerializer::Deserialize(Reader, results))
+			{
+				FEngineVersion currentEngineVersion = FEngineVersion::Current();
+				uint16 major = currentEngineVersion.GetMajor();
+				uint16 minor = currentEngineVersion.GetMinor();
+
+				FString ueVersion = FString::FromInt(major) + FString(".") + FString::FromInt(minor);
+
+				for (int r = 0; r < results.Num(); r++)
+				{
+					TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
+					FString release_tag = resultObj->GetStringField("tag_name");
+
+					// Filter version and check if good Unreal engine version (4.##)
+					// Plugin tag is in for {ue4Version}.{pluginVersion} like 4.19-1.1.
+					if (release_tag.FindChar('-', separatorIndex))
+					{
+						FString pluginUeVersion = release_tag.Left(separatorIndex);
+						FString pluginVersion = release_tag.Right(release_tag.Len() - separatorIndex - 1);
+						if (pluginUeVersion.Compare(ueVersion) == 0)
+						{
+							TaskData.LatestPluginVersion = pluginVersion;
+							break;
+						}
+					}
+					else
+					{
+						UE_LOG(LogSketchfabRESTClient, Display, TEXT("Failed to retrieve latest plugin version"));
+					}
+				}
+			}
+
+			if (!this->IsCompleted &&  OnCheckLatestVersion().IsBound())
+			{
+				OnCheckLatestVersion().Execute(*this);
+			}
+
+			SetState(SRS_CHECK_LATEST_VERSION_DONE);
+			return;
+		}
+	}
+	else
+	{
+		SetState(SRS_FAILED);
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
 	}
 }
 
@@ -270,6 +369,16 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 					OutItem->CacheFolder = TaskData.CacheFolder;
 					OutItem->Token = TaskData.Token;
 					OutItem->ModelAuthor = authorName;
+
+					TSharedPtr<FJsonObject> archives = resultObj->GetObjectField("archives");
+					if (archives.IsValid())
+					{
+						TSharedPtr<FJsonObject> gltf = archives->GetObjectField("gltf");
+						if (gltf.IsValid())
+						{
+							OutItem->ModelSize = gltf->GetIntegerField("size");
+						}
+					}
 
 					SearchData.Add(OutItem);
 				}
@@ -459,10 +568,8 @@ void FSketchfabTask::GetModelLink_Response(FHttpRequestPtr Request, FHttpRespons
 			TSharedPtr<FJsonObject> gltfObject = JsonObject->GetObjectField("gltf");
 
 			FString url = gltfObject->GetStringField("url");
-			int32 size = gltfObject->GetIntegerField("size");
 
 			TaskData.ModelURL = url;
-			TaskData.ModelSize = size;
 
 			if (!this->IsCompleted &&  OnModelLink().IsBound())
 			{
@@ -661,14 +768,44 @@ void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponse
 		//Deserialize the json data given Reader and the actual object to deserialize
 		if (FJsonSerializer::Deserialize(Reader, JsonObject))
 		{
+			if (JsonObject->HasField("username"))
+			{
+				TaskData.UserSession.UserName = JsonObject->GetStringField("username");
+			}
+
 			if (JsonObject->HasField("displayName"))
 			{
-				TaskData.UserName = JsonObject->GetStringField("displayName");
+				TaskData.UserSession.UserDisplayName = JsonObject->GetStringField("displayName");
+			}
+
+			if (JsonObject->HasField("account"))
+			{
+				FString accountType = JsonObject->GetStringField("account");
+				if(accountType.Compare("pro") == 0)
+				{
+					TaskData.UserSession.UserPlan = ACCOUNT_PRO;
+				}
+				else if(accountType.Compare("prem") == 0)
+				{
+					TaskData.UserSession.UserPlan = ACCOUNT_PREMIUM;
+				}
+				else if(accountType.Compare("biz") == 0)
+				{
+					TaskData.UserSession.UserPlan = ACCOUNT_BUSINESS;
+				}
+				else if(accountType.Compare("ent") == 0)
+				{
+					TaskData.UserSession.UserPlan = ACCOUNT_ENTERPRISE;
+				}
+				else
+				{
+					TaskData.UserSession.UserPlan = ACCOUNT_BASIC;
+				}
 			}
 
 			if (JsonObject->HasField("uid"))
 			{
-				TaskData.UserUID = JsonObject->GetStringField("uid");
+				TaskData.UserSession.UserUID = JsonObject->GetStringField("uid");
 			}
 
 			if (JsonObject->HasField("avatar"))
@@ -682,11 +819,11 @@ void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponse
 						TSharedPtr<FJsonObject> ImageObj = ImagesArray[0]->AsObject();
 						if (ImageObj->HasField("url"))
 						{
-							TaskData.UserThumbnaillURL = ImageObj->GetStringField("url");
+							TaskData.UserSession.UserThumbnaillURL = ImageObj->GetStringField("url");
 						}
 						if (ImageObj->HasField("uid"))
 						{
-							TaskData.UserThumbnaillUID = ImageObj->GetStringField("uid");
+							TaskData.UserSession.UserThumbnaillUID = ImageObj->GetStringField("uid");
 						}
 					}
 				}
@@ -713,7 +850,7 @@ void FSketchfabTask::GetUserThumbnail()
 
 	AddAuthorization(request);
 
-	request->SetURL(TaskData.UserThumbnaillURL);
+	request->SetURL(TaskData.UserSession.UserThumbnaillURL);
 	request->SetVerb(TEXT("GET"));
 	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
 	request->SetHeader("Content-Type", "image/jpeg");
@@ -770,11 +907,11 @@ void FSketchfabTask::GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpRes
 		{
 			IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 
-			FString uid = TaskData.UserThumbnaillUID;
+			FString uid = TaskData.UserSession.UserThumbnaillUID;
 			if (uid.IsEmpty())
 			{
 				//The json file currently does not contain the uid of the thumbnail, so for now I will use the users uid
-				uid = TaskData.UserUID;
+				uid = TaskData.UserSession.UserUID;
 			}
 
 			FString jpg = uid + ".jpg";
@@ -994,14 +1131,30 @@ void FSketchfabTask::GetModelInfo_Response(FHttpRequestPtr Request, FHttpRespons
 				TaskData.ModelVertexCount = JsonObject->GetIntegerField("vertexCount");
 				TaskData.ModelFaceCount = JsonObject->GetIntegerField("faceCount");
 				TaskData.AnimationCount = JsonObject->GetIntegerField("animationCount");
-				TaskData.ModelSize = JsonObject->GetIntegerField("size");
+				//TaskData.ModelSize = JsonObject->GetObjectField("archives")->GetObjectField("gltf")->GetIntegerField("size");
 				TaskData.ModelPublishedAt = GetPublishedAt(JsonObject);
+
+				TSharedPtr<FJsonObject> archives = JsonObject->GetObjectField("archives");
+				if (archives.IsValid())
+				{
+					TSharedPtr<FJsonObject> gltf = archives->GetObjectField("gltf");
+					if (gltf.IsValid())
+					{
+						TaskData.ModelSize = gltf->GetIntegerField("size");
+					}
+				}
 
 				TSharedPtr<FJsonObject> license = JsonObject->GetObjectField("license");
 				if (license.IsValid())
 				{
 					TaskData.LicenceType = license->GetStringField("fullName");
 					TaskData.LicenceInfo = license->GetStringField("requirements");
+				}
+
+				if (TaskData.LicenceType.IsEmpty()) // Personal models have no license data
+				{
+					TaskData.LicenceType = "Personal";
+					TaskData.LicenceInfo = "You own this model";
 				}
 
 				GetThumnailData(JsonObject, 1024, TaskData.ThumbnailUID_1024, TaskData.ThumbnailURL_1024, TaskData.ThumbnailWidth_1024, TaskData.ThumbnailHeight_1024);

@@ -1,6 +1,6 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#pragma once 
+#pragma once
 
 #include "ISketchfabAssetBrowser.h"
 #include "SSketchfabAssetView.h"
@@ -37,7 +37,7 @@ public:
 	void Construct(const FArguments& InArgs);
 	void SetModelInfo(const FSketchfabTask& InTask);
 	void SetThumbnail(const FSketchfabTask& InTask);
-	void SetFileSize(const FSketchfabTask& InTask);
+	FText GetFileSize();
 
 	FReply DownloadModel();
 	FReply ViewOnSketchfab();

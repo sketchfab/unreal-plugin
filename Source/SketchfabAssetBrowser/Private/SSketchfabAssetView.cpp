@@ -79,7 +79,7 @@ void SSketchfabAssetView::Construct(const FArguments& InArgs)
 
 	const float ThumbnailScaleRangeScalar = (DisplaySize.Y / 1080);
 
-	// Create a thumbnail pool for rendering thumbnails	
+	// Create a thumbnail pool for rendering thumbnails
 	AssetThumbnailPool = MakeShareable(new FSketchfabAssetThumbnailPool(1024, true /*InArgs._AreRealTimeThumbnailsAllowed*/));
 	NumOffscreenThumbnails = 64;
 	TileViewThumbnailResolution = 256;
@@ -125,7 +125,7 @@ void SSketchfabAssetView::Construct(const FArguments& InArgs)
 	VerticalBox->AddSlot()
 	.FillHeight(1.f)
 	[
-		SNew( SVerticalBox ) 
+		SNew( SVerticalBox )
 
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -140,7 +140,7 @@ void SSketchfabAssetView::Construct(const FArguments& InArgs)
 				.BorderPadding( FVector2D(0,0) )
 			]
 		]
-		
+
 		+ SVerticalBox::Slot()
 		.FillHeight(1.f)
 		[
@@ -179,23 +179,6 @@ void SSketchfabAssetView::Construct(const FArguments& InArgs)
 				AssetDiscoveryIndicator
 			]
 			*/
-
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Right)
-			.VAlign(VAlign_Bottom)
-			.Padding(FMargin(8, 0))
-			[
-				SNew(SBorder)
-				.BorderImage(FEditorStyle::GetBrush("ErrorReporting.EmptyBox"))
-				/*
-				.BorderBackgroundColor(this, &SAssetView::GetQuickJumpColor)
-				.Visibility(this, &SAssetView::IsQuickJumpVisible)
-				[
-					SNew(STextBlock)
-					.Text(this, &SAssetView::GetQuickJumpTerm)
-				]
-				*/
-			]
 		]
 	];
 
@@ -256,7 +239,7 @@ float SSketchfabAssetView::GetTileViewItemWidth() const
 	return GetTileViewItemBaseWidth() * FillScale;
 }
 
-float SSketchfabAssetView::GetTileViewItemBaseWidth() const 
+float SSketchfabAssetView::GetTileViewItemBaseWidth() const
 {
 	return (TileViewThumbnailSize + TileViewThumbnailPadding * 2) * FMath::Lerp(MinThumbnailScale, MaxThumbnailScale, GetThumbnailScale());
 }
@@ -395,7 +378,7 @@ void SSketchfabAssetView::ItemScrolledIntoView(TSharedPtr<struct FAssetViewItem>
 	if (AssetItem->bRenameWhenScrolledIntoview)
 	{
 		// Make sure we have window focus to avoid the inline text editor from canceling itself if we try to click on it
-		// This can happen if creating an asset opens an intermediary window which steals our focus, 
+		// This can happen if creating an asset opens an intermediary window which steals our focus,
 		// eg, the blueprint and slate widget style class windows (TTP# 314240)
 		TSharedPtr<SWindow> OwnerWindow = FSlateApplication::Get().FindWidgetWindow(AsShared());
 		if (OwnerWindow.IsValid())
@@ -507,7 +490,7 @@ bool SSketchfabAssetView::HasLicence(const FString& ModelUID)
 {
 	LicenceDataInfo *data = LicenceData.Find(ModelUID);
 	if (data && !data->LicenceType.IsEmpty())
-	{ 
+	{
 		return true;
 	}
 	return false;
@@ -544,6 +527,7 @@ void SSketchfabAssetView::ForceCreateNewAsset(TSharedPtr<FSketchfabTaskData> Dat
 	NewAssetData.ModelPublishedAt = Data->ModelPublishedAt;
 	NewAssetData.LicenceInfo = Data->LicenceInfo;
 	NewAssetData.LicenceType = Data->LicenceType;
+	NewAssetData.ModelSize = Data->ModelSize;
 
 	TSharedPtr<FAssetViewItem> NewItem = MakeShareable(new FAssetViewAsset(NewAssetData));
 
@@ -579,7 +563,7 @@ void SSketchfabAssetView::Tick(const FGeometry& AllottedGeometry, const double I
 	{
 		bNeedsRefresh = false;
 		//UpdateAssetList();
-		
+
 		//This is a hack for now. Just refresh all the widgets.
 		TileView->RebuildList();
 	}
@@ -877,7 +861,7 @@ TSharedPtr<FSketchfabAssetThumbnail> SSketchfabAssetView::AddItemToNewThumbnailR
 	{
 		/*
 		//For now I am ignoring the scale of the thumbnail since it is currently not used for the asset browser
-		//In future if this is to be used the the width and height of the loaded thumbnail image will need to be 
+		//In future if this is to be used the the width and height of the loaded thumbnail image will need to be
 		//calculated correctly and code changed in the thumbnailpool loading method.
 		if (!ensure(CurrentThumbnailSize > 0 && CurrentThumbnailSize <= MAX_THUMBNAIL_SIZE))
 		{
@@ -1092,7 +1076,7 @@ TArray<FSketchfabAssetData> SSketchfabAssetView::GetSelectedAssets() const
 
 //==========================================================================
 
-FSketchfabDragDropOperation::FSketchfabDragDropOperation() 
+FSketchfabDragDropOperation::FSketchfabDragDropOperation()
 {
 }
 

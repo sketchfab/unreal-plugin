@@ -325,7 +325,7 @@ private:
 	{
 		return FLinearColor(1, 1, 1, ViewportFadeCurve.GetLerp());
 	}
-	
+
 	EVisibility GetViewportVisibility() const
 	{
 		return bHasRenderedThumbnail ? EVisibility::Visible : EVisibility::Collapsed;
@@ -337,7 +337,7 @@ private:
 		return FMath::Max(FMath::CeilToFloat(WidthLastFrame*0.025f), 4.0f);
 	}
 
-	FSlateColor SSketchfabAssetThumbnail::GetAssetColor() const
+	FSlateColor GetAssetColor() const
 	{
 		const FSketchfabAssetData& AssetData = AssetThumbnail->GetAssetData();
 		const float Height = GetAssetColorStripHeight();
@@ -453,7 +453,7 @@ private:
 	{
 		if( Label != ESketchfabThumbnailLabel::NoLabel )
 		{
-			if ( Label == ESketchfabThumbnailLabel::AssetName ) 
+			if ( Label == ESketchfabThumbnailLabel::AssetName )
 			{
 				return GetAssetDisplayName();
 			}
@@ -786,7 +786,7 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 
 				check( AssetToRemove );
 
-				// Remove the old mapping 
+				// Remove the old mapping
 				ThumbnailInfo = ThumbnailToTextureMap.FindAndRemoveChecked( *AssetToRemove );
 			}
 			else if( FreeThumbnails.Num() > 0 )
@@ -801,12 +801,12 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 				// There are no free thumbnail resources
 				check( (uint32)ThumbnailToTextureMap.Num() <= NumInPool );
 				check( !ThumbnailInfo.IsValid() );
-				// The pool isn't used up so just make a new texture 
+				// The pool isn't used up so just make a new texture
 
 				// Make new thumbnail info if it doesn't exist
 				// This happens when the pool is not yet full
 				ThumbnailInfo = MakeShareable( new FThumbnailInfo );
-				
+
 				// Set the thumbnail and asset on the info. It is NOT safe to change or NULL these pointers until ReleaseResources.
 				ThumbnailInfo->ModelTexture = UImageLoader::LoadImageFromDisk(NULL, path);
 				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), AssetData.ThumbUID);
@@ -822,7 +822,7 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 			ThumbnailInfo->AssetData = AssetData;
 			ThumbnailInfo->Width = Width;
 			ThumbnailInfo->Height = Height;
-		
+
 			// Mark this thumbnail as needing to be updated
 			ThumbnailInfo->LastUpdateTime = -1.f;
 		}
@@ -905,7 +905,7 @@ void FSketchfabAssetThumbnailPool::PrioritizeThumbnails( const TArray< TSharedPt
 		TSet<FName> ObjectPathList;
 		for ( int32 ThumbIdx = 0; ThumbIdx < ThumbnailsToPrioritize.Num(); ++ThumbIdx )
 		{
-			ObjectPathList.Add(ThumbnailsToPrioritize[ThumbIdx]->GetAssetData().ModelUID); 
+			ObjectPathList.Add(ThumbnailsToPrioritize[ThumbIdx]->GetAssetData().ModelUID);
 		}
 	}
 }
@@ -949,7 +949,7 @@ void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ModelUID, uint32 
 			FreeThumbnails.Add( ThumbnailInfo );
 		}
 	}
-			
+
 }
 
 void FSketchfabAssetThumbnailPool::RefreshThumbnailsFor( FName ModelUID)
