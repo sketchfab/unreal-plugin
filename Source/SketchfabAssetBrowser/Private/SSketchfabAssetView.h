@@ -22,6 +22,7 @@
 #include "SlateStyle.h"
 #include "SlateStyleRegistry.h"
 #include "SketchfabTask.h"
+#include "Editor/EditorStyle/Public/EditorStyleSet.h"
 
 struct FAssetViewItemHelper;
 

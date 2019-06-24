@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PixelFormat.h"
+#include "Engine.h"
 #include "ImageLoader.generated.h"
 
 // Forward declarations

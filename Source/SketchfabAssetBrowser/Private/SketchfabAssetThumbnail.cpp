@@ -135,7 +135,7 @@ public:
 			ViewportFadeCurve = ViewportFadeAnimation.AddCurve(0.f, 0.25f, ECurveEaseFunction::QuadOut);
 
 			AssetThumbnail->GetViewportRenderTargetTexture(); // Access the render texture to push it on the stack if it isn't already rendered
-			FSlateDynamicImageBrush* ModelImageBrush = AssetThumbnail->GetImageBrush();
+			FDeferredCleanupSlateBrush* ImageBrush = AssetThumbnail->GetImageBrush();
 
 			InArgs._ThumbnailPool->OnThumbnailRendered().AddSP(this, &SSketchfabAssetThumbnail::OnThumbnailRendered);
 			InArgs._ThumbnailPool->OnThumbnailRenderFailed().AddSP(this, &SSketchfabAssetThumbnail::OnThumbnailRenderFailed);
@@ -145,17 +145,18 @@ public:
 				bHasRenderedThumbnail = true;
 				ViewportFadeAnimation.JumpToEnd();
 			}
-
-			// The viewport for the rendered thumbnail, if it exists
-			OverlayWidget->AddSlot()
-				[
-					SNew(SScaleBox)
-					.StretchDirection(EStretchDirection::Both)
+			if (ImageBrush) {
+				// The viewport for the rendered thumbnail, if it exists
+				OverlayWidget->AddSlot()
+					[
+						SNew(SScaleBox)
+						.StretchDirection(EStretchDirection::Both)
 					.Stretch(EStretch::ScaleToFill)
 					[
-						SNew(SImage).Image(ModelImageBrush)
+						SNew(SImage).Image(ImageBrush->GetSlateBrush())
 					]
-				];
+					];
+			}
 		}
 
 		if( bAllowHintText )
@@ -578,9 +579,9 @@ FSlateShaderResource* FSketchfabAssetThumbnail::GetViewportRenderTargetTexture()
 	return Texture;
 }
 
-FSlateDynamicImageBrush* FSketchfabAssetThumbnail::GetImageBrush() const
+FDeferredCleanupSlateBrush* FSketchfabAssetThumbnail::GetImageBrush() const
 {
-	FSlateDynamicImageBrush* Texture = NULL;
+	FDeferredCleanupSlateBrush* Texture = NULL;
 	if (ThumbnailPool.IsValid())
 	{
 		ThumbnailPool.Pin()->AccessTexture(AssetData, Width, Height, &Texture);
@@ -678,19 +679,8 @@ FSketchfabAssetThumbnailPool::FThumbnailInfo::~FThumbnailInfo()
 {
 	if (ModelImageBrush)
 	{
-		delete ModelImageBrush;
-		ModelImageBrush = NULL;
+		ModelImageBrush->FinishCleanup();
 	}
-
-
-	/*
-	//This is a UTexture that was created via NewObject(). I am unsure how to free this data at this point.
-	if (ModelTexture)
-	{
-		delete ModelTexture;
-		ModelTexture = NULL;
-	}
-	*/
 }
 
 void FSketchfabAssetThumbnailPool::ReleaseResources()
@@ -742,7 +732,7 @@ void FSketchfabAssetThumbnailPool::Tick( float DeltaTime )
 {
 }
 
-FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketchfabAssetData& AssetData, uint32 Width, uint32 Height, FSlateDynamicImageBrush **Image)
+FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture(const FSketchfabAssetData& AssetData, uint32 Width, uint32 Height, FDeferredCleanupSlateBrush **Image)
 {
 	FString path = AssetData.ContentFolder.ToString() / AssetData.ThumbUID.ToString();
 	path += ".jpg";
@@ -794,7 +784,7 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 				ThumbnailInfo = FreeThumbnails.Pop();
 
 				ThumbnailInfo->ModelTexture = UImageLoader::LoadImageFromDisk(NULL, path);
-				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), AssetData.ThumbUID);
+				ThumbnailInfo->ModelImageBrush = FDeferredCleanupSlateBrush::CreateBrush(ThumbnailInfo->ModelTexture, FLinearColor::White, ESlateBrushTileType::NoTile, ESlateBrushImageType::FullColor);
 			}
 			else
 			{
@@ -809,7 +799,7 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 
 				// Set the thumbnail and asset on the info. It is NOT safe to change or NULL these pointers until ReleaseResources.
 				ThumbnailInfo->ModelTexture = UImageLoader::LoadImageFromDisk(NULL, path);
-				ThumbnailInfo->ModelImageBrush = new FSlateDynamicImageBrush(ThumbnailInfo->ModelTexture, FVector2D(Width, Height), AssetData.ThumbUID);
+				ThumbnailInfo->ModelImageBrush = FDeferredCleanupSlateBrush::CreateBrush(ThumbnailInfo->ModelTexture, FLinearColor::White, ESlateBrushTileType::NoTile, ESlateBrushImageType::FullColor);
 			}
 
 
@@ -833,7 +823,7 @@ FSlateTexture2DRHIRef* FSketchfabAssetThumbnailPool::AccessTexture( const FSketc
 
 		if (Image)
 		{
-			*Image = ThumbnailInfo->ModelImageBrush;
+			*Image = ThumbnailInfo->ModelImageBrush.Get();
 		}
 
 		return NULL;
@@ -940,7 +930,7 @@ void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ModelUID, uint32 
 
 			if (ThumbnailInfo->ModelImageBrush)
 			{
-				delete ThumbnailInfo->ModelImageBrush;
+				ThumbnailInfo->ModelImageBrush->FinishCleanup();
 				ThumbnailInfo->ModelImageBrush = NULL;
 			}
 

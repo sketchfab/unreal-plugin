@@ -1,6 +1,6 @@
 // Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
 
-#include "ZipUtilityPrivatePCH.h"
+
 
 #define LOCTEXT_NAMESPACE "FZipUtilityModule"
 

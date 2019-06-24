@@ -27,6 +27,7 @@ namespace UnrealBuildTool.Rules
 					"Core",
 					"CoreUObject",
                     "Engine",
+                    "EditorStyle",
                     "UnrealEd",
                     "InputCore",
                     "SlateCore",
@@ -66,6 +67,8 @@ namespace UnrealBuildTool.Rules
 					// ... add any modules that your module loads dynamically here ...
 				}
 				);
-		}
+
+            PrivatePCHHeaderFile = "Private/SketchfabAssetBrowserPrivatePCH.h";
+        }
 	}
 }

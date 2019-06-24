@@ -21,10 +21,8 @@ public class ZipUtility : ModuleRules
 
 	public ZipUtility(ReadOnlyTargetRules Target) : base(Target)
     {
-
         PublicIncludePaths.AddRange(
             new string[] {
-                "ZipUtility/Public"
 				// ... add public include paths required here ...
 			}
             );
@@ -43,6 +41,7 @@ public class ZipUtility : ModuleRules
             new string[]
             {
                 "Core",
+                "Engine",
                 "WindowsFileUtility"
 				// ... add other public dependencies that you statically link with here ...
 			}
@@ -68,6 +67,8 @@ public class ZipUtility : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
             );
+
+        PrivatePCHHeaderFile = "Private/ZipUtilityPrivatePCH.h";
 
         LoadLib(Target);
     }

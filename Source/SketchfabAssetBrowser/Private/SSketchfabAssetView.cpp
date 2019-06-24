@@ -1084,7 +1084,8 @@ TSharedPtr<SWidget> FSketchfabDragDropOperation::GetDefaultDecorator() const
 {
 	if (AssetThumbnailPool.IsValid() && DraggedAssets.Num() > 0)
 	{
-		FSlateDynamicImageBrush* Texture = NULL;
+		FDeferredCleanupSlateBrush* Texture = NULL;
+
 		const FSketchfabAssetData &AssetData = DraggedAssets[0];
 		AssetThumbnailPool->AccessTexture(AssetData, AssetData.ThumbnailWidth, AssetData.ThumbnailHeight, &Texture);
 
@@ -1112,7 +1113,7 @@ TSharedPtr<SWidget> FSketchfabDragDropOperation::GetDefaultDecorator() const
 							.StretchDirection(EStretchDirection::Both)
 							.Stretch(EStretch::ScaleToFill)
 							[
-								SNew(SImage).Image(Texture)
+								SNew(SImage).Image(Texture->GetSlateBrush())
 							]
 						]
 					]

@@ -1,7 +1,7 @@
-#include "WindowsFileUtilityPrivatePCH.h"
+#include "WindowsFileUtilityFunctionLibrary.h"
 #include "WFUFolderWatchInterface.h"
 #include "WFUFileListInterface.h"
-#include "WindowsFileUtilityFunctionLibrary.h"
+
 
 //static TMAP definition
 TMap<FString, TArray<FWatcher>> UWindowsFileUtilityFunctionLibrary::Watchers = TMap<FString, TArray<FWatcher>>();
