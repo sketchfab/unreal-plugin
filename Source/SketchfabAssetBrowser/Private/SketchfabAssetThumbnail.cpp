@@ -679,7 +679,7 @@ FSketchfabAssetThumbnailPool::FThumbnailInfo::~FThumbnailInfo()
 {
 	if (ModelImageBrush)
 	{
-		ModelImageBrush->FinishCleanup();
+		//ModelImageBrush->FinishCleanup();
 	}
 }
 
@@ -930,7 +930,7 @@ void FSketchfabAssetThumbnailPool::FreeThumbnail( const FName& ModelUID, uint32 
 
 			if (ThumbnailInfo->ModelImageBrush)
 			{
-				ThumbnailInfo->ModelImageBrush->FinishCleanup();
+				//ThumbnailInfo->ModelImageBrush->FinishCleanup();
 				ThumbnailInfo->ModelImageBrush = NULL;
 			}
 

@@ -38,7 +38,7 @@ private:
 	FGLTFAssetImportContext ImportContext;
 
 	UPROPERTY()
-	UGLTFImportOptions* ImportOptions;
+	UGLTFImportOptions_SKETCHFAB* ImportOptions;
 
 
 public:

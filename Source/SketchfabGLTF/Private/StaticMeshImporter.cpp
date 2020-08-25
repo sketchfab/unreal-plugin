@@ -399,8 +399,8 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 			}
 
 			int32 FinalIndex = ImportedMesh->StaticMaterials.AddUnique(ExistingMaterial ? ExistingMaterial : UMaterial::GetDefaultMaterial(MD_Surface));
-			ImportedMesh->SectionInfoMap.Set(LODIndex, FinalIndex, FMeshSectionInfo(FinalIndex));
-			ImportedMesh->OriginalSectionInfoMap.Set(LODIndex, FinalIndex, ImportedMesh->SectionInfoMap.Get(LODIndex, FinalIndex));
+			ImportedMesh->GetSectionInfoMap().Set(LODIndex, FinalIndex, FMeshSectionInfo(FinalIndex));
+			ImportedMesh->GetOriginalSectionInfoMap().Set(LODIndex, FinalIndex, ImportedMesh->GetSectionInfoMap().Get(LODIndex, FinalIndex));
 
 			ImportContext.MaterialMap.Add(prim.material, FinalIndex);
 		}
@@ -420,13 +420,13 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 	}
 
 
-	if (!ImportedMesh->SourceModels.IsValidIndex(LODIndex))
+	if (!ImportedMesh->GetSourceModels().IsValidIndex(LODIndex))
 	{
 		// Add one LOD
-		ImportedMesh->SourceModels.AddDefaulted();
+		ImportedMesh->GetSourceModels().AddDefaulted();
 	}
 
-	FStaticMeshSourceModel& SrcModel = ImportedMesh->SourceModels[LODIndex];
+	FStaticMeshSourceModel& SrcModel = ImportedMesh->GetSourceModel(LODIndex);
 
 	RawTriangles.CompactMaterialIndices();
 

@@ -568,7 +568,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, tiny
 				const auto &alphaCutoffProp = Mat->additionalValues.find("alphaCutoff");
 				if (alphaCutoffProp != Mat->additionalValues.end())
 				{
-					tinygltf::Parameter &param = alphaCutoffProp->second;
+					param = alphaCutoffProp->second;
 					if (param.number_array.size() > 0)
 					{
 						UnrealMaterial->OpacityMaskClipValue = param.number_array[0];

@@ -1111,8 +1111,7 @@ void SSketchfabAssetBrowserWindow::DoLoginLogout(const FString &url)
 		.OnUrlChanged(this, &SSketchfabAssetBrowserWindow::OnUrlChanged)
 	);
 
-	FWidgetPath WidgetPath;
-	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
+	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared());
 	FSlateApplication::Get().AddWindowAsNativeChild(OAuthWindowPtr.ToSharedRef(), CurrentWindow.ToSharedRef());
 }
 
@@ -1383,8 +1382,7 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 		.OnDownloadRequest(this, &SSketchfabAssetBrowserWindow::DownloadModel)
 	);
 
-	FWidgetPath WidgetPath;
-	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared(), WidgetPath);
+	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared());
 	FSlateApplication::Get().AddWindowAsNativeChild(ModelWindow, CurrentWindow.ToSharedRef());
 
 	GetModelInfo(AssetData.ModelUID.ToString());
@@ -1630,7 +1628,6 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 
 		FString jpg = Data->ThumbnailUID + ".jpg";
 		FString FileName = Data->CacheFolder / jpg;
-		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 
 		bool downloadThumbnail = ShouldDownloadFile(FileName, Data->ModelPublishedAt);
 		if (downloadThumbnail)
@@ -1770,20 +1767,20 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 			ParentWindow = MainFrame.GetParentWindow();
 		}
 
-		TSharedRef<SWindow> Window = SNew(SWindow)
+		TSharedRef<SWindow> NewWindow = SNew(SWindow)
 			.Title(LOCTEXT("SketchfabAcceptLicenseWindow", "License Acceptance"))
 			.SizingRule(ESizingRule::Autosized);
 
 
 		TSharedPtr<SAcceptLicenseWindow> AcceptLicenceWindow;
-		Window->SetContent
+		NewWindow->SetContent
 		(
 			SAssignNew(AcceptLicenceWindow, SAcceptLicenseWindow)
 			.AssetData(DragDropOp->DraggedAssets[0])
-			.WidgetWindow(Window)
+			.WidgetWindow(NewWindow)
 		);
 
-		FSlateApplication::Get().AddModalWindow(Window, ParentWindow, false);
+		FSlateApplication::Get().AddModalWindow(NewWindow, ParentWindow, false);
 
 		if (AcceptLicenceWindow->ShouldImport())
 		{

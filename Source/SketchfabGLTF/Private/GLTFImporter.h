@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "GLTFImportOptions.h"
+#include "GLTFImportOptions_SKETCHFAB.h"
 #include "Logging/TokenizedMessage.h"
 #include "GLTFPrimResolver.h"
 #include "Materials/MaterialExpressionTextureSample.h"
@@ -39,7 +39,7 @@ struct FGLTFImportContext
 	FString ImportPathName;
 
 	UPROPERTY()
-	UGLTFImportOptions* ImportOptions;
+	UGLTFImportOptions_SKETCHFAB* ImportOptions;
 
 	UPROPERTY()
 	UGLTFPrimResolver* PrimResolver;

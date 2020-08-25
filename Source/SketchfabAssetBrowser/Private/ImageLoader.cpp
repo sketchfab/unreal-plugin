@@ -43,7 +43,7 @@ TFuture<UTexture2D*> UImageLoader::LoadImageFromDiskAsync(UObject* Outer, const 
 {
 	// Run the image loading function asynchronously through a lambda expression, capturing the ImagePath string by value.
 	// Run it on the thread pool, so we can load multiple images simultaneously without interrupting other tasks.
-	return Async<UTexture2D*>(EAsyncExecution::ThreadPool, [=]() { return LoadImageFromDisk(Outer, ImagePath); }, CompletionCallback);
+	return Async(EAsyncExecution::ThreadPool, [=]() { return LoadImageFromDisk(Outer, ImagePath); }, CompletionCallback);
 }
 
 UTexture2D* UImageLoader::LoadImageFromDisk(UObject* Outer, const FString& ImagePath)
@@ -80,10 +80,10 @@ UTexture2D* UImageLoader::LoadImageFromDisk(UObject* Outer, const FString& Image
 	}
 
 	// Decompress the image data
-	const TArray<uint8>* RawData = nullptr;
+	TArray64<uint8> RawData;
 	ImageWrapper->SetCompressed(FileData.GetData(), FileData.Num());
-	ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, RawData);
-	if (RawData == nullptr)
+	bool success = ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, RawData);
+	if (!success)
 	{
 		UIL_LOG(Error, TEXT("Failed to decompress image file: %s"), *ImagePath);
 		return nullptr;
@@ -91,10 +91,10 @@ UTexture2D* UImageLoader::LoadImageFromDisk(UObject* Outer, const FString& Image
 
 	// Create the texture and upload the uncompressed image data
 	FString TextureBaseName = TEXT("Texture_") + FPaths::GetBaseFilename(ImagePath);
-	return CreateTexture(Outer, *RawData, ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), EPixelFormat::PF_B8G8R8A8, FName(*TextureBaseName));
+	return CreateTexture(Outer, RawData, ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), EPixelFormat::PF_B8G8R8A8, FName(*TextureBaseName));
 }
 
-UTexture2D* UImageLoader::CreateTexture(UObject* Outer, const TArray<uint8>& PixelData, int32 InSizeX, int32 InSizeY, EPixelFormat InFormat, FName BaseName)
+UTexture2D* UImageLoader::CreateTexture(UObject* Outer, const TArray64<uint8>& PixelData, int32 InSizeX, int32 InSizeY, EPixelFormat InFormat, FName BaseName)
 {
 	// Shamelessly copied from UTexture2D::CreateTransient with a few modifications
 	if (InSizeX <= 0 || InSizeY <= 0 ||
@@ -118,7 +118,8 @@ UTexture2D* UImageLoader::CreateTexture(UObject* Outer, const TArray<uint8>& Pix
 	// Allocate first mipmap and upload the pixel data
 	int32 NumBlocksX = InSizeX / GPixelFormats[InFormat].BlockSizeX;
 	int32 NumBlocksY = InSizeY / GPixelFormats[InFormat].BlockSizeY;
-	FTexture2DMipMap* Mip = new(NewTexture->PlatformData->Mips) FTexture2DMipMap();
+	FTexture2DMipMap* Mip = new FTexture2DMipMap();
+	NewTexture->PlatformData->Mips.Add(Mip);
 	Mip->SizeX = InSizeX;
 	Mip->SizeY = InSizeY;
 	Mip->BulkData.Lock(LOCK_READ_WRITE);

@@ -6,7 +6,7 @@
 #include "UObject/ObjectMacros.h"
 #include "Engine/EngineTypes.h"
 #include "Factories/MaterialImportHelpers.h"
-#include "GLTFImportOptions.generated.h"
+#include "GLTFImportOptions_SKETCHFAB.generated.h"
 
 
 UENUM()
@@ -38,7 +38,7 @@ enum class EGLTFMeshImportType : uint8
 };
 
 UCLASS(config = EditorPerProjectUserSettings)
-class UGLTFImportOptions : public UObject
+class UGLTFImportOptions_SKETCHFAB : public UObject
 {
 	GENERATED_UCLASS_BODY()
 public:
@@ -70,13 +70,13 @@ public:
 };
 
 UCLASS(config = EditorPerProjectUserSettings)
-class UGLTFSceneImportOptions : public UGLTFImportOptions
+class UGLTFSceneImportOptions : public UGLTFImportOptions_SKETCHFAB
 {
 	GENERATED_UCLASS_BODY()
 public:
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
-	virtual bool CanEditChange(const UProperty* InProperty) const override;
+	virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
 public:
 	/** If checked, all actors generated will have a world space transform and will not have any attachment hierarchy */

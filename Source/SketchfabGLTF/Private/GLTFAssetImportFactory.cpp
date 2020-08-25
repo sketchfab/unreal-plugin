@@ -5,7 +5,7 @@
 #include "IGLTFImporterModule.h"
 #include "ActorFactories/ActorFactoryStaticMesh.h"
 #include "ProfilingDebugging/ScopedTimers.h"
-#include "GLTFImportOptions.h"
+#include "GLTFImportOptions_SKETCHFAB.h"
 #include "Engine/StaticMesh.h"
 #include "Misc/Paths.h"
 #include "JsonObjectConverter.h"
@@ -24,7 +24,7 @@ UGLTFAssetImportFactory::UGLTFAssetImportFactory(const FObjectInitializer& Objec
 	bEditAfterNew = true;
 	SupportedClass = UStaticMesh::StaticClass();
 
-	ImportOptions = ObjectInitializer.CreateDefaultSubobject<UGLTFImportOptions>(this, TEXT("GLTFImportOptions"));
+	ImportOptions = ObjectInitializer.CreateDefaultSubobject<UGLTFImportOptions_SKETCHFAB>(this, TEXT("GLTFImportOptions"));
 
 	bEditorImport = true;
 	bText = false;

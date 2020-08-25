@@ -56,12 +56,12 @@ public:
 
 	bool operator>(const FSketchfabAssetData& Other) const
 	{
-		return ModelUID > Other.ModelUID;
+		return (Other.ModelUID).LexicalLess(ModelUID);
 	}
 
 	bool operator<(const FSketchfabAssetData& Other) const
 	{
-		return ModelUID < Other.ModelUID;
+		return ModelUID.LexicalLess(Other.ModelUID);
 	}
 
 	/** Checks to see if this AssetData refers to an asset or is NULL */

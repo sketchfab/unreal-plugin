@@ -506,10 +506,10 @@ void SSketchfabAssetView::SetLicence(const FString& ModelUID, const FString &Lic
 	}
 	else
 	{
-		LicenceDataInfo data;
-		data.LicenceType = LicenceType;
-		data.LicenceInfo = LicenceInfo;
-		LicenceData.Add(ModelUID, data);
+		LicenceDataInfo data2;
+		data2.LicenceType = LicenceType;
+		data2.LicenceInfo = LicenceInfo;
+		LicenceData.Add(ModelUID, data2);
 	}
 }
 

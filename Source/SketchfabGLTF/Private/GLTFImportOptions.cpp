@@ -1,9 +1,9 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#include "GLTFImportOptions.h"
+#include "GLTFImportOptions_SKETCHFAB.h"
 #include "UObject/UnrealType.h"
 
-UGLTFImportOptions::UGLTFImportOptions(const FObjectInitializer& ObjectInitializer)
+UGLTFImportOptions_SKETCHFAB::UGLTFImportOptions_SKETCHFAB(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	MeshImportType = EGLTFMeshImportType::StaticMesh;
@@ -11,7 +11,7 @@ UGLTFImportOptions::UGLTFImportOptions(const FObjectInitializer& ObjectInitializ
 	bImportMaterials = true;
 }
 
-void UGLTFImportOptions::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+void UGLTFImportOptions_SKETCHFAB::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
@@ -37,16 +37,16 @@ void UGLTFSceneImportOptions::PostEditChangeProperty(struct FPropertyChangedEven
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 
-bool UGLTFSceneImportOptions::CanEditChange(const UProperty* InProperty) const
+bool UGLTFSceneImportOptions::CanEditChange(const FProperty* InProperty) const
 {
 	bool bCanEdit = Super::CanEditChange(InProperty);
 
 	FName PropertyName = InProperty ? InProperty->GetFName() : NAME_None;
 
-	if (GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, MeshImportType) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, bApplyWorldTransformToGeometry) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, bGenerateUniquePathPerMesh) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions, bImportMaterials) == PropertyName)
+	if (GET_MEMBER_NAME_CHECKED(UGLTFImportOptions_SKETCHFAB, MeshImportType) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions_SKETCHFAB, bApplyWorldTransformToGeometry) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions_SKETCHFAB, bGenerateUniquePathPerMesh) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions_SKETCHFAB, bImportMaterials) == PropertyName)
 	{
 		bCanEdit &= bImportMeshes;
 	}

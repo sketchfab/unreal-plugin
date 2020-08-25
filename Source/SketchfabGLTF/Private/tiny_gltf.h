@@ -1947,15 +1947,14 @@ static bool ParseNode(Node *node, std::string *err, const picojson::object &o) {
     for (; it != itEnd; it++) {
       if (it->first == "KHR_lights_cmn" &&
          (it->second).is<picojson::object>()) {
-        const picojson::object &values_object =
-          (it->second).get<picojson::object>();
+          const picojson::object& val_object = (it->second).get<picojson::object>();
 
-        picojson::object::const_iterator itVal(values_object.begin());
-        picojson::object::const_iterator itValEnd(values_object.end());
+        picojson::object::const_iterator itVal(val_object.begin());
+        picojson::object::const_iterator itValEnd(val_object.end());
 
         for (; itVal != itValEnd; itVal++) {
           Parameter param;
-          if (ParseParameterProperty(&param, err, values_object, itVal->first,
+          if (ParseParameterProperty(&param, err, val_object, itVal->first,
                 false)) {
             node->extLightsValues[itVal->first] = param;
           }
@@ -2780,8 +2779,8 @@ bool TinyGLTF::LoadFromString(Model *model, std::string *err, const char *str,
       // parse KHR_lights_cmn extension
       if (it->first == "KHR_lights_cmn" && it->second.is<picojson::object>()) {
         const picojson::object &object = it->second.get<picojson::object>();
-        picojson::object::const_iterator it(object.find("lights"));
-        picojson::object::const_iterator itEnd(object.end());
+        it = object.find("lights");
+        itEnd = object.end();
         if (it == itEnd)
           continue;
 
