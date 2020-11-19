@@ -85,5 +85,5 @@ private:
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_MODULE(FSketchfabAssetBrowserModule, AssetBrowser)
+IMPLEMENT_MODULE(FSketchfabAssetBrowserModule, SketchfabAssetBrowser);
 

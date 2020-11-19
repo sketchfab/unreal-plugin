@@ -39,5 +39,5 @@ private:
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_MODULE(FGLTFImporterModule, GLTFImporter)
+IMPLEMENT_MODULE(FGLTFImporterModule, SketchfabGLTF)
 
