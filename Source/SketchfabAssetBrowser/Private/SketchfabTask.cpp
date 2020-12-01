@@ -797,6 +797,10 @@ void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponse
 				{
 					TaskData.UserSession.UserPlan = ACCOUNT_ENTERPRISE;
 				}
+				else if(accountType.Compare("plus") == 0)
+				{
+					TaskData.UserSession.UserPlan = ACCOUNT_PLUS;
+				}
 				else
 				{
 					TaskData.UserSession.UserPlan = ACCOUNT_BASIC;

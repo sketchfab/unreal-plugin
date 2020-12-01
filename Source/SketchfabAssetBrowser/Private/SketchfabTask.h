@@ -70,6 +70,7 @@ struct FSketchfabCategory
 enum SketchfabAccountType
 {
 	ACCOUNT_BASIC,
+	ACCOUNT_PLUS,
 	ACCOUNT_PRO,
 	ACCOUNT_PREMIUM,
 	ACCOUNT_BUSINESS,

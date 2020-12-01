@@ -50,6 +50,7 @@ public:
 	FReply CheckLatestPluginVersion();
 	FReply GetLatestPluginVersion();
 	FReply OnUpgradeToPro();
+	FReply OnVisitStore();
 
 	//Search Box
 	FReply OnSearchPressed();
@@ -105,11 +106,21 @@ private:
 		FACECOUNT_UNDEFINED,
 	};
 
-	void setDefaultParams(bool myModels);
+	enum ESearchDomain {
+		SEARCHDOMAIN_Default,
+		SEARCHDOMAIN_Own,
+		SEARCHDOMAIN_Store,
+		SEARCHDOMAIN_UNDEFINED,
+	};
+
+	void setDefaultParams();
 	bool IsSearchMyModelsAvailable() const;
 	EVisibility ShouldDisplayUpgradeToPro() const;
 	ECheckBoxState IsSearchMyModelsChecked() const;
 	void OnSearchMyModelsCheckStateChanged(ECheckBoxState NewState);
+
+	EVisibility ShouldDisplayEmptyResults() const;
+	EVisibility ShouldDisplayVisitStore() const;
 
 	ECheckBoxState IsSearchAnimatedChecked() const;
 	void OnSearchAnimatedCheckStateChanged(ECheckBoxState NewState);
@@ -120,9 +131,18 @@ private:
 	EVisibility GetNewVersionButtonVisibility() const;
 	FText GetCurrentVersionText() const;
 
-	bool bSearchMyModels;
 	bool bSearchAnimated;
 	bool bSearchStaffPicked;
+
+	// Search domain
+	TSharedRef<SWidget> GenerateSearchDomainComboItem(TSharedPtr<FString> InItem);
+	void HandleSearchDomainComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
+	FText GetSearchDomainComboText() const;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> SearchDomainComboBox;
+	TArray<TSharedPtr<FString>> SearchDomainComboList;
+	int32 SearchDomainIndex;
+	FString CurrentSearchDomainString;
+	EVisibility ShouldDisplayFilters() const;
 
 	// Sort By
 	TSharedRef<SWidget> GenerateSortByComboItem(TSharedPtr<FString> InItem);
@@ -214,6 +234,8 @@ private:
 	FString CacheFolder;
 
 	FString NextURL;
+
+	int32 NResults;
 
 	FString LoggedInUserDisplayName;
 

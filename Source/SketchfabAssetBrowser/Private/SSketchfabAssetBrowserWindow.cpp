@@ -212,12 +212,35 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	CurrentPluginVersion = descriptor.VersionName;
 
 	Window = InArgs._WidgetWindow;
-	bSearchMyModels = false;
 	bSearchAnimated = false;
 	bSearchStaffPicked = true;
 
 	CategoryIndex = 0;
 	CurrentCategoryString = TEXT("All");
+
+	SearchDomainIndex = (int32)SEARCHDOMAIN_Default;
+	CurrentSearchDomainString = TEXT("All Site");
+	for (int32 i = 0; i < (int32)SEARCHDOMAIN_UNDEFINED; i++)
+	{
+		switch (i)
+		{
+		case SEARCHDOMAIN_Default:
+		{
+			SearchDomainComboList.Add(MakeShared<FString>(TEXT("All site")));
+		}
+		break;
+		case SEARCHDOMAIN_Own:
+		{
+			SearchDomainComboList.Add(MakeShared<FString>(TEXT("Own Models (PRO)")));
+		}
+		break;
+		case SEARCHDOMAIN_Store:
+		{
+			SearchDomainComboList.Add(MakeShared<FString>(TEXT("Store purchases")));
+		}
+		break;
+		}
+	}
 
 	SortByIndex = (int32)SORTBY_MostRecent;
 	CurrentSortByString = TEXT("Most Recent");
@@ -376,6 +399,22 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						.Justification(ETextJustify::Left)
 					]
 
+					// Search domain
+					+SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding(2.0f, 0.0f, 2.0f, 0.0f)
+					[
+						SAssignNew(SearchDomainComboBox, SComboBox<TSharedPtr<FString>>)
+						.OptionsSource(&SearchDomainComboList)
+						.OnGenerateWidget(this, &SSketchfabAssetBrowserWindow::GenerateSearchDomainComboItem)
+						.OnSelectionChanged(this, &SSketchfabAssetBrowserWindow::HandleSearchDomainComboChanged)
+						[
+							SNew(STextBlock)
+							.Text(this, &SSketchfabAssetBrowserWindow::GetSearchDomainComboText)
+						]
+					]
+
 					// Search
 					+SHorizontalBox::Slot()
 					.Padding(4, 1, 0, 0)
@@ -406,21 +445,6 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						//.IsEnabled(this, &SContentBrowser::IsSaveSearchButtonEnabled)
 						.ContentPadding( FMargin(1, 1) )
 					]
-
-					// My models checkbox
-					+SHorizontalBox::Slot()
-					.AutoWidth()
-					.Padding(12.0f, 0.0f, 4.0f, 0.0f)
-					[
-						SNew(SCheckBox)
-						.IsChecked(this, &SSketchfabAssetBrowserWindow::IsSearchMyModelsChecked)
-						.IsEnabled(this, &SSketchfabAssetBrowserWindow::IsSearchMyModelsAvailable)
-						.OnCheckStateChanged(this, &SSketchfabAssetBrowserWindow::OnSearchMyModelsCheckStateChanged)
-						[
-							SNew(STextBlock)
-							.Text(this, &SSketchfabAssetBrowserWindow::GetMyModelText)
-						]
-					]
 				]
 			]
 		]
@@ -432,6 +456,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			SNew(SBorder)
 			.Padding(FMargin(3))
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			.Visibility(this, &SSketchfabAssetBrowserWindow::ShouldDisplayFilters)
 			[
 				SNew(SHorizontalBox)
 
@@ -630,11 +655,13 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			]
 		]
 
+		// UpgradeToPro
 		+ SVerticalBox::Slot()
 		.Padding(0, 2, 0, 2)
 		.AutoHeight()
 		[
 			SNew(SBorder)
+			.Visibility(this, &SSketchfabAssetBrowserWindow::ShouldDisplayUpgradeToPro)
 			.Padding(FMargin(3))
 			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 			[
@@ -652,17 +679,82 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 						SNew(STextBlock)
 						.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Light.ttf"), 16))
 						//.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.9f)) // send color and alpha R G B A
-						.Visibility(this, &SSketchfabAssetBrowserWindow::ShouldDisplayUpgradeToPro)
-						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_UpgradeProTxt", "Gain full API access to your personal library of 3D models"))
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_UpgradeProTxt", "Access your personal library of 3D models"))
 						.Justification(ETextJustify::Center)
 					]
 					+ SUniformGridPanel::Slot(0, 1)
 					.HAlign(HAlign_Center)
 					[
 					SNew(SButton)
-					.Visibility(this, &SSketchfabAssetBrowserWindow::ShouldDisplayUpgradeToPro)
 					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_UpgradeProBtn", "Upgrade to PRO"))
 					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnUpgradeToPro)
+					]
+				]
+			]
+		]
+
+		// No results found
+		+ SVerticalBox::Slot()
+		.Padding(0, 2, 0, 2)
+		.AutoHeight()
+		[
+			SNew(SBorder)
+			.Visibility(this, &SSketchfabAssetBrowserWindow::ShouldDisplayEmptyResults)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(STextBlock)
+						.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Light.ttf"), 16))
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_EmptyResultsTxt", "No results found"))
+						.Justification(ETextJustify::Center)
+					]
+				]
+			]
+		]
+
+		// No store purchases, visit the store
+		+ SVerticalBox::Slot()
+		.Padding(0, 2, 0, 2)
+		.AutoHeight()
+		[
+			SNew(SBorder)
+			.Visibility(this, &SSketchfabAssetBrowserWindow::ShouldDisplayVisitStore)
+			.Padding(FMargin(3))
+			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				//.Padding(2)
+				[
+
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(STextBlock)
+						.Font(FSlateFontInfo(FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Light.ttf"), 16))
+						//.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.9f)) // send color and alpha R G B A
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_VisitStoreTxt", "No results found in your purchases"))
+						.Justification(ETextJustify::Center)
+					]
+					+ SUniformGridPanel::Slot(0, 1)
+					.HAlign(HAlign_Center)
+					[
+					SNew(SButton)
+					.Text(LOCTEXT("SSketchfabAssetBrowserWindow_VisitStoreBtn", "Visit the Store"))
+					.OnClicked(this, &SSketchfabAssetBrowserWindow::OnVisitStore)
 					]
 				]
 			]
@@ -906,7 +998,27 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 {
 	AssetViewPtr->FlushThumbnails();
 
-	FString url = bSearchMyModels ? "https://api.sketchfab.com/v3/me/search?type=models&downloadable=true" : "https://api.sketchfab.com/v3/search?type=models&downloadable=true";
+	FString url = "https://api.sketchfab.com/v3";
+
+	// Adapt the base url according to the search domain
+	switch (SearchDomainIndex)
+	{
+		case SEARCHDOMAIN_Default:
+		{
+			url += "/search?type=models&downloadable=true";
+			break;
+		}
+		case SEARCHDOMAIN_Own:
+		{
+			url += "/me/search?type=models&downloadable=true";
+			break;
+		}
+		case SEARCHDOMAIN_Store:
+		{
+			url += "/me/models/purchases?";
+			break;
+		}
+	}
 
 	if (!QuerySearchText.IsEmpty())
 	{
@@ -1066,6 +1178,15 @@ FReply SSketchfabAssetBrowserWindow::OnUpgradeToPro()
 {
 	{
 		FString url = "https://sketchfab.com/plans?utm_source=unreal-plugin&utm_medium=plugin&utm_campaign=download-api-pro-cta";
+		FPlatformMisc::OsExecute(TEXT("open"), *url);
+		return FReply::Handled();
+	}
+}
+
+FReply SSketchfabAssetBrowserWindow::OnVisitStore()
+{
+	{
+		FString url = "https://sketchfab.com/store?utm_source=unreal-plugin&utm_medium=plugin&utm_campaign=store-cta";
 		FPlatformMisc::OsExecute(TEXT("open"), *url);
 		return FReply::Handled();
 	}
@@ -1310,17 +1431,27 @@ bool SSketchfabAssetBrowserWindow::IsSearchMyModelsAvailable() const
 
 EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayUpgradeToPro() const
 {
-	return bSearchMyModels && LoggedInUserName != "" && !IsLoggedUserPro ? EVisibility::Visible : EVisibility::Collapsed;
+	return (SearchDomainIndex == SEARCHDOMAIN_Own) && LoggedInUserName != "" && !IsLoggedUserPro ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
-ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchMyModelsChecked() const
+EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayFilters() const
 {
-	return bSearchMyModels ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+	return (SearchDomainIndex == SEARCHDOMAIN_Store) ? EVisibility::Collapsed : EVisibility::Visible;
 }
 
-void SSketchfabAssetBrowserWindow::setDefaultParams(bool myModels)
+EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayVisitStore() const
 {
-	bSearchStaffPicked = !myModels;
+	return (SearchDomainIndex == SEARCHDOMAIN_Store && NResults == 0) ? EVisibility::Visible : EVisibility::Collapsed;
+}
+
+EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayEmptyResults() const
+{
+	return (SearchDomainIndex != SEARCHDOMAIN_Store && NResults == 0) ? EVisibility::Visible : EVisibility::Collapsed;
+}
+
+void SSketchfabAssetBrowserWindow::setDefaultParams()
+{
+	bSearchStaffPicked = true;
 	bSearchAnimated = false;
 
 	// Restore Sort By
@@ -1334,13 +1465,6 @@ void SSketchfabAssetBrowserWindow::setDefaultParams(bool myModels)
 	// Restore Face Count
 	CurrentFaceCountString = *FaceCountComboList[0].Get();
 	FaceCountIndex = (int32)FACECOUNT_ALL;
-}
-
-void SSketchfabAssetBrowserWindow::OnSearchMyModelsCheckStateChanged(ECheckBoxState NewState)
-{
-	bSearchMyModels = (NewState == ECheckBoxState::Checked);
-	setDefaultParams(bSearchMyModels);
-	OnSearchPressed();
 }
 
 ECheckBoxState SSketchfabAssetBrowserWindow::IsSearchAnimatedChecked() const
@@ -1388,6 +1512,31 @@ void SSketchfabAssetBrowserWindow::ShowModelWindow(const FSketchfabAssetData& As
 	GetModelInfo(AssetData.ModelUID.ToString());
 }
 
+// Search domain
+TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateSearchDomainComboItem(TSharedPtr<FString> InItem)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(*InItem))
+		.Margin(FMargin(4, 2));
+}
+
+void SSketchfabAssetBrowserWindow::HandleSearchDomainComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
+{
+	for (int32 i = 0; i < SearchDomainComboList.Num(); i++)
+	{
+		if (Item == SearchDomainComboList[i])
+		{
+			CurrentSearchDomainString = *Item.Get();
+			SearchDomainIndex = i;
+			OnSearchPressed();
+		}
+	}
+}
+
+FText SSketchfabAssetBrowserWindow::GetSearchDomainComboText() const
+{
+	return FText::FromString(CurrentSearchDomainString);
+}
 
 // Category
 TSharedRef<SWidget> SSketchfabAssetBrowserWindow::GenerateCategoryComboItem(TSharedPtr<FString> InItem)
@@ -1594,6 +1743,11 @@ void SSketchfabAssetBrowserWindow::OnUserData(const FSketchfabTask& InTask)
 		LoggedInUserAccountType = "(ENT)";
 		IsLoggedUserPro = true;
 	}
+	else if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_PLUS)
+	{
+		LoggedInUserAccountType = "(PLUS)";
+		IsLoggedUserPro = false;
+	}
 	else
 	{
 		LoggedInUserAccountType = "(FREE)";
@@ -1646,6 +1800,7 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 	AssetViewPtr->NeedRefresh();
 
 	NextURL = InTask.TaskData.NextURL;
+	NResults = InTask.SearchData.Num();
 }
 
 void SSketchfabAssetBrowserWindow::OnModelLink(const FSketchfabTask& InTask)
