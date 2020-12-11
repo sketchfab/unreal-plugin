@@ -48,6 +48,7 @@ namespace UnrealBuildTool.Rules
                     "JsonUtilities",
                     "WebBrowser",
                     "XmlParser",
+                    "DeveloperSettings",
                     "ImageWrapper",
                     "Projects"  // Support IPluginManager
  					// ... add other public dependencies that you statically link with here ...

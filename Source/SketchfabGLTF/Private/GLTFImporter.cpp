@@ -231,7 +231,7 @@ UObject* UGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const TA
 			// Once we've already imported it we dont need to import it again
 			if (!ImportContext.PathToImportAssetMap.Contains(NewPackageName))
 			{
-				UPackage* Package = CreatePackage(nullptr, *NewPackageName);
+				UPackage* Package = CreatePackage(*NewPackageName);
 
 				Package->FullyLoad();
 
@@ -424,7 +424,7 @@ UTexture* UGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tinygl
 		FString FinalPackageName;
 		AssetToolsModule.Get().CreateUniqueAssetName(BasePackageName, Suffix, FinalPackageName, TextureName);
 
-		TexturePackage = CreatePackage(NULL, *FinalPackageName);
+		TexturePackage = CreatePackage(*FinalPackageName);
 	}
 	else
 	{
@@ -533,7 +533,7 @@ void UGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, tiny
 	FString OutAssetName;
 	AssetToolsModule.Get().CreateUniqueAssetName(BasePackageName, Suffix, FinalPackageName, OutAssetName);
 
-	UPackage* Package = CreatePackage(NULL, *FinalPackageName);
+	UPackage* Package = CreatePackage(*FinalPackageName);
 
 	// create an unreal material asset
 	auto MaterialFactory = NewObject<UMaterialFactoryNew>();

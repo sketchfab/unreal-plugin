@@ -39,7 +39,8 @@ namespace UnrealBuildTool.Rules
                     "RHI",
                     "MessageLog",
                     "JsonUtilities",
-                    "ZipUtility" //https://github.com/GameLogicDesign/ZipUtility-ue4
+					"DeveloperSettings",
+					"ZipUtility" //https://github.com/GameLogicDesign/ZipUtility-ue4
 					// ... add other public dependencies that you statically link with here ...
 				}
 				);

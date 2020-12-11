@@ -42,7 +42,7 @@ FSketchfabTask::~FSketchfabTask()
 {
 	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, Warning, TEXT("Destroying Task With Model Id %s"), *TaskData.ModelUID);
 
-	TArray<TSharedPtr<IHttpRequest>> OutPendingRequests;
+	TArray<TSharedPtr<IHttpRequest, ESPMode::ThreadSafe>> OutPendingRequests;
 	if (PendingRequests.GetKeys(OutPendingRequests) > 0)
 	{
 		for (int32 ItemIndex = 0; ItemIndex < OutPendingRequests.Num(); ++ItemIndex)
@@ -119,7 +119,7 @@ bool FSketchfabTask::IsFinished() const
 
 // ~ HTTP Request method to communicate with Sketchfab REST Interface
 
-void FSketchfabTask::AddAuthorization(TSharedRef<IHttpRequest> Request)
+void FSketchfabTask::AddAuthorization(TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request)
 {
 	if (!TaskData.Token.IsEmpty())
 	{
@@ -132,7 +132,7 @@ void FSketchfabTask::AddAuthorization(TSharedRef<IHttpRequest> Request)
 /*Http call*/
 void FSketchfabTask::CheckLatestPluginVersion()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 	request->SetURL("https://api.github.com/repos/sketchfab/Sketchfab-Unreal/releases");
 	request->SetVerb(TEXT("GET"));
 	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
@@ -155,7 +155,7 @@ void FSketchfabTask::CheckLatestPluginVersion()
 }
 void FSketchfabTask::Search()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 
 	FString url = TaskData.ModelSearchURL;
 
@@ -397,7 +397,7 @@ void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr R
 
 void FSketchfabTask::GetThumbnail()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 
 	AddAuthorization(request);
 
@@ -496,7 +496,7 @@ void FSketchfabTask::GetThumbnail_Response(FHttpRequestPtr Request, FHttpRespons
 
 void FSketchfabTask::GetModelLink()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 
 	AddAuthorization(request);
 
@@ -591,7 +591,7 @@ void FSketchfabTask::GetModelLink_Response(FHttpRequestPtr Request, FHttpRespons
 
 void FSketchfabTask::DownloadModel()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 
 	request->SetURL(TaskData.ModelURL);
 	request->SetVerb(TEXT("GET"));
@@ -708,7 +708,7 @@ void FSketchfabTask::DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 By
 
 void FSketchfabTask::GetUserData()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 
 	AddAuthorization(request);
 
@@ -850,7 +850,7 @@ void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponse
 
 void FSketchfabTask::GetUserThumbnail()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 
 	AddAuthorization(request);
 
@@ -949,7 +949,7 @@ void FSketchfabTask::GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpRes
 
 void FSketchfabTask::GetCategories()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 
 	AddAuthorization(request);
 
@@ -1057,7 +1057,7 @@ void FSketchfabTask::GetCategories_Response(FHttpRequestPtr Request, FHttpRespon
 
 void FSketchfabTask::GetModelInfo()
 {
-	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> request = FHttpModule::Get().CreateRequest();
 
 	FString url = "https://api.sketchfab.com/v3/models/";
 	url += TaskData.ModelUID;

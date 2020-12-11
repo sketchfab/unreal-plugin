@@ -241,7 +241,7 @@ public:
 	void GetModelInfo();
 
 	//
-	void AddAuthorization(TSharedRef<IHttpRequest> Request);
+	void AddAuthorization(TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request);
 	void DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 BytesSent, int32 BytesReceived);
 
 	//~Being Response methods
@@ -295,5 +295,5 @@ private:
 	//~ Delegates End
 
 	/** Map that stores pending request. They need to be cleaned up when destroying the instance. Especially if job has completed*/
-	TMap<TSharedPtr<IHttpRequest>, FString> PendingRequests;
+	TMap<TSharedPtr<IHttpRequest, ESPMode::ThreadSafe>, FString> PendingRequests;
 };
