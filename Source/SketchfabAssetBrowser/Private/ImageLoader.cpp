@@ -2,9 +2,10 @@
 #include "RenderUtils.h"
 #include "Engine/Texture2D.h"
 
-#include "ModuleManager.h"
-#include "Async.h"
-#include "FileHelper.h"
+#include "Modules/ModuleManager.h"
+#include "Async/Async.h"
+#include "Async/Future.h"
+#include "Misc/FileHelper.h"
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
 

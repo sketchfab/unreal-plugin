@@ -1,13 +1,13 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "SketchfabAssetBrowserPrivatePCH.h"
-#include "Paths.h"
+#include "Misc/Paths.h"
 #include "UObject/ObjectMacros.h"
-#include "GCObject.h"
+#include "UObject/GCObject.h"
 #include "SketchfabAssetBrowser.h"
-#include "ISettingsModule.h"
+#include "Developer/Settings/Public/ISettingsModule.h"
 
-#include "Engine.h"
+#include "Engine/Engine.h"
 #include "LevelEditor.h"
 #include "SketchfabRESTClient.h"
 

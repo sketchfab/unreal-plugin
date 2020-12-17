@@ -3,7 +3,7 @@
 #include "ZipFileFunctionInternalCallback.h"
 #include "ListCallback.h"
 #include "ProgressCallback.h"
-#include "IPluginManager.h"
+#include "Interfaces/IPluginManager.h"
 #include "ZULambdaDelegate.h"
 
 #include "7zpp.h"

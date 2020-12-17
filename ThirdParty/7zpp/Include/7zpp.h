@@ -3,9 +3,9 @@
 #include "ListCallback.h"
 #include "ProgressCallback.h"
 
-#include "PreWindowsApi.h"
-#include "AllowWindowsPlatformTypes.h"
-#include "AllowWindowsPlatformAtomics.h"
+#include "Windows/PreWindowsApi.h"
+#include "Windows/AllowWindowsPlatformTypes.h"
+#include "Windows/AllowWindowsPlatformAtomics.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4191)
@@ -36,9 +36,9 @@
 #include "SevenZipExtractor.h"
 #include "SevenZipLister.h"
 
-#include "HideWindowsPlatformAtomics.h"
-#include "HideWindowsPlatformTypes.h"
-#include "PostWindowsApi.h"
+#include "Windows/HideWindowsPlatformAtomics.h"
+#include "Windows/HideWindowsPlatformTypes.h"
+#include "Windows/PostWindowsApi.h"
 #pragma warning(pop)
 
 // Version of this library

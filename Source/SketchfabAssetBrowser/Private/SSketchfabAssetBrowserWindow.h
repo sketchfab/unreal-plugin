@@ -10,7 +10,7 @@
 #include "SSketchfabAssetSearchBox.h"
 #include "SSketchfabAssetWindow.h"
 #include "SOAuthWebBrowser.h"
-#include "SComboBox.h"
+#include "Widgets/Input/SComboBox.h"
 #include "ContentBrowserModule.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowserWindow, Log, All);

@@ -1,8 +1,8 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "SSketchfabAssetWindow.h"
-#include "ScopedSlowTask.h"
-#include "SUniformGridPanel.h"
+#include "Misc/ScopedSlowTask.h"
+#include "Widgets/Layout/SUniformGridPanel.h"
 #include "PropertyEditorModule.h"
 #include "IDetailsView.h"
 #include "Editor/MainFrame/Public/Interfaces/IMainFrameModule.h"
@@ -11,18 +11,18 @@
 #include "IMessageLogListing.h"
 #include "PackageTools.h"
 #include "Engine/StaticMesh.h"
-#include "SBox.h"
-#include "SButton.h"
-#include "SlateApplication.h"
-#include "FileManager.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Input/SButton.h"
+#include "Framework/Application/SlateApplication.h"
+#include "HAL/FileManager.h"
 
 #include "Misc/FileHelper.h"
 
-#include "SSplitter.h"
-#include "SComboButton.h"
-#include "MultiBoxBuilder.h"
+#include "Widgets/Layout/SSplitter.h"
+#include "Widgets/Input/SComboButton.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "SketchfabRESTClient.h"
-#include "SScaleBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetWindow"
 

@@ -1,7 +1,7 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "GLTFImportOptions.h"
-#include "UnrealType.h"
+#include "UObject/UnrealType.h"
 
 UGLTFImportOptions::UGLTFImportOptions(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

@@ -1,9 +1,9 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "GLTFImporter.h"
-#include "ScopedSlowTask.h"
+#include "Misc/ScopedSlowTask.h"
 #include "AssetSelection.h"
-#include "SUniformGridPanel.h"
+#include "Widgets/Layout/SUniformGridPanel.h"
 #include "PropertyEditorModule.h"
 #include "IDetailsView.h"
 #include "Editor/MainFrame/Public/Interfaces/IMainFrameModule.h"
@@ -15,10 +15,10 @@
 #include "GLTFConversionUtils.h"
 #include "StaticMeshImporter.h"
 #include "Engine/StaticMesh.h"
-#include "SBox.h"
-#include "SButton.h"
-#include "SlateApplication.h"
-#include "FileManager.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Input/SButton.h"
+#include "Framework/Application/SlateApplication.h"
+#include "HAL/FileManager.h"
 #include "GLTFImporterProjectSettings.h"
 
 #include "Misc/FileHelper.h"

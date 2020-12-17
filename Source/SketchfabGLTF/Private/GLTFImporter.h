@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GLTFImportOptions.h"
-#include "TokenizedMessage.h"
+#include "Logging/TokenizedMessage.h"
 #include "GLTFPrimResolver.h"
 #include "Materials/MaterialExpressionTextureSample.h"
 

@@ -1,9 +1,9 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "GLTFImporterPrivatePCH.h"
-#include "Paths.h"
+#include "Misc/Paths.h"
 #include "UObject/ObjectMacros.h"
-#include "GCObject.h"
+#include "UObject/GCObject.h"
 #include "GLTFImporter.h"
 #include "ISettingsModule.h"
 

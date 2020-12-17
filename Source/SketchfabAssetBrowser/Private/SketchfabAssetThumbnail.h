@@ -9,7 +9,7 @@
 #include "Rendering/RenderingCommon.h"
 #include "Widgets/SWidget.h"
 #include "TickableEditorObject.h"
-#include "DeferredCleanupSlateBrush.h"
+#include "Slate/DeferredCleanupSlateBrush.h"
 
 class AActor;
 class FSketchfabAssetThumbnailPool;

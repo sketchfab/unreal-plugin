@@ -7,8 +7,8 @@
 #include "MeshUtilities.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/Material.h"
-#include "PackageName.h"
-#include "Package.h"
+#include "Misc/PackageName.h"
+#include "UObject/Package.h"
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
 

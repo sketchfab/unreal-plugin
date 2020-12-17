@@ -1,9 +1,9 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "SketchfabAssetBrowser.h"
-#include "ModuleManager.h"
+#include "Modules/ModuleManager.h"
 #include "Editor/MainFrame/Public/Interfaces/IMainFrameModule.h"
-#include "SlateApplication.h"
+#include "Framework/Application/SlateApplication.h"
 #include "SSketchfabAssetBrowserWindow.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"

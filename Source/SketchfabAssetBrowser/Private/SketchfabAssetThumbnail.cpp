@@ -31,8 +31,8 @@
 #include "ClassIconFinder.h"
 #include "IVREditorModule.h"
 #include "ImageLoader.h"
-#include "SlateDynamicImageBrush.h"
-#include "SScaleBox.h"
+#include "Brushes/SlateDynamicImageBrush.h"
+#include "Widgets/Layout/SScaleBox.h"
 
 class SSketchfabAssetThumbnail : public SCompoundWidget
 {

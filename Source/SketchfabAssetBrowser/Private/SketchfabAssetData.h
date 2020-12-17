@@ -11,7 +11,7 @@
 #include "UObject/ObjectRedirector.h"
 #include "Misc/PackageName.h"
 #include "UObject/LinkerLoad.h"
-#include "PrimaryAssetId.h"
+#include "UObject/PrimaryAssetId.h"
 
 #include "SketchfabAssetData.generated.h"
 

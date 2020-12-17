@@ -3,7 +3,7 @@
 
 #include <exception>
 #include "SevenString.h"
-#include "AllowWindowsPlatformTypes.h"
+#include "Windows/AllowWindowsPlatformTypes.h"
 
 namespace SevenZip
 {
@@ -27,4 +27,4 @@ namespace SevenZip
 	};
 }
 
-#include "HideWindowsPlatformTypes.h"
+#include "Windows/HideWindowsPlatformTypes.h"

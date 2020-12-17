@@ -18,9 +18,9 @@
 #include "Widgets/Views/STableViewBase.h"
 #include "Widgets/Views/STableRow.h"
 #include "Widgets/Views/STileView.h"
-#include "SInlineEditableTextBlock.h"
-#include "SlateStyle.h"
-#include "SlateStyleRegistry.h"
+#include "Widgets/Text/SInlineEditableTextBlock.h"
+#include "Styling/SlateStyle.h"
+#include "Styling/SlateStyleRegistry.h"
 #include "SketchfabTask.h"
 #include "Editor/EditorStyle/Public/EditorStyleSet.h"
 

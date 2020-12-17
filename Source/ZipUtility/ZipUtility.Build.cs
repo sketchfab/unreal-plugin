@@ -16,7 +16,7 @@ public class ZipUtility : ModuleRules
 
 	private string ATLPath
 	{
-		get { return "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.12.25827/atlmfc"; }
+		get { return "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.26.28801/atlmfc"; }
 	}
 
 	public ZipUtility(ReadOnlyTargetRules Target) : base(Target)
@@ -86,10 +86,9 @@ public class ZipUtility : ModuleRules
 
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, PlatformSubPath, "atls.lib"));
             PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, PlatformSubPath, "7zpp_u.lib"));
-            PublicLibraryPaths.Add(Path.Combine(LibrariesPath, PlatformSubPath));
 
             PublicDelayLoadDLLs.Add("7z.dll");
-            RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(DLLPath, PlatformSubPath, "7z.dll")));
+            RuntimeDependencies.Add(Path.Combine(DLLPath, PlatformSubPath, "7z.dll"));
         }
 
         if (isLibrarySupported)

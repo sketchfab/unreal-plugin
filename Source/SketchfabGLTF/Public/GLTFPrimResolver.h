@@ -3,7 +3,7 @@
 #pragma once
 
 #include "UObject/Object.h"
-#include "SubclassOf.h"
+#include "Templates/SubclassOf.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "tiny_gltf.h"

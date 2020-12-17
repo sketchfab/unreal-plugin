@@ -4,7 +4,7 @@
 #include "GLTFImporter.h"
 #include "GLTFConversionUtils.h"
 #include "AssetData.h"
-#include "ModuleManager.h"
+#include "Modules/ModuleManager.h"
 #include "AssetRegistryModule.h"
 #include "AssetSelection.h"
 #include "IGLTFImporterModule.h"
