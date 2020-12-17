@@ -10,3 +10,4 @@ Binaries/Win64/UE4Editor-SketchfabAssetBrowser-Win64-DebugGame.dll
 Binaries/Win64/UE4Editor-SketchfabGLTF-Win64-DebugGame.dll
 Binaries/Win64/UE4Editor-WindowsFileUtility-Win64-DebugGame.dll
 Binaries/Win64/UE4Editor-ZipUtility-Win64-DebugGame.dll
+releases/*
