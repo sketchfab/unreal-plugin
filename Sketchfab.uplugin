@@ -1,7 +1,7 @@
 {
 	"FileVersion" : 3,
 	"Version" : 4,
-	"VersionName" : "1.2.0",
+	"VersionName" : "1.3.0",
 	"FriendlyName" : "Sketchfab",
 	"Description" : "GLTF Importer and Sketchfab Asset Store Browser",
 	"Category" : "Importers",
