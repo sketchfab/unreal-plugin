@@ -1,18 +1,16 @@
 # Sketchfab plugin for Unreal Engine
 
-*Unreal plugin, based on [Sketchfab download API](https://sketchfab.com/developers/download-api), to browse and import models from Sketchfab*
+*Unreal plugin for Windows to browse and import models from Sketchfab.*
+
+*Please note that a Sketchfab account is required to download models, and that animation import is not yet supported.*
 
 Supported versions:
 
-* [Release for 4.26](https://github.com/sketchfab/unreal-plugin/releases/tag/4.26-1.2.0)
-* [Release for 4.25](https://github.com/sketchfab/unreal-plugin/releases/tag/4.25-1.2.0)
+* [Release for 4.26](https://github.com/sketchfab/unreal-plugin/releases/tag/4.26-1.3.0)
+* [Release for 4.25](https://github.com/sketchfab/unreal-plugin/releases/tag/4.25-1.3.0)
 * [Release for 4.21](https://github.com/sketchfab/unreal-plugin/releases/tag/4.21-1.1.1)
 * [Release for 4.20](https://github.com/sketchfab/unreal-plugin/releases/tag/4.20-1.1.1)
 * [Release for 4.19](https://github.com/sketchfab/unreal-plugin/releases/tag/4.19-1.1.1)
-
-**A Sketchfab account is required to be able to download content from Sketchfab**
-
-⚠️ **This plugin is only available for Windows** ⚠️ 
 
 ### Installation
 
