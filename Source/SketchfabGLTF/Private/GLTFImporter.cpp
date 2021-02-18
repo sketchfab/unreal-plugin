@@ -655,7 +655,7 @@ void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& Mater
 	{
 		TArray<FExpressionOutput> Outputs = MultiplyExpression->B.Expression->GetOutputs();
 		FExpressionOutput* Output = nullptr;
-		if (Outputs.Num() == 5)
+		if ( (Outputs.Num() == 5) || (Outputs.Num() == 6) )
 		{
 			switch (colorChannel)
 			{
@@ -704,7 +704,7 @@ UMaterialExpressionOneMinus* CreateOneMinusExpression(UMaterial* UnrealMaterial,
 
 	TArray<FExpressionOutput> Outputs = UnrealTextureExpression->GetOutputs();
 	FExpressionOutput* Output = nullptr;
-	if (Outputs.Num() == 5)
+	if ((Outputs.Num() == 5) || (Outputs.Num() == 6))
 	{
 		switch (colorChannel)
 		{
@@ -747,7 +747,7 @@ void UGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel 
 		TArray<FExpressionOutput> Outputs = MaterialInput.Expression->GetOutputs();
 		FExpressionOutput* Output = nullptr;
 
-		if (Outputs.Num() == 5)
+		if ((Outputs.Num() == 5) || (Outputs.Num() == 6))
 		{
 			switch (colorChannel)
 			{
@@ -831,6 +831,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	PBRTYPE pbrType = PBRTYPE_Undefined;
 
 	UMaterialExpressionVectorParameter *baseColorFactor = nullptr;
+	UMaterialExpressionScalarParameter* baseColorOpacityFactor = nullptr;
 	UMaterialExpressionScalarParameter *metallicFactor = nullptr;
 	UMaterialExpressionScalarParameter *roughnessFactor = nullptr;
 	UMaterialExpressionVectorParameter *emissiveFactor = nullptr;
@@ -886,22 +887,23 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			tinygltf::Parameter &param = baseColorProp->second;
 			if (param.number_array.size() == 4)
 			{
-				//If there is no baseColorTexture then we just use this alpha part of the baseColorFactor and hook it up directly to the material
-				const auto &baseColorTextureProp = map->find("baseColorTexture");
-				if (baseColorTextureProp == map->end())
+				baseColorOpacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (baseColorOpacityFactor)
 				{
-					UMaterialExpressionScalarParameter *opacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-					if (opacityFactor)
+					if (baseColorOpacityFactor->CanRenameNode())
 					{
-						if (opacityFactor->CanRenameNode())
-						{
-							opacityFactor->SetEditableName(GLTFToUnreal::ConvertString("opacityFactor"));
-						}
+						baseColorOpacityFactor->SetEditableName(GLTFToUnreal::ConvertString("baseColorOpacityFactor"));
+					}
 
-						UnrealMaterial->Expressions.Add(opacityFactor);
-						opacityFactor->DefaultValue = param.number_array[3];
-						MaterialInput.Expression = opacityFactor;
-						AttachOutputs(MaterialInput, ColorChannel_All);
+					UnrealMaterial->Expressions.Add(baseColorOpacityFactor);
+					baseColorOpacityFactor->DefaultValue = param.number_array[3];
+
+					//If there is no baseColorTexture then we just use this value by itself and hook it up directly to the material
+					const auto& baseColorTextureProp = map->find("baseColorTexture");
+					if (baseColorTextureProp == map->end())
+					{
+						MaterialInput.Expression = baseColorOpacityFactor;
+						AttachOutputs(MaterialInput, ColorChannel_Alpha);
 						return true;
 					}
 				}
@@ -954,22 +956,23 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 			tinygltf::Parameter &param = diffuseProp->second;
 			if (param.number_array.size() == 4)
 			{
-				//If there is no diffuseTexture then we just use this color by itself and hook it up directly to the material
-				const auto &diffuseTextureProp = map->find("diffuseTexture");
-				if (diffuseTextureProp == map->end())
+				baseColorOpacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (baseColorOpacityFactor)
 				{
-					UMaterialExpressionScalarParameter *opacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-					if (opacityFactor)
+					if (baseColorOpacityFactor->CanRenameNode())
 					{
-						if (opacityFactor->CanRenameNode())
-						{
-							opacityFactor->SetEditableName(GLTFToUnreal::ConvertString("opacityFactor"));
-						}
+						baseColorOpacityFactor->SetEditableName(GLTFToUnreal::ConvertString("baseColorOpacityFactor"));
+					}
 
-						UnrealMaterial->Expressions.Add(opacityFactor);
-						opacityFactor->DefaultValue = param.number_array[3];
-						MaterialInput.Expression = opacityFactor;
-						AttachOutputs(MaterialInput, ColorChannel_All);
+					UnrealMaterial->Expressions.Add(baseColorOpacityFactor);
+					baseColorOpacityFactor->DefaultValue = param.number_array[3];
+
+					//If there is no diffuseTexture then we just use this value by itself and hook it up directly to the material
+					const auto& baseColorTextureProp = map->find("diffuseTexture");
+					if (baseColorTextureProp == map->end())
+					{
+						MaterialInput.Expression = baseColorOpacityFactor;
+						AttachOutputs(MaterialInput, ColorChannel_Alpha);
 						return true;
 					}
 				}
@@ -1313,8 +1316,9 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					{
 						MaterialInput.Expression = OneMinus;
 					}
+					break;
 				}
-				break;
+				case PBRTYPE_Opacity: CreateMultiplyExpression(UnrealMaterial, MaterialInput, baseColorOpacityFactor, UnrealTextureExpression, ColorChannel_Alpha); break;
 				default: break;
 				}
 
