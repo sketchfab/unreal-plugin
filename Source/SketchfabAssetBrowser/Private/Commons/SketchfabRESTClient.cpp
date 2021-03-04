@@ -153,6 +153,14 @@ void FSketchfabRESTClient::UpdateTaskStates()
 		case SRS_GETMODELINFO_DONE:
 			TasksMarkedForRemoval.Add(SketchfabTask);
 			break;
+		case SRS_UPLOADMODEL:
+			SketchfabTask->UploadModel();
+			break;
+		case SRS_UPLOADMODEL_PROCESSING:
+			break;
+		case SRS_UPLOADMODEL_DONE:
+			TasksMarkedForRemoval.Add(SketchfabTask);
+			break;
 		}
 	}
 

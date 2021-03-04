@@ -7,6 +7,9 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include <Misc/EngineVersion.h>
+
+#include "Misc/FileHelper.h"
+
 #define HOSTNAME "http://127.0.0.1"
 #define PORT ":55002"
 
@@ -22,6 +25,7 @@ bool IsCompleteState(SketchfabRESTState state)
 	case SRS_DOWNLOADMODEL_DONE:
 	case SRS_GETUSERDATA_DONE:
 	case SRS_GETUSERTHUMB_DONE:
+	case SRS_UPLOADMODEL_DONE:
 	case SRS_GETCATEGORIES_DONE:
 		return true;
 	}
@@ -60,6 +64,7 @@ FSketchfabTask::~FSketchfabTask()
 	OnModelDownloaded().Unbind();
 	OnModelDownloadProgress().Unbind();
 	OnUserData().Unbind();
+	OnModelUploaded().Unbind();
 	OnUserThumbnailDelegate.Unbind();
 	OnCategories().Unbind();
 	OnModelInfo().Unbind();
@@ -123,9 +128,13 @@ void FSketchfabTask::AddAuthorization(TSharedRef<IHttpRequest, ESPMode::ThreadSa
 {
 	if (!TaskData.Token.IsEmpty())
 	{
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Token is not empty"));
 		FString bearer = "Bearer ";
 		bearer += TaskData.Token;
 		Request->SetHeader("Authorization", bearer);
+	}
+	else {
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Token is empty"));
 	}
 }
 
@@ -1193,4 +1202,158 @@ FDateTime FSketchfabTask::GetPublishedAt(TSharedPtr<FJsonObject> JsonObject)
 		ret = FDateTime::Today();
 	}
 	return ret;
+}
+
+
+
+FString BoundaryBegin = "";
+FString BoundaryLabel = "";
+FString BoundaryEnd = "";
+FString RequestData = "";
+TArray<uint8> RequestBytes;
+
+TArray<uint8> FStringToUint8(const FString& InString)
+{
+	TArray<uint8> OutBytes;
+
+	// Handle empty strings
+	if (InString.Len() > 0)
+	{
+		FTCHARToUTF8 Converted(*InString); // Convert to UTF8
+		OutBytes.Append(reinterpret_cast<const uint8*>(Converted.Get()), Converted.Length());
+	}
+
+	return OutBytes;
+}
+
+
+void AddField(const FString& Name, const FString& Value)
+{
+	RequestData += FString(TEXT("\r\n"))
+		+ BoundaryBegin
+		+ FString(TEXT("Content-Disposition: form-data; name=\""))
+		+ Name
+		+ FString(TEXT("\"\r\n\r\n"))
+		+ Value;
+}
+void AddFile(const FString& Name, const FString& FileName, const FString& FilePath) {
+
+	TArray<uint8> UpFileRawData;
+	FFileHelper::LoadFileToArray(UpFileRawData, *FilePath);
+
+	RequestData += FString(TEXT("\r\n"))
+		+ BoundaryBegin
+		+ FString(TEXT("Content-Disposition: form-data; name=\""))
+		+ Name
+		+ FString(TEXT("\"; filename=\""))
+		+ FileName
+		+ FString(TEXT("\"\r\n\r\n"));
+
+	RequestBytes = FStringToUint8(RequestData);
+	RequestBytes.Append(UpFileRawData);
+}
+
+void FSketchfabTask::SetUploadRequestContent(TSharedRef<IHttpRequest> Request) {
+	// Set the multipart boundary properties
+	BoundaryLabel = FString(TEXT("e543322540af456f9a3773049ca02529-")) + FString::FromInt(FMath::Rand());
+	BoundaryBegin = FString(TEXT("--")) + BoundaryLabel + FString(TEXT("\r\n"));
+	BoundaryEnd = FString(TEXT("\r\n--")) + BoundaryLabel + FString(TEXT("--\r\n"));
+	// Name/Value fields
+	AddField(TEXT("name"), TaskData.ModelName);
+	AddField(TEXT("description"), TaskData.ModelDescription);
+	AddField(TEXT("tags"), TaskData.ModelTags);
+	AddField(TEXT("password"), TaskData.ModelPassword);
+	AddField(TEXT("isPublished"), TaskData.Draft ? TEXT("false") : TEXT("true"));
+	AddField(TEXT("isPrivate"), TaskData.Private ? TEXT("true") : TEXT("false"));
+	AddField(TEXT("source"), TEXT("unreal-exporter"));
+	// File
+	AddFile(TEXT("modelFile"), FPaths::GetCleanFilename(TaskData.FileToUpload), TaskData.FileToUpload);
+	// Boundary end
+	RequestBytes.Append(FStringToUint8(BoundaryEnd));
+
+	// Set the content of the request
+	Request->SetContent(RequestBytes);
+}
+
+//CombinedContent.Append(FStringToUint8(BoundaryEnd));
+
+void FSketchfabTask::UploadModel()
+{
+
+	TSharedRef<IHttpRequest> request = FHttpModule::Get().CreateRequest();
+
+	AddAuthorization(request);
+	SetUploadRequestContent(request);
+
+	request->SetURL("https://api.sketchfab.com/v3/models");
+	request->SetVerb("POST");
+	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
+	request->SetHeader("Content-Type", "multipart/form-data; boundary=" + BoundaryLabel);
+	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::UploadModel_Response);
+
+	
+
+	if (!request->ProcessRequest())
+	{
+		SetState(SRS_FAILED);
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Failed to process Request %s"), *request->GetURL());
+	}
+	else
+	{
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Request processed %s"), *request->GetURL());
+		DebugHttpRequestCounter.Increment();
+		PendingRequests.Add(request, request->GetURL());
+		SetState(SRS_UPLOADMODEL_PROCESSING);
+	}
+}
+
+void FSketchfabTask::UploadModel_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	DebugHttpRequestCounter.Decrement();
+
+	FString OutUrl = PendingRequests.FindRef(Request);
+
+	if (!OutUrl.IsEmpty())
+	{
+		PendingRequests.Remove(Request);
+	}
+
+	if (!Response.IsValid())
+	{
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Invalid response"));
+		return;
+	}
+
+	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+	{
+		if (this == nullptr)
+		{
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destroyed"));
+			SetState(SRS_FAILED);
+			return;
+		}
+
+		// Serialize the request response (uri and model uid)
+		TSharedPtr<FJsonObject> JsonObject;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+		if (FJsonSerializer::Deserialize(Reader, JsonObject))
+		{
+			TaskData.uid = JsonObject->GetStringField("uid");
+			TaskData.uri = JsonObject->GetStringField("uri");
+		}
+
+		if (!this->IsCompleted &&  OnModelUploaded().IsBound())
+		{
+			OnModelUploaded().Execute(*this);
+		}
+
+		SetState(SRS_UPLOADMODEL_DONE);
+	}
+	else
+	{
+		SetState(SRS_FAILED);
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Code: %d"), Response->GetResponseCode());
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Content: %s"), *(Response->GetContentAsString()));
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
+	}
 }

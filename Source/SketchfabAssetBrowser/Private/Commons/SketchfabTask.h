@@ -48,6 +48,9 @@ enum SketchfabRESTState
 	SRS_GETMODELINFO,
 	SRS_GETMODELINFO_PROCESSING,
 	SRS_GETMODELINFO_DONE,
+	SRS_UPLOADMODEL,
+	SRS_UPLOADMODEL_PROCESSING,
+	SRS_UPLOADMODEL_DONE,
 };
 
 bool IsCompleteState(SketchfabRESTState state);
@@ -182,6 +185,19 @@ struct FSketchfabTaskData
 	FString LicenceType;
 	FString LicenceInfo;
 
+	/** Upload info */
+	// Already has ModelName
+	FString ModelDescription;
+	FString ModelTags;
+	FString FileToUpload;
+	FString ModelPassword;
+	bool Draft;
+	bool Private;
+	bool BakeMaterials;
+	// Return value (to get uploaded model link)
+	FString uid;
+	FString uri;
+
 	FSketchfabTaskData()
 	{
 		ModelSize = 0;
@@ -226,6 +242,7 @@ public:
 	FSketchfabTaskDelegate& OnUserThumbnail() { return OnUserThumbnailDelegate; }
 	FSketchfabTaskDelegate& OnCategories() { return OnCategoriesDelegate; }
 	FSketchfabTaskDelegate& OnModelInfo() { return OnModelInfoDelegate; }
+	FSketchfabTaskDelegate& OnModelUploaded() { return OnModelUploadedDelegate; }
 
 	void EnableDebugLogging();
 
@@ -239,6 +256,8 @@ public:
 	void GetUserThumbnail();
 	void GetCategories();
 	void GetModelInfo();
+	void UploadModel();
+	void SetUploadRequestContent(TSharedRef<IHttpRequest> Request);
 
 	//
 	void AddAuthorization(TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request);
@@ -254,6 +273,7 @@ public:
 	void GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetCategories_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetModelInfo_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void UploadModel_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
 	//~End Rest methods
 
@@ -292,6 +312,7 @@ private:
 	FSketchfabTaskDelegate OnUserThumbnailDelegate;
 	FSketchfabTaskDelegate OnCategoriesDelegate;
 	FSketchfabTaskDelegate OnModelInfoDelegate;
+	FSketchfabTaskDelegate OnModelUploadedDelegate;
 	//~ Delegates End
 
 	/** Map that stores pending request. They need to be cleaned up when destroying the instance. Especially if job has completed*/
