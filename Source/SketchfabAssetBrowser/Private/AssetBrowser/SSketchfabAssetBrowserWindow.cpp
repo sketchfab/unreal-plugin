@@ -577,6 +577,8 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const 
 	TaskData.Token = Token;
 	TaskData.CacheFolder = CacheFolder;
 	TaskData.ModelUID = ModelUID;
+	uint64* size = ModelSizesMap.Find(ModelUID);
+	TaskData.ModelSize = *size;
 	TaskData.StateLock = new FCriticalSection();
 
 	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
@@ -1161,6 +1163,9 @@ void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
 
 		FString jpg = Data->ThumbnailUID + ".jpg";
 		FString FileName = Data->CacheFolder / jpg;
+
+		// Add the model size to a map in order to keep the reference for reference while download is in progress
+		ModelSizesMap.Add(Data->ModelUID, Data->ModelSize);
 
 		bool downloadThumbnail = ShouldDownloadFile(FileName, Data->ModelPublishedAt);
 		if (downloadThumbnail)

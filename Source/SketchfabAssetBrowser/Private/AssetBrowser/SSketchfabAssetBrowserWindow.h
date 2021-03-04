@@ -199,5 +199,6 @@ private:
 	int32 NResults;
 
 	TSet<FString> ModelsDownloading;
+	TMap<FString, uint64> ModelSizesMap;
 };
 
