@@ -8,10 +8,9 @@
 FGLTFJsonAsset::FGLTFJsonAsset()
 	: Version(TEXT("2.0"))
 {
-	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(GLTFEXPORTER_MODULE_NAME);
+	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("Sketchfab");
 	const FPluginDescriptor& PluginDescriptor = Plugin->GetDescriptor();
 
-	// TODO: add configuration option to include detailed engine and plugin version info?
-
-	Generator = TEXT(EPIC_PRODUCT_NAME) TEXT(" ") VERSION_STRINGIFY(ENGINE_MAJOR_VERSION) TEXT(" ") + PluginDescriptor.FriendlyName;
+	Generator = TEXT(EPIC_PRODUCT_NAME) TEXT(" ") VERSION_STRINGIFY(ENGINE_MAJOR_VERSION) TEXT(".") VERSION_STRINGIFY(ENGINE_MINOR_VERSION)
+		TEXT(" ") + PluginDescriptor.FriendlyName + TEXT(" ") + PluginDescriptor.VersionName;
 }

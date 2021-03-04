@@ -92,7 +92,7 @@ void FGLTFMessageBuilder::ShowMessages() const
 		FMessageLogModule& MessageLogModule = FModuleManager::LoadModuleChecked<FMessageLogModule>("MessageLog");
 		const TSharedRef<IMessageLogListing> LogListing = MessageLogModule.GetLogListing(GLTFEXPORTER_MODULE_NAME);
 
-		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(GLTFEXPORTER_MODULE_NAME);
+		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("Sketchfab");
 		const FPluginDescriptor& PluginDescriptor = Plugin->GetDescriptor();
 
 		LogListing->SetLabel(FText::FromString(PluginDescriptor.FriendlyName));

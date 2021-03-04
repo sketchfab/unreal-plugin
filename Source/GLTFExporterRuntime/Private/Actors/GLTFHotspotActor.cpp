@@ -83,33 +83,12 @@ AGLTFHotspotActor::AGLTFHotspotActor(const FObjectInitializer& ObjectInitializer
 	SphereComponent->OnEndCursorOver.AddDynamic(this, &AGLTFHotspotActor::EndCursorOver);
 	SphereComponent->OnClicked.AddDynamic(this, &AGLTFHotspotActor::Clicked);
 
-	struct FConstructorStatics
-	{
-		ConstructorHelpers::FObjectFinder<UMaterial> DefaultMaterial;
-		ConstructorHelpers::FObjectFinder<UMaterial> DefaultIconMaterial;
-		ConstructorHelpers::FObjectFinder<UTexture2D> DefaultImage;
-		ConstructorHelpers::FObjectFinder<UTexture2D> DefaultHoveredImage;
-		ConstructorHelpers::FObjectFinder<UTexture2D> DefaultToggledImage;
-		ConstructorHelpers::FObjectFinder<UTexture2D> DefaultToggledHoveredImage;
-
-		FConstructorStatics()
-			: DefaultMaterial(TEXT("/GLTFExporter/Materials/Hotspot"))
-			, DefaultIconMaterial(TEXT("/GLTFExporter/Materials/HotspotIcon"))
-			, DefaultImage(TEXT("/GLTFExporter/Textures/Hotspots/Image"))
-			, DefaultHoveredImage(TEXT("/GLTFExporter/Textures/Hotspots/HoveredImage"))
-			, DefaultToggledImage(TEXT("/GLTFExporter/Textures/Hotspots/ToggledImage"))
-			, DefaultToggledHoveredImage(TEXT("/GLTFExporter/Textures/Hotspots/ToggledHoveredImage"))
-		{
-		}
-	};
-	static FConstructorStatics ConstructorStatics;
-
-	DefaultMaterial = ConstructorStatics.DefaultMaterial.Object;
-	DefaultIconMaterial = ConstructorStatics.DefaultIconMaterial.Object;
-	DefaultImage = ConstructorStatics.DefaultImage.Object;
-	DefaultHoveredImage = ConstructorStatics.DefaultHoveredImage.Object;
-	DefaultToggledImage = ConstructorStatics.DefaultToggledImage.Object;
-	DefaultToggledHoveredImage = ConstructorStatics.DefaultToggledHoveredImage.Object;
+	DefaultMaterial = nullptr;
+	DefaultIconMaterial = nullptr;
+	DefaultImage = nullptr;
+	DefaultHoveredImage = nullptr;
+	DefaultToggledImage = nullptr;
+	DefaultToggledHoveredImage = nullptr;
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;

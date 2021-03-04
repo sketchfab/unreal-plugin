@@ -18,7 +18,7 @@ then
 	rm -rf "$project_plugin"
 	mkdir -p "$project_plugin"
 	# Copy the files to the directory
-	cp -r Source/ Resources/ ThirdParty/ Sketchfab.uplugin ZipUtility_License.txt "$project_plugin"
+	cp -r Source/ Content/ Resources/ ThirdParty/ Sketchfab.uplugin ZipUtility_License.txt "$project_plugin"
 elif [[ $* == *--from* ]]
 then
 	echo "Updating repository from $2"
@@ -34,7 +34,7 @@ else
 	# Create a releases/ directory and copy plugin files
 	release_dir="releases/SketchfabUnrealPlugin-$version"
 	mkdir -p $release_dir
-	cp -r Binaries/ Resources/ ThirdParty/ Sketchfab.uplugin ZipUtility_License.txt $release_dir
+	cp -r Binaries/ Resources/ Content/ ThirdParty/ Sketchfab.uplugin ZipUtility_License.txt $release_dir
 	# Zip everything
 	cd releases/
 	zip -r -q SketchfabUnrealPlugin-$version.zip SketchfabUnrealPlugin-$version/

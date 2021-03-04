@@ -24,7 +24,7 @@ protected:
 
 	virtual bool AddObject(FGLTFContainerBuilder& Builder, const UObject* Object);
 
-private:
+public:
 
 	UGLTFExportOptions* GetExportOptions();
 };
