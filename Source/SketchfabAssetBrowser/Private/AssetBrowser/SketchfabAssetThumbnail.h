@@ -10,6 +10,7 @@
 #include "Widgets/SWidget.h"
 #include "TickableEditorObject.h"
 #include "Slate/DeferredCleanupSlateBrush.h"
+#include "Engine/Texture2D.h"
 
 class AActor;
 class FSketchfabAssetThumbnailPool;

@@ -49,6 +49,13 @@
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 25
+// CreatePackage only uses one argument in 4.26+
+#ifndef CreatePackage
+#define CreatePackage(x) CreatePackage(nullptr, x)
+#endif
+#endif
+
 DEFINE_LOG_CATEGORY(LogGLTFImport);
 
 

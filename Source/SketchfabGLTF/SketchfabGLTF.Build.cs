@@ -39,11 +39,20 @@ namespace UnrealBuildTool.Rules
                     "RHI",
                     "MessageLog",
                     "JsonUtilities",
-					"DeveloperSettings",
 					"ZipUtility" //https://github.com/GameLogicDesign/ZipUtility-ue4
 					// ... add other public dependencies that you statically link with here ...
 				}
 				);
+
+			// DeveloperSettings was not a module until 4.26
+			#if UE_4_26_OR_LATER
+			PublicDependencyModuleNames.AddRange(
+				new string[]
+				{
+					"DeveloperSettings"
+				}
+			);
+			#endif
 
 			PrivateDependencyModuleNames.AddRange(
 				new string[]

@@ -16,6 +16,14 @@
 #include "Runtime/Online/HTTP/Public/Interfaces/IHttpRequest.h"
 #include "Runtime/Online/HTTP/Public/HttpModule.h"
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 25
+typedef TSharedRef<IHttpRequest> ReqRef;
+typedef TSharedPtr<IHttpRequest> ReqPtr;
+#else
+typedef TSharedRef<IHttpRequest, ESPMode::ThreadSafe> ReqRef;
+typedef TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> ReqPtr;
+#endif
+
 /** Enum representing state used by Sketchfab Server */
 enum SketchfabRESTState
 {
@@ -257,10 +265,10 @@ public:
 	void GetCategories();
 	void GetModelInfo();
 	void UploadModel();
-	void SetUploadRequestContent(TSharedRef<IHttpRequest> Request);
+	void SetUploadRequestContent(ReqRef Request);
 
 	//
-	void AddAuthorization(TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request);
+	void AddAuthorization(ReqRef Request);
 	void DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 BytesSent, int32 BytesReceived);
 
 	//~Being Response methods
@@ -316,5 +324,5 @@ private:
 	//~ Delegates End
 
 	/** Map that stores pending request. They need to be cleaned up when destroying the instance. Especially if job has completed*/
-	TMap<TSharedPtr<IHttpRequest, ESPMode::ThreadSafe>, FString> PendingRequests;
+	TMap<ReqPtr, FString> PendingRequests;
 };

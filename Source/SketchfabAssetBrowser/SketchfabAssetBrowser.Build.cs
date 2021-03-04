@@ -55,7 +55,6 @@ namespace UnrealBuildTool.Rules
 					"XmlParser",
 					"ImageWrapper",
 					"Projects",  // Support IPluginManager
-					"EditorScriptingUtilities"
 				}
 	                );
 

@@ -43,5 +43,16 @@
 				"Win32"
 			]
 		}
+	],
+	"Plugins" :
+	[
+		{
+			"Name": "EditorScriptingUtilities",
+			"Enabled" : true
+		},
+		{
+			"Name": "GeometryCache",
+			"Enabled" : true
+		},
 	]
 }
