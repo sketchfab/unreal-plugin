@@ -5,21 +5,21 @@
 #include "Editor/MainFrame/Public/Interfaces/IMainFrameModule.h"
 #include "Framework/Application/SlateApplication.h"
 #include "SSketchfabAssetBrowserWindow.h"
+#include "SSketchfabExporterWindow.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
-DEFINE_LOG_CATEGORY(LogSketchfabAssetBrowser);
 
-USketchfabAssetBrowser::USketchfabAssetBrowser(const FObjectInitializer& Initializer)
+USketchfabWindow::USketchfabWindow(const FObjectInitializer& Initializer)
 	: Super(Initializer)
 {
 }
 
-bool USketchfabAssetBrowser::ShowWindow()
+bool USketchfabWindow::ShowWindow()
 {
-	if (SketchfabBrowserWindowPtr.IsValid())
+	if (WindowPtr.IsValid())
 	{
-		SketchfabBrowserWindowPtr->BringToFront();
+		WindowPtr->BringToFront();
 	}
 	else
 	{
@@ -31,35 +31,63 @@ bool USketchfabAssetBrowser::ShowWindow()
 			ParentWindow = MainFrame.GetParentWindow();
 		}
 
-		SketchfabBrowserWindowPtr = SNew(SWindow)
-			.Title(LOCTEXT("SketchfabAssetBrowserWindow", "Sketchfab Asset Browser"))
-			.SizingRule(ESizingRule::UserSized)
-			.ClientSize(FVector2D(1024, 800))
-			[
-				SNew(SSketchfabAssetBrowserWindow)
-				.WidgetWindow(SketchfabBrowserWindowPtr)
-			];
+		WindowPtr = CreateWindow();
 
 		// Set the closed callback
-		SketchfabBrowserWindowPtr->SetOnWindowClosed(FOnWindowClosed::CreateUObject(this, &USketchfabAssetBrowser::OnWindowClosed));
+		WindowPtr->SetOnWindowClosed(FOnWindowClosed::CreateUObject(this, &USketchfabWindow::OnWindowClosed));
 
 		if (ParentWindow.IsValid())
 		{
-			FSlateApplication::Get().AddWindowAsNativeChild(SketchfabBrowserWindowPtr.ToSharedRef(), ParentWindow.ToSharedRef());
+			FSlateApplication::Get().AddWindowAsNativeChild(WindowPtr.ToSharedRef(), ParentWindow.ToSharedRef());
 		}
 		else
 		{
-			FSlateApplication::Get().AddWindow(SketchfabBrowserWindowPtr.ToSharedRef());
+			FSlateApplication::Get().AddWindow(WindowPtr.ToSharedRef());
 		}
 	}
 
 	return true;
 }
 
-void USketchfabAssetBrowser::OnWindowClosed(const TSharedRef<SWindow>& InWindow)
+void USketchfabWindow::OnWindowClosed(const TSharedRef<SWindow>& InWindow)
 {
-	SketchfabBrowserWindowPtr = NULL;
+	WindowPtr = NULL;
 }
+
+
+DEFINE_LOG_CATEGORY(LogSketchfabAssetBrowser);
+USketchfabAssetBrowser::USketchfabAssetBrowser(const FObjectInitializer& Initializer)
+	: Super(Initializer)
+{}
+TSharedPtr<SWindow> USketchfabAssetBrowser::CreateWindow() {
+	return SNew(SWindow)
+		.SizingRule(ESizingRule::UserSized)
+		.Title(FText::FromString("Sketchfab Asset Browser"))
+		.ClientSize(FVector2D(1024, 800))
+		.MinHeight(600)
+		.MinWidth(800)
+		[
+			SNew(SSketchfabAssetBrowserWindow).WidgetWindow(WindowPtr)
+		];
+}
+
+
+DEFINE_LOG_CATEGORY(LogSketchfabExporter);
+USketchfabExporter::USketchfabExporter(const FObjectInitializer& Initializer)
+	: Super(Initializer)
+{}
+TSharedPtr<SWindow> USketchfabExporter::CreateWindow() {
+	return SNew(SWindow)
+		.SizingRule(ESizingRule::UserSized)
+		.Title(FText::FromString("Sketchfab Exporter"))
+		.ClientSize(FVector2D(600, 525))
+		.MinHeight(525)
+		.MinWidth(500)
+		[
+			SNew(SSketchfabExporterWindow).WidgetWindow(WindowPtr)
+		];
+}
+
 
 #undef LOCTEXT_NAMESPACE
 

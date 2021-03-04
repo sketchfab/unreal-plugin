@@ -24,6 +24,7 @@ public:
 	virtual void StartupModule() override
 	{
 		AssetBrowser = NewObject<USketchfabAssetBrowser>();
+		Exporter     = NewObject<USketchfabExporter>();
 
 		// make an extension to add the Orion function menu
 		Extender = MakeShareable(new FExtender());
@@ -44,6 +45,7 @@ public:
 	{
 		FSketchfabRESTClient::Shutdown();
 		AssetBrowser = nullptr;
+		Exporter = nullptr;
 	}
 
 	class USketchfabAssetBrowser* GetAssetBrowser() override
@@ -51,10 +53,16 @@ public:
 		return AssetBrowser;
 	}
 
+	class USketchfabExporter* GetExporter() override
+	{
+		return Exporter;
+	}
+
 	/** FGCObject interface */
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override
 	{
 		Collector.AddReferencedObject(AssetBrowser);
+		Collector.AddReferencedObject(Exporter);
 	}
 
 private:
@@ -66,6 +74,11 @@ private:
 			LOCTEXT("SketchfabMenu_Tooltip", "Launch the Sketchfab Asset Browser."),
 			FSlateIcon(),
 			FUIAction(FExecuteAction::CreateRaw(this, &FSketchfabAssetBrowserModule::MenuCallbackOpenBrowser)));
+		MenuBuilder.AddMenuEntry(
+			LOCTEXT("SketchfabMenu_Exporter", "Exporter"),
+			LOCTEXT("SketchfabMenu_Tooltip", "Launch the Sketchfab Exporter."),
+			FSlateIcon(),
+			FUIAction(FExecuteAction::CreateRaw(this, &FSketchfabAssetBrowserModule::MenuCallbackOpenExporter)));
 		MenuBuilder.EndSection();
 	}
 
@@ -78,8 +91,18 @@ private:
 		}
 	}
 
+	void MenuCallbackOpenExporter() {
+		UE_LOG(LogSketchfabExporter, Log, TEXT("MenuCallbackOpenExporter"));
+
+		if (Exporter)
+		{
+			Exporter->ShowWindow();
+		}
+	}
+
 private:
 	USketchfabAssetBrowser* AssetBrowser;
+	USketchfabExporter*     Exporter;
 	TSharedPtr<FExtender> Extender;
 };
 

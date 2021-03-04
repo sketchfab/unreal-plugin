@@ -5,18 +5,35 @@
 #include "ISketchfabAssetBrowser.h"
 #include "SketchfabAssetBrowser.generated.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowser, Log, All);
-
 UCLASS(transient)
-class USketchfabAssetBrowser : public UObject
+class USketchfabWindow : public UObject
 {
 	GENERATED_UCLASS_BODY()
 public:
 	bool ShowWindow();
 	void OnWindowClosed(const TSharedRef<SWindow>& InWindow);
+	virtual TSharedPtr<SWindow> CreateWindow() { return nullptr; };
 
-private:
-	TSharedPtr<SWindow> SketchfabBrowserWindowPtr;
+protected:
+	FString WindowTitle;
+	int MinWidth, MinHeight;
+	int DefaultWidth, DefaultHeight;
+	TSharedPtr<SWindow> WindowPtr;
 };
 
+DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabAssetBrowser, Log, All);
+UCLASS(transient)
+class USketchfabAssetBrowser : public USketchfabWindow {
+	GENERATED_UCLASS_BODY()
+public:
+	TSharedPtr<SWindow> CreateWindow();
+};
 
+DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabExporter, Log, All);
+UCLASS(transient)
+class USketchfabExporter : public USketchfabWindow
+{
+	GENERATED_UCLASS_BODY()
+public:
+	TSharedPtr<SWindow> CreateWindow();
+};
