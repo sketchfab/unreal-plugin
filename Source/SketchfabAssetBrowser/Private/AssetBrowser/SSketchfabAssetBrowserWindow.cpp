@@ -1,217 +1,17 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "SSketchfabAssetBrowserWindow.h"
-#include "Misc/ScopedSlowTask.h"
-#include "Widgets/Layout/SUniformGridPanel.h"
-#include "PropertyEditorModule.h"
-#include "IDetailsView.h"
-#include "Editor/MainFrame/Public/Interfaces/IMainFrameModule.h"
-#include "ObjectTools.h"
-#include "MessageLogModule.h"
-#include "IMessageLogListing.h"
-#include "PackageTools.h"
-#include "Engine/StaticMesh.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/Input/SButton.h"
-#include "Framework/Application/SlateApplication.h"
-#include "HAL/FileManager.h"
-
-#include "Misc/FileHelper.h"
-#include "Engine/Texture.h"
-#include "Factories/TextureFactory.h"
-#include "Engine/Texture2D.h"
-
-#include "EditorFramework/AssetImportData.h"
-
-#include "Widgets/Layout/SSplitter.h"
-#include "SSketchfabAssetView.h"
-#include "SketchfabRESTClient.h"
-#include "Widgets/Input/SComboButton.h"
-#include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "AssetToolsModule.h"
-#include "IWebBrowserCookieManager.h"
-#include "WebBrowserModule.h"
-
-#include "Interfaces/IPluginManager.h"
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
 DEFINE_LOG_CATEGORY(LogSketchfabAssetBrowserWindow);
 
 
-
-class SAcceptLicenseWindow : public SCompoundWidget
-{
-public:
-	SLATE_BEGIN_ARGS(SAcceptLicenseWindow)
-	{}
-
-	SLATE_ARGUMENT(FSketchfabAssetData, AssetData)
-
-	SLATE_ARGUMENT(TSharedPtr<SWindow>, WidgetWindow)
-		SLATE_END_ARGS()
-
-public:
-	void Construct(const FArguments& InArgs)
-	{
-		AssetData = InArgs._AssetData;
-		Window = InArgs._WidgetWindow;
-		bShouldImport = false;
-
-		ChildSlot
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(0, 0, 0, 2)
-			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.HAlign(HAlign_Center)
-				.Padding(2,2,2,10)
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString("You must accept the following license before using this model"))
-					.Justification(ETextJustify::Center)
-					.AutoWrapText(true)
-					.MinDesiredWidth(400.0f)
-				]
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.HAlign(HAlign_Center)
-				.Padding(2)
-				[
-					SNew(SBorder)
-					.BorderImage(FEditorStyle::GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.05f, 1.f))
-					.Padding(FMargin(2))
-					[
-						SNew(SBox)
-						.MinDesiredHeight(200.0f)
-						.MinDesiredWidth(400.0f)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0, 0, 0, 4)
-							[
-								SNew(STextBlock)
-								.Text(FText::FromString("License Information"))
-								.Font(FEditorStyle::GetFontStyle(TEXT("PropertyWindow.BoldFont")))
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0, 0, 0, 2)
-							[
-								SNew(STextBlock)
-								.AutoWrapText(true)
-								.Text(FText::FromString(AssetData.LicenceType))
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0, 0, 0, 2)
-							[
-								SNew(STextBlock)
-								.AutoWrapText(true)
-								.Text(FText::FromString(AssetData.LicenceInfo))
-							]
-						]
-					]
-				]
-			]
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
-			.Padding(2)
-			[
-				SNew(SUniformGridPanel)
-				.SlotPadding(2)
-				+ SUniformGridPanel::Slot(0, 0)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.Text(LOCTEXT("SAcceptLicenseWindow_Accept", "Accept"))
-					.OnClicked(this, &SAcceptLicenseWindow::OnImport)
-				]
-				+ SUniformGridPanel::Slot(1, 0)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.Text(LOCTEXT("SAcceptLicenseWindow_Cancel", "Cancel"))
-					.OnClicked(this, &SAcceptLicenseWindow::OnCancel)
-				]
-			]
-		];
-	}
-
-	virtual bool SupportsKeyboardFocus() const override { return true; }
-
-	FReply OnImport()
-	{
-		bShouldImport = true;
-		if (Window.IsValid())
-		{
-			Window.Pin()->RequestDestroyWindow();
-		}
-		return FReply::Handled();
-	}
-
-
-	FReply OnCancel()
-	{
-		bShouldImport = false;
-		if (Window.IsValid())
-		{
-			Window.Pin()->RequestDestroyWindow();
-		}
-		return FReply::Handled();
-	}
-
-	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override
-	{
-		if (InKeyEvent.GetKey() == EKeys::Escape)
-		{
-			return OnCancel();
-		}
-
-		return FReply::Unhandled();
-	}
-
-	bool ShouldImport() const
-	{
-		return bShouldImport;
-	}
-
-private:
-	TWeakPtr< SWindow > Window;
-	FSketchfabAssetData AssetData;
-	bool bShouldImport;
-};
-
-//===========================================================================
-
-SSketchfabAssetBrowserWindow::~SSketchfabAssetBrowserWindow()
-{
-	FSketchfabRESTClient::Get()->Shutdown();
-}
-
 void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 {
-	//IE C:/Users/user/AppData/Local/UnrealEngine/4.18/SketchfabCache/
-	CacheFolder = GetSketchfabCacheDir();
-	CheckLatestPluginVersion();
-	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-	if (!PlatformFile.DirectoryExists(*CacheFolder))
-	{
-		PlatformFile.CreateDirectory(*CacheFolder);
-	}
-
-	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("Sketchfab");
-	FPluginDescriptor descriptor = Plugin->GetDescriptor();
-	CurrentPluginVersion = descriptor.VersionName;
-
+	initWindow();
 	Window = InArgs._WidgetWindow;
+
 	bSearchAnimated = false;
 	bSearchStaffPicked = true;
 
@@ -310,7 +110,8 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		}
 	}
 
-
+	TSharedRef<SVerticalBox> LoginNode = CreateLoginArea(1);
+	TSharedRef<SVerticalBox> FooterNode = CreateFooterArea(1);
 
 	ChildSlot
 	[
@@ -319,57 +120,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 		.AutoHeight()
 		.Padding(0, 0, 0, 2)
 		[
-			SNew(SBorder)
-			.Padding(FMargin(3))
-			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
-			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.HAlign(HAlign_Right)
-				.Padding(2)
-				[
-					SNew(SUniformGridPanel)
-					.SlotPadding(2)
-					+ SUniformGridPanel::Slot(0, 0)
-					[
-						SNew(STextBlock)
-						.Justification(ETextJustify::Center)
-						.Margin(FMargin(0.0f, 5.0f, 0.0f, 0.0f))
-						.Text(this, &SSketchfabAssetBrowserWindow::GetLoginText)
-						.MinDesiredWidth(200.0f)
-					]
-					+ SUniformGridPanel::Slot(1, 0)
-					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Text(this, &SSketchfabAssetBrowserWindow::GetLoginButtonText)
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnLogin)
-					]
-				]
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0, 0, 0, 2)
-		[
-			SNew(SBorder)
-			.Padding(FMargin(3))
-			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
-			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.HAlign(HAlign_Center)
-				.Padding(2)
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString("1. Login to your Sketchfab account.\n2. Select a model and click Download Selected to download (double click to view model information)\n3. After downloading you can import by click+dragging it into the content browser."))
-					.Justification(ETextJustify::Center)
-					.AutoWrapText(true)
-					.MinDesiredWidth(400.0f)
-				]
-			]
+			LoginNode
 		]
 
 		//Search Bar
@@ -649,7 +400,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 					.ThumbnailScale(0.4f)
 					.OnAssetSelected(this, &SSketchfabAssetBrowserWindow::OnAssetsSelected)
 					.OnAssetsActivated(this, &SSketchfabAssetBrowserWindow::OnAssetsActivated)
-					.OnGetAssetContextMenu(this, &SSketchfabAssetBrowserWindow::OnGetAssetContextMenu)
+					//.OnGetAssetContextMenu(this, &SSketchfabAssetBrowserWindow::OnGetAssetContextMenu)
 					.AllowDragging(true)
 				]
 			]
@@ -760,53 +511,12 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 			]
 		]
 
+		
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(0, 0, 0, 2)
 		[
-			SNew(SBorder)
-			.Padding(FMargin(3))
-			.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.HAlign(HAlign_Left)
-				.Padding(2)
-				[
-					SNew(SUniformGridPanel)
-					.SlotPadding(2)
-					+ SUniformGridPanel::Slot(0, 0)
-					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_ClearCache", "Clear Cache"))
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::OnClearCache)
-					]
-				]
-
-				+ SHorizontalBox::Slot()
-				.HAlign(HAlign_Right)
-				.Padding(2)
-				[
-					SNew(SUniformGridPanel)
-					.SlotPadding(2)
-					+ SUniformGridPanel::Slot(0, 0)
-					[
-						SNew(SButton)
-						.HAlign(HAlign_Center)
-						.Visibility(this, &SSketchfabAssetBrowserWindow::GetNewVersionButtonVisibility)
-						.Text(FText::FromString("Get new Version"))
-						.OnClicked(this, &SSketchfabAssetBrowserWindow::GetLatestPluginVersion)
-					]
-					+ SUniformGridPanel::Slot(1, 0)
-					[
-						SNew(STextBlock)
-						.Justification(ETextJustify::Center)
-						.Margin(FMargin(0.0, 4.0, 0.0, 2.0))
-						.Text(this, &SSketchfabAssetBrowserWindow::GetCurrentVersionText)
-					]
-				]
-			]
+			FooterNode
 		]
 	];
 
@@ -912,6 +622,38 @@ FReply SSketchfabAssetBrowserWindow::OnDownloadSelected()
 	return FReply::Handled();
 }
 
+EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayClearCache() const 
+{ 
+	return EVisibility::Visible; 
+}
+
+FReply SSketchfabAssetBrowserWindow::OnClearCache()
+{
+       FString Folder = GetSketchfabCacheDir();
+
+       FString msg = "Delete all files in the Sketchfab cache folder '" + Folder + "' ?";
+       if (FMessageDialog::Open(EAppMsgType::OkCancel, FText::FromString(msg)) == EAppReturnType::Ok)
+       {
+               AssetViewPtr->FlushThumbnails();
+
+               IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+               if (PlatformFile.DirectoryExists(*Folder))
+               {
+                       PlatformFile.DeleteDirectoryRecursively(*Folder);
+                       PlatformFile.CreateDirectory(*Folder);
+               }
+               OnSearchPressed();
+       }
+
+       if (Window.IsValid())
+       {
+               Window.Pin()->BringToFront(true);
+       }
+
+       return FReply::Handled();
+}
+
+/*
 TSharedPtr<SWidget> SSketchfabAssetBrowserWindow::OnGetAssetContextMenu(const TArray<FSketchfabAssetData>& SelectedAssets)
 {
 	if (SelectedAssets.Num() == 0)
@@ -925,62 +667,7 @@ TSharedPtr<SWidget> SSketchfabAssetBrowserWindow::OnGetAssetContextMenu(const TA
 
 	return NULL;
 }
-
-EVisibility SSketchfabAssetBrowserWindow::GetNewVersionButtonVisibility() const
-{
-	if (!LatestPluginVersion.IsEmpty() && LatestPluginVersion != CurrentPluginVersion)
-	{
-		return EVisibility::Visible;
-	}
-	else
-	{
-		return EVisibility::Hidden;
-	}
-}
-
-FText SSketchfabAssetBrowserWindow::GetCurrentVersionText() const
-{
-	FString versionState;
-	if(LatestPluginVersion.IsEmpty())
-	{
-		versionState = "";
-	}
-	else if (CurrentPluginVersion == LatestPluginVersion)
-	{
-		versionState = "(up to date)";
-	}
-	else
-	{
-		versionState = "(outdated)";
-	}
-
-	return FText::FromString("Sketchfab plugin version " + CurrentPluginVersion + " " + versionState);
-}
-
-FText SSketchfabAssetBrowserWindow::GetLoginText() const
-{
-	if (!LoggedInUserDisplayName.IsEmpty())
-	{
-		FString text = "Logged in as " + LoggedInUserDisplayName + " " + LoggedInUserAccountType;
-        return FText::FromString(text);
-	}
-	else
-	{
-		return LOCTEXT("SSketchfabAssetBrowserWindow_GetLoginText", "You're not logged in");
-	}
-}
-
-FText SSketchfabAssetBrowserWindow::GetLoginButtonText() const
-{
-	if (!LoggedInUserDisplayName.IsEmpty())
-	{
-		return LOCTEXT("SSketchfabAssetBrowserWindow_OnLogin", "Logout");
-	}
-	else
-	{
-		return LOCTEXT("SSketchfabAssetBrowserWindow_OnLogin", "Login");
-	}
-}
+*/
 
 FText SSketchfabAssetBrowserWindow::GetMyModelText() const
 {
@@ -1150,39 +837,6 @@ void SSketchfabAssetBrowserWindow::OnSearchBoxCommitted(const FText& InSearchTex
 	}
 }
 
-FReply SSketchfabAssetBrowserWindow::OnLogin()
-{
-	if (!LoggedInUserDisplayName.IsEmpty())
-	{
-		Token = "";
-		LoggedInUserName = "";
-		LoggedInUserDisplayName = "";
-
-		TSharedPtr<IWebBrowserCookieManager> cookieMan = IWebBrowserModule::Get().GetSingleton()->GetCookieManager();
-		cookieMan->DeleteCookies("sketchfab.com");
-
-		//FString url = "https://sketchfab.com/logout";
-		//DoLoginLogout(url);
-		return FReply::Handled();
-	}
-	else
-	{
-		FString url = "https://sketchfab.com/oauth2/authorize/?state=123456789&response_type=token&client_id=lZklEgZh9G5LcFqiCUUXTzXyNIZaO7iX35iXODqO";
-		DoLoginLogout(url);
-		return FReply::Handled();
-	}
-
-}
-
-FReply SSketchfabAssetBrowserWindow::OnUpgradeToPro()
-{
-	{
-		FString url = "https://sketchfab.com/plans?utm_source=unreal-plugin&utm_medium=plugin&utm_campaign=download-api-pro-cta";
-		FPlatformMisc::OsExecute(TEXT("open"), *url);
-		return FReply::Handled();
-	}
-}
-
 FReply SSketchfabAssetBrowserWindow::OnVisitStore()
 {
 	{
@@ -1192,226 +846,15 @@ FReply SSketchfabAssetBrowserWindow::OnVisitStore()
 	}
 }
 
-void SSketchfabAssetBrowserWindow::DoLoginLogout(const FString &url)
-{
-	if (OAuthWindowPtr.IsValid())
-	{
-		if (!isOauthWindowClosed)
-		{
-			OAuthWindowPtr->BringToFront();
-			return;
-		}
-		else
-		{
-			OAuthWindowPtr.Reset();
-		}
-	}
-
-
-	TSharedPtr<SWindow> ParentWindow;
-
-	if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
-	{
-		IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-		ParentWindow = MainFrame.GetParentWindow();
-	}
-	isOauthWindowClosed = false;
-	OAuthWindowPtr = SNew(SWindow)
-		.Title(LOCTEXT("SketchfabAssetBrowser_LoginWindow", "Sketchfab Login Window"))
-		.SizingRule(ESizingRule::FixedSize)
-		.ClientSize(FVector2D(400, 600));
-
-	OAuthWindowPtr->SetOnWindowClosed(FOnWindowClosed::CreateRaw(this, &SSketchfabAssetBrowserWindow::OnOAuthWindowClosed));
-
-	TSharedPtr<SOAuthWebBrowser> OAuthBrowser;
-	OAuthWindowPtr->SetContent
-	(
-		SAssignNew(OAuthBrowser, SOAuthWebBrowser)
-		.ParentWindow(OAuthWindowPtr)
-		.InitialURL(url)
-		.OnUrlChanged(this, &SSketchfabAssetBrowserWindow::OnUrlChanged)
-	);
-
-	TSharedPtr<SWindow> CurrentWindow = FSlateApplication::Get().FindWidgetWindow(AsShared());
-	FSlateApplication::Get().AddWindowAsNativeChild(OAuthWindowPtr.ToSharedRef(), CurrentWindow.ToSharedRef());
-}
-
-void SSketchfabAssetBrowserWindow::OnOAuthWindowClosed(const TSharedRef<SWindow>& InWindow)
-{
-	//FIXME (AurL): this is a dirty hack to fix OAuth window. There should be a better way to handle it's creation/destruction
-	// Symptoms: Calling RequestDestroyWindow and then reseting the TSharedPtr here causes crash (data deletion occurs after call to this function)
-	// Using DestroyWindowImmediately() doesn't crash but the OAuth window is still grabbing the focus and parent windows widgets are not accessible in its area
-	isOauthWindowClosed = true;
-}
-
-FReply SSketchfabAssetBrowserWindow::OnLogout()
-{
-	Token = "";
-	LoggedInUserName = "";
-	LoggedInUserDisplayName = "";
-
-	TSharedPtr<IWebBrowserCookieManager> cookieMan = IWebBrowserModule::Get().GetSingleton()->GetCookieManager();
-	cookieMan->DeleteCookies("sketchfab.com");
-
-	//FString url = "https://sketchfab.com/logout";
-	//DoLoginLogout(url);
-	return FReply::Handled();
-}
-
-bool SSketchfabAssetBrowserWindow::OnLoginEnabled() const
-{
-	if (Token.IsEmpty() || LoggedInUserDisplayName.IsEmpty())
-	{
-		return true;
-	}
-	return false;
-}
-
-bool SSketchfabAssetBrowserWindow::OnLogoutEnabled() const
-{
-	return !OnLoginEnabled();
-}
-
 bool SSketchfabAssetBrowserWindow::hasMoreResults() const
 {
 	return !NextURL.IsEmpty();
-}
-
-FReply SSketchfabAssetBrowserWindow::OnCancel()
-{
-	if (Window.IsValid())
-	{
-		Window.Pin()->RequestDestroyWindow();
-	}
-	return FReply::Handled();
 }
 
 FReply SSketchfabAssetBrowserWindow::OnNext()
 {
 	Search(NextURL);
 	return FReply::Handled();
-}
-
-FReply SSketchfabAssetBrowserWindow::OnClearCache()
-{
-	FString Folder = GetSketchfabCacheDir();
-
-	FString msg = "Delete all files in the Sketchfab cache folder '" + Folder + "' ?";
-	if (FMessageDialog::Open(EAppMsgType::OkCancel, FText::FromString(msg)) == EAppReturnType::Ok)
-	{
-		AssetViewPtr->FlushThumbnails();
-
-		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-		if (PlatformFile.DirectoryExists(*Folder))
-		{
-			PlatformFile.DeleteDirectoryRecursively(*Folder);
-			PlatformFile.CreateDirectory(*Folder);
-		}
-		OnSearchPressed();
-	}
-
-	if (Window.IsValid())
-	{
-		Window.Pin()->BringToFront(true);
-	}
-
-	return FReply::Handled();
-}
-
-FReply SSketchfabAssetBrowserWindow::CheckLatestPluginVersion()
-{
-	FSketchfabTaskData TaskData;
-	TaskData.StateLock = new FCriticalSection();
-
-	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
-	Task->SetState(SRS_CHECK_LATEST_VERSION);
-	Task->OnCheckLatestVersion().BindRaw(this, &SSketchfabAssetBrowserWindow::OnCheckLatestVersion);
-	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-	Task->CheckLatestPluginVersion();
-	FSketchfabRESTClient::Get()->AddTask(Task);
-
-	return FReply::Handled();
-}
-
-FReply SSketchfabAssetBrowserWindow::GetLatestPluginVersion()
-{
-	FString Command = "https://github.com/sketchfab/Sketchfab-Unreal/releases/latest";
-	FPlatformMisc::OsExecute(TEXT("open"), *Command);
-	return FReply::Handled();
-}
-
-void SSketchfabAssetBrowserWindow::OnUrlChanged(const FText &url)
-{
-	FString data = url.ToString();
-
-	//If successfully logging in and access given based on the client_id then my redirect URL will be sent here along with
-	//an authorization code. I then get the code from the URL and use that to request an Access Token, which will have an expiration time.
-	//I then store this Access Token and the expiration time and use the token for all further communication with the server.
-
-	//https://sketchfab.com/developers/oauth#registering-your-app
-
-	//BEFORE the token expires I can use the "refresh token", which comes with the access token, to obtain a new access token before it expires.
-
-	//https://sketchfab.com/oauth2/success#access_token=DsFGAAK86kLQ1gfUjQQD6gLPhNP6lm&token_type=Bearer&state=123456789&expires_in=36000&scope=read+write
-
-
-	FString leftBlock = TEXT("https://sketchfab.com/oauth2/success#");
-	if (data.Contains(leftBlock))
-	{
-		FString params = data.RightChop(leftBlock.Len());
-
-		FString accesstoken;
-		FString tokentype;
-		FString state;
-		FString expiresin;
-		FString scope;
-
-		TArray<FString> parameters;
-		if (params.ParseIntoArray(parameters, TEXT("&"), true) > 0)
-		{
-			for (int a = 0; a < parameters.Num(); a++)
-			{
-				const FString &param = parameters[a];
-
-				FString left, right;
-				if (param.Split(TEXT("="), &left, &right))
-				{
-					if (left == "access_token")
-						accesstoken = right;
-					else if (left == "token_type")
-						tokentype = right;
-					else if (left == "state")
-						state = right;
-					else if (left == "expires_in")
-						expiresin = right;
-					else if (left == "scope")
-						scope = right;
-				}
-			}
-		}
-
-		if (accesstoken.Len() != 0)
-		{
-			Token = accesstoken;
-			GetUserData();
-			if (OAuthWindowPtr.IsValid())
-			{
-				OAuthWindowPtr->RequestDestroyWindow();
-			}
-		}
-		return;
-	}
-
-	leftBlock = TEXT("https://sketchfab.com/?logged_out=1");
-	if (data.Contains(leftBlock))
-	{
-		if (OAuthWindowPtr.IsValid())
-		{
-			OAuthWindowPtr->RequestDestroyWindow();
-			OAuthWindowPtr = NULL;
-		}
-	}
-	return;
 }
 
 FReply SSketchfabAssetBrowserWindow::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
@@ -1427,11 +870,6 @@ FReply SSketchfabAssetBrowserWindow::OnKeyDown(const FGeometry& MyGeometry, cons
 bool SSketchfabAssetBrowserWindow::IsSearchMyModelsAvailable() const
 {
 	return LoggedInUserName != "";
-}
-
-EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayUpgradeToPro() const
-{
-	return (SearchDomainIndex == SEARCHDOMAIN_Own) && LoggedInUserName != "" && !IsLoggedUserPro ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
 EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayFilters() const
@@ -1636,20 +1074,6 @@ void SSketchfabAssetBrowserWindow::Search(const FString &url)
 	FSketchfabRESTClient::Get()->AddTask(Task);
 }
 
-void SSketchfabAssetBrowserWindow::GetUserData()
-{
-	FSketchfabTaskData TaskData;
-	TaskData.Token = Token;
-	TaskData.CacheFolder = CacheFolder;
-	TaskData.StateLock = new FCriticalSection();
-
-	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
-	Task->SetState(SRS_GETUSERDATA);
-	Task->OnUserData().BindRaw(this, &SSketchfabAssetBrowserWindow::OnUserData);
-	Task->OnTaskFailed().BindRaw(this, &SSketchfabAssetBrowserWindow::OnTaskFailed);
-	FSketchfabRESTClient::Get()->AddTask(Task);
-}
-
 void SSketchfabAssetBrowserWindow::GetCategories()
 {
 	FSketchfabTaskData TaskData;
@@ -1715,46 +1139,6 @@ void SSketchfabAssetBrowserWindow::OnDownloadFailed(const FSketchfabTask& InTask
 	ModelsDownloading.Remove(InTask.TaskData.ModelUID);
 }
 
-void SSketchfabAssetBrowserWindow::OnTaskFailed(const FSketchfabTask& InTask)
-{
-}
-
-void SSketchfabAssetBrowserWindow::OnUserData(const FSketchfabTask& InTask)
-{
-	LoggedInUserName = InTask.TaskData.UserSession.UserName;
-	LoggedInUserDisplayName = InTask.TaskData.UserSession.UserDisplayName;
-	if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_PRO)
-	{
-		LoggedInUserAccountType = "(PRO)";
-		IsLoggedUserPro = true;
-	}
-	else if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_PREMIUM)
-	{
-		LoggedInUserAccountType = "(PREMIUM)";
-		IsLoggedUserPro = true;
-	}
-	else if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_BUSINESS)
-	{
-		LoggedInUserAccountType = "(BIZ)";
-		IsLoggedUserPro = true;
-	}
-	else if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_ENTERPRISE)
-	{
-		LoggedInUserAccountType = "(ENT)";
-		IsLoggedUserPro = true;
-	}
-	else if(InTask.TaskData.UserSession.UserPlan == ACCOUNT_PLUS)
-	{
-		LoggedInUserAccountType = "(PLUS)";
-		IsLoggedUserPro = false;
-	}
-	else
-	{
-		LoggedInUserAccountType = "(FREE)";
-		IsLoggedUserPro = false;
-	}
-}
-
 void SSketchfabAssetBrowserWindow::OnUserThumbnailDownloaded(const FSketchfabTask& InTask)
 {
 	AssetViewPtr->NeedRefresh();
@@ -1763,11 +1147,6 @@ void SSketchfabAssetBrowserWindow::OnUserThumbnailDownloaded(const FSketchfabTas
 void SSketchfabAssetBrowserWindow::OnThumbnailDownloaded(const FSketchfabTask& InTask)
 {
 	AssetViewPtr->NeedRefresh();
-}
-
-void SSketchfabAssetBrowserWindow::OnCheckLatestVersion(const FSketchfabTask& InTask)
-{
-	LatestPluginVersion = InTask.TaskData.LatestPluginVersion;
 }
 
 void SSketchfabAssetBrowserWindow::OnSearch(const FSketchfabTask& InTask)
@@ -1914,30 +1293,15 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 			return true;
 		}
 
-		TSharedPtr<SWindow> ParentWindow;
-
-		if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
-		{
-			IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-			ParentWindow = MainFrame.GetParentWindow();
-		}
-
-		TSharedRef<SWindow> NewWindow = SNew(SWindow)
-			.Title(LOCTEXT("SketchfabAcceptLicenseWindow", "License Acceptance"))
-			.SizingRule(ESizingRule::Autosized);
-
-
-		TSharedPtr<SAcceptLicenseWindow> AcceptLicenceWindow;
-		NewWindow->SetContent
+		TSharedPtr<SPopUpWindow> popup = CreatePopUp
 		(
-			SAssignNew(AcceptLicenceWindow, SAcceptLicenseWindow)
-			.AssetData(DragDropOp->DraggedAssets[0])
-			.WidgetWindow(NewWindow)
+			"License Acceptance",
+			"You must accept the following license before using this model",
+			"License Information\n" + DragDropOp->DraggedAssets[0].LicenceType + "\n" + DragDropOp->DraggedAssets[0].LicenceInfo,
+			"Accept",
+			"Cancel"
 		);
-
-		FSlateApplication::Get().AddModalWindow(NewWindow, ParentWindow, false);
-
-		if (AcceptLicenceWindow->ShouldImport())
+		if (popup->Confirmed())
 		{
 			TArray<FString> Assets;
 			Assets.Add(DragDropOp->DraggedAssetPaths[0]);
