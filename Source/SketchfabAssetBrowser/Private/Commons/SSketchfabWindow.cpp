@@ -133,8 +133,7 @@ void SSketchfabWindow::DoLoginLogout(const FString &url)
 	isOauthWindowClosed = false;
 	OAuthWindowPtr = SNew(SWindow)
 		.Title(LOCTEXT("SketchfabAssetBrowser_LoginWindow", "Sketchfab Login Window"))
-		.SizingRule(ESizingRule::FixedSize)
-		.ClientSize(FVector2D(400, 600));
+		.ClientSize(FVector2D(625, 800));
 
 	OAuthWindowPtr->SetOnWindowClosed(FOnWindowClosed::CreateRaw(this, &SSketchfabWindow::OnOAuthWindowClosed));
 
@@ -513,7 +512,7 @@ void SSketchfabWindow::OnUserData(const FSketchfabTask& InTask)
 	}
 	else
 	{
-		LoggedInUserAccountType = "(FREE)";
+		LoggedInUserAccountType = "(BASIC)";
 		IsLoggedUserPro = false;
 	}
 }
