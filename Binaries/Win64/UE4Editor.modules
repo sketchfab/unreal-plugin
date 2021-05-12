@@ -1,7 +1,11 @@
 {
-	"BuildId": "13144385",
+	"BuildId": "14830424",
 	"Modules": 
 	{
+		"GLTFExporter": "UE4Editor-GLTFExporter.dll",
+		"GLTFExporterRuntime": "UE4Editor-GLTFExporterRuntime.dll",
+		"GLTFMaterialAnalyzer": "UE4Editor-GLTFMaterialAnalyzer.dll",
+		"GLTFMaterialBaking": "UE4Editor-GLTFMaterialBaking.dll",
 		"SketchfabAssetBrowser": "UE4Editor-SketchfabAssetBrowser.dll",
 		"SketchfabGLTF": "UE4Editor-SketchfabGLTF.dll",
 		"WindowsFileUtility": "UE4Editor-WindowsFileUtility.dll",
