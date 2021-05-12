@@ -3,6 +3,7 @@
 #pragma once
 
 #include "SSketchfabWindow.h"
+#include "UserData/GLTFMaterialUserData.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabExporterWindow, Log, All);
 
@@ -42,6 +43,7 @@ private:
 	ECheckBoxState IsBakeChecked() const;
 	ECheckBoxState IsDraftChecked() const;
 	ECheckBoxState IsPrivateChecked() const;
+	bool IsBakeCheckedBool() const;
 	void OnSelectedCheckStateChanged(ECheckBoxState NewState);
 	void OnBakeCheckStateChanged(ECheckBoxState NewState);
 	void OnDraftCheckStateChanged(ECheckBoxState NewState);
@@ -52,6 +54,21 @@ private:
 	void OnPasswordChanged(const FText& InText, ETextCommit::Type Type);
 	FText GetUploadButtonText() const;
 	bool IsPasswordEnabled() const;
+
+	void InitComboBoxes();
+
+	enum EBakingResolution {
+		RES_128,
+		RES_256,
+		RES_512,
+		RES_1024,
+		RES_2048,
+		RES_4096,
+		RES_UNDEFINED,
+	};
+	void HandleBakingResolutionComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
+	TArray<TSharedPtr<FString>> ResolutionComboList;
+	int32 BakingResolutionIndex;
 
 private:
 	

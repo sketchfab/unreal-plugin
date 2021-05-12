@@ -16,6 +16,7 @@
 #include "UObject/Object.h"
 #include "UObject/GCObjectScopeGuard.h"
 #include "GenericPlatform/GenericPlatformFile.h"
+#include "Widgets/Input/STextComboBox.h"
 
 
 #define LOCTEXT_NAMESPACE "SketchfabExporter"
@@ -26,6 +27,7 @@ DEFINE_LOG_CATEGORY(LogSketchfabExporterWindow);
 void SSketchfabExporterWindow::Construct(const FArguments& InArgs)
 {
 	initWindow();
+	InitComboBoxes();
 	Window = InArgs._WidgetWindow;
 
 	TSharedRef<SVerticalBox> LoginNode  = CreateLoginArea(0);
@@ -126,6 +128,12 @@ TSharedRef<SVerticalBox> SSketchfabExporterWindow::CreateUploadArea() {
 			.MinDesiredWidth(250.0f)
 		];
 
+	// Baking resolution
+	TSharedRef<STextComboBox> BakingResolutionComboBox = SNew(STextComboBox)
+		.OptionsSource(&ResolutionComboList)
+		.IsEnabled(this, &SSketchfabExporterWindow::IsBakeCheckedBool)
+		.OnSelectionChanged(this, &SSketchfabExporterWindow::HandleBakingResolutionComboChanged);
+
 	// Add some tooltips to the check boxes
 	SelectionCheckBox->SetToolTipText(FText::FromString("Checked:   Only upload the objects currently selected in the world\nUnchecked: Upload all visible objects in the world"));
 	BakingCheckBox->SetToolTipText(FText::FromString("Recommended if custom material nodes are used"));
@@ -136,8 +144,9 @@ TSharedRef<SVerticalBox> SSketchfabExporterWindow::CreateUploadArea() {
 	CreateHorizontalField(UploadNode, "Model Title", ModelTitleEditableBox);
 	CreateHorizontalField(UploadNode, "Model Description", ModelDescriptionEditableBox, 0.f, false);
 	CreateHorizontalField(UploadNode, "Model Tags", ModelTagsEditableBox, 25.0f);
+	CreateHorizontalField(UploadNode, "", BakingCheckBox);
+	CreateHorizontalField(UploadNode, "Baking resolution", BakingResolutionComboBox, 25.0f);
 	CreateHorizontalField(UploadNode, "", SelectionCheckBox);
-	CreateHorizontalField(UploadNode, "", BakingCheckBox, 25.0f);
 	CreateHorizontalField(UploadNode, "", DraftCheckBox);
 	CreateHorizontalField(UploadNode, "", PrivateCheckBox);
 	CreateHorizontalField(UploadNode, "", PasswordEditableBox, 25.0f);
@@ -182,6 +191,33 @@ void SSketchfabExporterWindow::CreateHorizontalField(TSharedRef<SVerticalBox> VB
 		else            VBox->AddSlot().FillHeight(5.0f).Padding(0, 0, 0, BPadding)[HBox];
 }
 
+void SSketchfabExporterWindow::InitComboBoxes(){
+	BakingResolutionIndex = (int32)RES_1024;
+	for (int32 i = 0; i < (int32)RES_UNDEFINED; i++)
+	{
+		switch (i)
+		{
+			case RES_128:  {ResolutionComboList.Add(MakeShared<FString>(TEXT("128x128")));}   break;
+			case RES_256:  {ResolutionComboList.Add(MakeShared<FString>(TEXT("256x256")));}   break;
+			case RES_512:  {ResolutionComboList.Add(MakeShared<FString>(TEXT("512x512")));}   break;
+			case RES_1024: {ResolutionComboList.Add(MakeShared<FString>(TEXT("1024x1024")));} break;
+			case RES_2048: {ResolutionComboList.Add(MakeShared<FString>(TEXT("2048x2048")));} break;
+			case RES_4096: {ResolutionComboList.Add(MakeShared<FString>(TEXT("4096x4096")));} break;
+		}
+	}
+}
+void SSketchfabExporterWindow::HandleBakingResolutionComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
+{
+	for (int32 i = 0; i < ResolutionComboList.Num(); i++)
+	{
+		if (Item == ResolutionComboList[i])
+		{
+			BakingResolutionIndex = i;
+		}
+	}
+}
+
+
 // UI callbacks
 ECheckBoxState SSketchfabExporterWindow::IsSelectedChecked() const
 {
@@ -190,6 +226,10 @@ ECheckBoxState SSketchfabExporterWindow::IsSelectedChecked() const
 ECheckBoxState SSketchfabExporterWindow::IsBakeChecked() const
 {
 	return bBakeMaterials ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+}
+bool SSketchfabExporterWindow::IsBakeCheckedBool() const
+{
+	return bBakeMaterials;
 }
 ECheckBoxState SSketchfabExporterWindow::IsDraftChecked() const
 {
@@ -287,6 +327,7 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 		opts->bExportHiddenInGame = false; // Hidden meshes not exported
 		opts->BakeMaterialInputs = bBakeMaterials ? EGLTFMaterialBakeMode::UseMeshData : EGLTFMaterialBakeMode::Disabled; // Don't bake the material inputs
 		// Behaviour and Epic web additional options
+		opts->DefaultMaterialBakeSize = static_cast<EGLTFMaterialBakeSizePOT>(BakingResolutionIndex + 7); // Align on EGLTFMaterialBakeSizePOT::POT_128
 		opts->bExportPreviewMesh = false;
 		opts->bBundleWebViewer = false;
 		opts->bShowFilesWhenDone = false;
@@ -418,8 +459,7 @@ void SSketchfabExporterWindow::Upload(){
 		"Upload in progress",
 		"Your model is uploading",
 		"Your model is currently being uploaded to Sketchfab.\n"
-			"Please do not close UE Editor until another pop-up informs you of the status of the upload.\n"
-			"(we'll add a better progress/notification system soon...)",
+			"Please do not close UE Editor until another pop-up informs you of the status of the upload.\n",
 		"OK",
 		""
 	);

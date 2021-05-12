@@ -80,7 +80,7 @@ TSharedPtr<SWindow> USketchfabExporter::CreateWindow() {
 	return SNew(SWindow)
 		.SizingRule(ESizingRule::UserSized)
 		.Title(FText::FromString("Sketchfab Exporter"))
-		.ClientSize(FVector2D(600, 525))
+		.ClientSize(FVector2D(600, 625))
 		.MinHeight(525)
 		.MinWidth(500)
 		[
