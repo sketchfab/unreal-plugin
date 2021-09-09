@@ -1,10 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFZipUtility.h"
+#include "Builders/SKGLTFZipUtility.h"
+
+#include <fstream>
+#include <vector>
 
 THIRD_PARTY_INCLUDES_START
 #include "ThirdParty/zlib/zlib-1.2.5/Inc/zlib.h"
 #include "ThirdParty/zlib/zlib-1.2.5/Src/contrib/minizip/unzip.h"
+#include "ThirdParty/zlib/zlib-1.2.5/Src/contrib/minizip/zip.h"
 THIRD_PARTY_INCLUDES_END
 
 TArray<FString> FGLTFZipUtility::GetAllFiles(const FString& ArchiveFile)
@@ -169,3 +173,57 @@ bool FGLTFZipUtility::ExtractCurrentFile(void* ZipHandle, const FString& TargetF
 
 	return true;
 }
+
+int FGLTFZipUtility::CompressDirectory(const FString& ArchiveFile, const FString& TargetDirectory)
+{
+
+	// From https://stackoverflow.com/questions/11370908/how-do-i-use-minizip-on-zlib
+
+	//std::cout << ArchiveFile << "/" << TargetDirectory << std::endl;
+	std::string archive = std::string(TCHAR_TO_UTF8(*ArchiveFile));       //"C:\\Users\\loic\\Desktop\\lol.zip";
+	std::string fileToZip = std::string(TCHAR_TO_UTF8(*TargetDirectory)); //"C:\\Users\\loic\\Desktop\\matcap.png";
+
+	zipFile zf = zipOpen64(archive.c_str(), APPEND_STATUS_CREATE);
+	if (zf == NULL)
+		return 1;
+
+	bool _return = true;
+
+	std::fstream file(fileToZip, std::ios::binary | std::ios::in);
+	if (file.is_open())
+	{
+		file.seekg(0, std::ios::end);
+		long size = file.tellg();
+		file.seekg(0, std::ios::beg);
+
+		std::vector<char> buffer(size);
+		if (size == 0 || file.read(&buffer[0], size))
+		{
+			zip_fileinfo zfi = { 0 };
+			std::string fileName = fileToZip.substr(fileToZip.rfind('\\') + 1);
+
+			if (S_OK == zipOpenNewFileInZip(zf, std::string(fileName.begin(), fileName.end()).c_str(), &zfi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION))
+			{
+				if (zipWriteInFileInZip(zf, size == 0 ? "" : &buffer[0], size))
+					_return = false;
+
+				if (zipCloseFileInZip(zf))
+					_return = false;
+
+				file.close();
+			}
+		}
+		file.close();
+	}
+	//_return = false;
+
+	if (zipClose(zf, NULL))
+		return 3;
+
+	/*if (!_return)
+		return 4;
+	*/
+	return 0;
+
+}
+

@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFBuilder.h"
-#include "UserData/GLTFMaterialUserData.h"
-#include "Builders/GLTFFileUtility.h"
+#include "Builders/SKGLTFBuilder.h"
+#include "UserData/SKGLTFMaterialUserData.h"
+#include "Builders/SKGLTFFileUtility.h"
 
-FGLTFBuilder::FGLTFBuilder(const FString& FilePath, const UGLTFExportOptions* ExportOptions)
+FGLTFBuilder::FGLTFBuilder(const FString& FilePath, const USKGLTFExportOptions* ExportOptions)
 	: bIsGlbFile(FGLTFFileUtility::IsGlbFile(FilePath))
 	, FilePath(FilePath)
 	, DirPath(FPaths::GetPath(FilePath))
@@ -14,10 +14,10 @@ FGLTFBuilder::FGLTFBuilder(const FString& FilePath, const UGLTFExportOptions* Ex
 
 FIntPoint FGLTFBuilder::GetBakeSizeForMaterialProperty(const UMaterialInterface* Material, const FMaterialPropertyEx& Property) const
 {
-	const EGLTFMaterialPropertyGroup PropertyGroup = GetPropertyGroup(Property);
-	EGLTFMaterialBakeSizePOT DefaultValue = ExportOptions->DefaultMaterialBakeSize;
+	const ESKGLTFMaterialPropertyGroup PropertyGroup = GetPropertyGroup(Property);
+	ESKGLTFMaterialBakeSizePOT DefaultValue = ExportOptions->DefaultMaterialBakeSize;
 
-	if (const FGLTFOverrideMaterialBakeSettings* BakeSettings = ExportOptions->DefaultInputBakeSettings.Find(PropertyGroup))
+	if (const FSKGLTFOverrideMaterialBakeSettings* BakeSettings = ExportOptions->DefaultInputBakeSettings.Find(PropertyGroup))
 	{
 		if (BakeSettings->bOverrideSize)
 		{
@@ -25,17 +25,17 @@ FIntPoint FGLTFBuilder::GetBakeSizeForMaterialProperty(const UMaterialInterface*
 		}
 	}
 
-	const EGLTFMaterialBakeSizePOT Size = UGLTFMaterialExportOptions::GetBakeSizeForPropertyGroup(Material, PropertyGroup, DefaultValue);
+	const ESKGLTFMaterialBakeSizePOT Size = USKGLTFMaterialExportOptions::GetBakeSizeForPropertyGroup(Material, PropertyGroup, DefaultValue);
 	const int32 PixelSize = 1 << static_cast<uint8>(Size);
 	return { PixelSize, PixelSize };
 }
 
 TextureFilter FGLTFBuilder::GetBakeFilterForMaterialProperty(const UMaterialInterface* Material, const FMaterialPropertyEx& Property) const
 {
-	const EGLTFMaterialPropertyGroup PropertyGroup = GetPropertyGroup(Property);
+	const ESKGLTFMaterialPropertyGroup PropertyGroup = GetPropertyGroup(Property);
 	TextureFilter DefaultValue = ExportOptions->DefaultMaterialBakeFilter;
 
-	if (const FGLTFOverrideMaterialBakeSettings* BakeSettings = ExportOptions->DefaultInputBakeSettings.Find(PropertyGroup))
+	if (const FSKGLTFOverrideMaterialBakeSettings* BakeSettings = ExportOptions->DefaultInputBakeSettings.Find(PropertyGroup))
 	{
 		if (BakeSettings->bOverrideFilter)
 		{
@@ -43,15 +43,15 @@ TextureFilter FGLTFBuilder::GetBakeFilterForMaterialProperty(const UMaterialInte
 		}
 	}
 
-	return UGLTFMaterialExportOptions::GetBakeFilterForPropertyGroup(Material, PropertyGroup, DefaultValue);
+	return USKGLTFMaterialExportOptions::GetBakeFilterForPropertyGroup(Material, PropertyGroup, DefaultValue);
 }
 
 TextureAddress FGLTFBuilder::GetBakeTilingForMaterialProperty(const UMaterialInterface* Material, const FMaterialPropertyEx& Property) const
 {
-	const EGLTFMaterialPropertyGroup PropertyGroup = GetPropertyGroup(Property);
+	const ESKGLTFMaterialPropertyGroup PropertyGroup = GetPropertyGroup(Property);
 	TextureAddress DefaultValue = ExportOptions->DefaultMaterialBakeTiling;
 
-	if (const FGLTFOverrideMaterialBakeSettings* BakeSettings = ExportOptions->DefaultInputBakeSettings.Find(PropertyGroup))
+	if (const FSKGLTFOverrideMaterialBakeSettings* BakeSettings = ExportOptions->DefaultInputBakeSettings.Find(PropertyGroup))
 	{
 		if (BakeSettings->bOverrideTiling)
 		{
@@ -59,68 +59,68 @@ TextureAddress FGLTFBuilder::GetBakeTilingForMaterialProperty(const UMaterialInt
 		}
 	}
 
-	return UGLTFMaterialExportOptions::GetBakeTilingForPropertyGroup(Material, PropertyGroup, DefaultValue);
+	return USKGLTFMaterialExportOptions::GetBakeTilingForPropertyGroup(Material, PropertyGroup, DefaultValue);
 }
 
-EGLTFJsonHDREncoding FGLTFBuilder::GetTextureHDREncoding() const
+ESKGLTFJsonHDREncoding FGLTFBuilder::GetTextureHDREncoding() const
 {
 	switch (ExportOptions->TextureHDREncoding)
 	{
-		case EGLTFTextureHDREncoding::None: return EGLTFJsonHDREncoding::None;
-		case EGLTFTextureHDREncoding::RGBM: return EGLTFJsonHDREncoding::RGBM;
+		case ESKGLTFTextureHDREncoding::None: return ESKGLTFJsonHDREncoding::None;
+		case ESKGLTFTextureHDREncoding::RGBM: return ESKGLTFJsonHDREncoding::RGBM;
 		// TODO: add more encodings (like RGBE) when viewer supports them
 		default:
 			checkNoEntry();
-			return EGLTFJsonHDREncoding::None;
+			return ESKGLTFJsonHDREncoding::None;
 	}
 }
 
 bool FGLTFBuilder::ShouldExportLight(EComponentMobility::Type LightMobility) const
 {
-	const EGLTFSceneMobility AllowedMobility = static_cast<EGLTFSceneMobility>(ExportOptions->ExportLights);
-	const EGLTFSceneMobility QueriedMobility = GetSceneMobility(LightMobility);
+	const ESKGLTFSceneMobility AllowedMobility = static_cast<ESKGLTFSceneMobility>(ExportOptions->ExportLights);
+	const ESKGLTFSceneMobility QueriedMobility = GetSceneMobility(LightMobility);
 	return EnumHasAllFlags(AllowedMobility, QueriedMobility);
 }
 
-EGLTFSceneMobility FGLTFBuilder::GetSceneMobility(EComponentMobility::Type Mobility)
+ESKGLTFSceneMobility FGLTFBuilder::GetSceneMobility(EComponentMobility::Type Mobility)
 {
 	switch (Mobility)
 	{
-		case EComponentMobility::Static:     return EGLTFSceneMobility::Static;
-		case EComponentMobility::Stationary: return EGLTFSceneMobility::Stationary;
-		case EComponentMobility::Movable:    return EGLTFSceneMobility::Movable;
+		case EComponentMobility::Static:     return ESKGLTFSceneMobility::Static;
+		case EComponentMobility::Stationary: return ESKGLTFSceneMobility::Stationary;
+		case EComponentMobility::Movable:    return ESKGLTFSceneMobility::Movable;
 		default:
 			checkNoEntry();
-			return EGLTFSceneMobility::None;
+			return ESKGLTFSceneMobility::None;
 	}
 }
 
-EGLTFMaterialPropertyGroup FGLTFBuilder::GetPropertyGroup(const FMaterialPropertyEx& Property)
+ESKGLTFMaterialPropertyGroup FGLTFBuilder::GetPropertyGroup(const FMaterialPropertyEx& Property)
 {
 	switch (Property.Type)
 	{
 		case MP_BaseColor:
         case MP_Opacity:
         case MP_OpacityMask:
-            return EGLTFMaterialPropertyGroup::BaseColorOpacity;
+            return ESKGLTFMaterialPropertyGroup::BaseColorOpacity;
 		case MP_Metallic:
         case MP_Roughness:
-            return EGLTFMaterialPropertyGroup::MetallicRoughness;
+            return ESKGLTFMaterialPropertyGroup::MetallicRoughness;
 		case MP_EmissiveColor:
-			return EGLTFMaterialPropertyGroup::EmissiveColor;
+			return ESKGLTFMaterialPropertyGroup::EmissiveColor;
 		case MP_Normal:
-			return EGLTFMaterialPropertyGroup::Normal;
+			return ESKGLTFMaterialPropertyGroup::Normal;
 		case MP_AmbientOcclusion:
-			return EGLTFMaterialPropertyGroup::AmbientOcclusion;
+			return ESKGLTFMaterialPropertyGroup::AmbientOcclusion;
 		case MP_CustomData0:
         case MP_CustomData1:
-            return EGLTFMaterialPropertyGroup::ClearCoatRoughness;
+            return ESKGLTFMaterialPropertyGroup::ClearCoatRoughness;
 		case MP_CustomOutput:
 			if (Property.CustomOutput == TEXT("ClearCoatBottomNormal"))
 			{
-				return EGLTFMaterialPropertyGroup::ClearCoatBottomNormal;
+				return ESKGLTFMaterialPropertyGroup::ClearCoatBottomNormal;
 			}
 		default:
-			return EGLTFMaterialPropertyGroup::None;
+			return ESKGLTFMaterialPropertyGroup::None;
 	}
 }

@@ -1,6 +1,6 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
-#include "UI/GLTFExportOptionsWindow.h"
+#include "UI/SKGLTFExportOptionsWindow.h"
 #include "Modules/ModuleManager.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Text/STextBlock.h"
@@ -205,7 +205,7 @@ SGLTFExportOptionsWindow::SGLTFExportOptionsWindow()
 	, bShouldExportAll(false)
 {}
 
-void SGLTFExportOptionsWindow::ShowDialog(UGLTFExportOptions* ExportOptions, const FString& FullPath, bool bBatchMode, bool& bOutOperationCanceled, bool& bOutExportAll)
+void SGLTFExportOptionsWindow::ShowDialog(USKGLTFExportOptions* ExportOptions, const FString& FullPath, bool bBatchMode, bool& bOutOperationCanceled, bool& bOutExportAll)
 {
 	check(ExportOptions != nullptr);
 

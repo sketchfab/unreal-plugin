@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Json/GLTFJsonMatrix4.h"
+#include "Json/SKGLTFJsonMatrix4.h"
 
 const FGLTFJsonMatrix4 FGLTFJsonMatrix4::Identity =
 {

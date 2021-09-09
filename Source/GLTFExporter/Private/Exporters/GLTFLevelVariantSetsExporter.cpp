@@ -1,17 +1,17 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Exporters/GLTFLevelVariantSetsExporter.h"
-#include "Exporters/GLTFExporterUtility.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Exporters/SKGLTFLevelVariantSetsExporter.h"
+#include "Exporters/SKGLTFExporterUtility.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "LevelVariantSets.h"
 
-UGLTFLevelVariantSetsExporter::UGLTFLevelVariantSetsExporter(const FObjectInitializer& ObjectInitializer)
+USKGLTFLevelVariantSetsExporter::USKGLTFLevelVariantSetsExporter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	SupportedClass = ULevelVariantSets::StaticClass();
 }
 
-bool UGLTFLevelVariantSetsExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
+bool USKGLTFLevelVariantSetsExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
 {
 	const ULevelVariantSets* LevelVariantSets = CastChecked<ULevelVariantSets>(Object);
 

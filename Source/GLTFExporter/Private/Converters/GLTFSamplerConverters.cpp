@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFSamplerConverters.h"
-#include "Builders/GLTFContainerBuilder.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFTextureUtility.h"
+#include "Converters/SKGLTFSamplerConverters.h"
+#include "Builders/SKGLTFContainerBuilder.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFTextureUtility.h"
 
 FGLTFJsonSamplerIndex FGLTFSamplerConverter::Convert(const UTexture* Texture)
 {
@@ -15,8 +15,8 @@ FGLTFJsonSamplerIndex FGLTFSamplerConverter::Convert(const UTexture* Texture)
 	if (Texture->IsA<ULightMapTexture2D>())
 	{
 		// Override default filter settings for LightMap textures (which otherwise is "nearest")
-		JsonSampler.MinFilter = EGLTFJsonTextureFilter::LinearMipmapLinear;
-		JsonSampler.MagFilter = EGLTFJsonTextureFilter::Linear;
+		JsonSampler.MinFilter = ESKGLTFJsonTextureFilter::LinearMipmapLinear;
+		JsonSampler.MagFilter = ESKGLTFJsonTextureFilter::Linear;
 	}
 	else
 	{
@@ -26,8 +26,8 @@ FGLTFJsonSamplerIndex FGLTFSamplerConverter::Convert(const UTexture* Texture)
 
 	if (FGLTFTextureUtility::IsCubemap(Texture))
 	{
-		JsonSampler.WrapS = EGLTFJsonTextureWrap::ClampToEdge;
-		JsonSampler.WrapT = EGLTFJsonTextureWrap::ClampToEdge;
+		JsonSampler.WrapS = ESKGLTFJsonTextureWrap::ClampToEdge;
+		JsonSampler.WrapT = ESKGLTFJsonTextureWrap::ClampToEdge;
 	}
 	else
 	{

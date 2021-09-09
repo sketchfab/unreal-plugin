@@ -1,15 +1,15 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "GLTFMaterialAnalyzer.h"
-#include "GLTFProxyMaterialCompiler.h"
+#include "SKGLTFMaterialAnalyzer.h"
+#include "SKGLTFProxyMaterialCompiler.h"
 #include "Materials/HLSLMaterialTranslator.h"
 
-UGLTFMaterialAnalyzer::UGLTFMaterialAnalyzer()
+USKGLTFMaterialAnalyzer::USKGLTFMaterialAnalyzer()
 {
 	ResetToDefaults();
 }
 
-void UGLTFMaterialAnalyzer::ResetToDefaults()
+void USKGLTFMaterialAnalyzer::ResetToDefaults()
 {
 	Property = MP_MAX;
 	CustomOutput = {};
@@ -17,19 +17,19 @@ void UGLTFMaterialAnalyzer::ResetToDefaults()
 	Analysis = nullptr;
 }
 
-void UGLTFMaterialAnalyzer::AnalyzeMaterialPropertyEx(const UMaterialInterface* InMaterial, const EMaterialProperty& InProperty, const FString& InCustomOutput, FGLTFMaterialAnalysis& OutAnalysis)
+void USKGLTFMaterialAnalyzer::AnalyzeMaterialPropertyEx(const UMaterialInterface* InMaterial, const EMaterialProperty& InProperty, const FString& InCustomOutput, FGLTFMaterialAnalysis& OutAnalysis)
 {
 	// NOTE: besides avoiding creating a new object each time a property is analyzed,
 	// the use of GetDefaultObject() also server another purpose:
 	//
 	// When a property in an object that may be referenced by materials is modified,
 	// the editor will evaluate which materials need updating.
-	// UGLTFMaterialAnalyzer has no implementations for the pure virtual functions
+	// USKGLTFMaterialAnalyzer has no implementations for the pure virtual functions
 	// defined in UMaterialInterface, and the editor would crash if it was processed.
 	// Fortunately objects with the RF_ClassDefaultObject flag
 	// are excluded from being processed.
 
-	UGLTFMaterialAnalyzer* Analyzer = Cast<UGLTFMaterialAnalyzer>(StaticClass()->GetDefaultObject());
+	USKGLTFMaterialAnalyzer* Analyzer = Cast<USKGLTFMaterialAnalyzer>(StaticClass()->GetDefaultObject());
 
 	Analyzer->Property = InProperty;
 	Analyzer->CustomOutput = InCustomOutput;
@@ -46,7 +46,7 @@ void UGLTFMaterialAnalyzer::AnalyzeMaterialPropertyEx(const UMaterialInterface* 
 	Analyzer->ResetToDefaults();
 }
 
-UMaterialExpressionCustomOutput* UGLTFMaterialAnalyzer::GetCustomOutputExpression() const
+UMaterialExpressionCustomOutput* USKGLTFMaterialAnalyzer::GetCustomOutputExpression() const
 {
 	for (UMaterialExpression* Expression : Material->GetMaterial()->Expressions)
 	{
@@ -60,12 +60,12 @@ UMaterialExpressionCustomOutput* UGLTFMaterialAnalyzer::GetCustomOutputExpressio
 	return nullptr;
 }
 
-FMaterialResource* UGLTFMaterialAnalyzer::GetMaterialResource(ERHIFeatureLevel::Type InFeatureLevel, EMaterialQualityLevel::Type QualityLevel)
+FMaterialResource* USKGLTFMaterialAnalyzer::GetMaterialResource(ERHIFeatureLevel::Type InFeatureLevel, EMaterialQualityLevel::Type QualityLevel)
 {
 	return Material != nullptr ? Material->GetMaterialResource(InFeatureLevel, QualityLevel) : nullptr;
 }
 
-int32 UGLTFMaterialAnalyzer::CompilePropertyEx(FMaterialCompiler* Compiler, const FGuid& AttributeID)
+int32 USKGLTFMaterialAnalyzer::CompilePropertyEx(FMaterialCompiler* Compiler, const FGuid& AttributeID)
 {
 	if (Material == nullptr)
 	{
@@ -94,7 +94,7 @@ int32 UGLTFMaterialAnalyzer::CompilePropertyEx(FMaterialCompiler* Compiler, cons
 	{
 		using FHLSLMaterialTranslator::FHLSLMaterialTranslator;
 
-		friend UGLTFMaterialAnalyzer;
+		friend USKGLTFMaterialAnalyzer;
 	};
 
 	FHLSLMaterialTranslatorHack* TranslatorHack = static_cast<FHLSLMaterialTranslatorHack*>(Compiler);
@@ -118,7 +118,7 @@ int32 UGLTFMaterialAnalyzer::CompilePropertyEx(FMaterialCompiler* Compiler, cons
 	return Result;
 }
 
-bool UGLTFMaterialAnalyzer::IsPropertyActive(EMaterialProperty InProperty) const
+bool USKGLTFMaterialAnalyzer::IsPropertyActive(EMaterialProperty InProperty) const
 {
 	return Material != nullptr && Material->IsPropertyActive(InProperty);
 }

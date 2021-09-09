@@ -1,14 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFMaterialConverters.h"
-#include "Converters/GLTFMaterialUtility.h"
-#include "Builders/GLTFConvertBuilder.h"
-#include "Tasks/GLTFMaterialTasks.h"
+#include "Converters/SKGLTFMaterialConverters.h"
+#include "Converters/SKGLTFMaterialUtility.h"
+#include "Builders/SKGLTFConvertBuilder.h"
+#include "Tasks/SKGLTFMaterialTasks.h"
 
 void FGLTFMaterialConverter::Sanitize(const UMaterialInterface*& Material, const FGLTFMeshData*& MeshData, FGLTFIndexArray& SectionIndices)
 {
 	if (MeshData == nullptr ||
-		Builder.ExportOptions->BakeMaterialInputs != EGLTFMaterialBakeMode::UseMeshData ||
+		Builder.ExportOptions->BakeMaterialInputs != ESKGLTFMaterialBakeMode::UseMeshData ||
 		!FGLTFMaterialUtility::NeedsMeshData(Material))
 	{
 		MeshData = nullptr;

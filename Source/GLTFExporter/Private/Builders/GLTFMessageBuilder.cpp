@@ -1,12 +1,12 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFMessageBuilder.h"
-#include "GLTFExporterModule.h"
+#include "Builders/SKGLTFMessageBuilder.h"
+#include "SKGLTFExporterModule.h"
 #include "Interfaces/IPluginManager.h"
 #include "MessageLogModule.h"
 #include "IMessageLogListing.h"
 
-FGLTFMessageBuilder::FGLTFMessageBuilder(const FString& FilePath, const UGLTFExportOptions* ExportOptions)
+FGLTFMessageBuilder::FGLTFMessageBuilder(const FString& FilePath, const USKGLTFExportOptions* ExportOptions)
 	: FGLTFBuilder(FilePath, ExportOptions)
 {
 }
@@ -16,24 +16,24 @@ void FGLTFMessageBuilder::ClearMessages()
 	Messages.Empty();
 }
 
-void FGLTFMessageBuilder::AddMessage(EGLTFMessageSeverity Severity, const FString& Message)
+void FGLTFMessageBuilder::AddMessage(ESKGLTFMessageSeverity Severity, const FString& Message)
 {
 	Messages.Emplace(Severity, Message);
 }
 
 void FGLTFMessageBuilder::AddInfoMessage(const FString& Message)
 {
-	AddMessage(EGLTFMessageSeverity::Info, Message);
+	AddMessage(ESKGLTFMessageSeverity::Info, Message);
 }
 
 void FGLTFMessageBuilder::AddWarningMessage(const FString& Message)
 {
-	AddMessage(EGLTFMessageSeverity::Warning, Message);
+	AddMessage(ESKGLTFMessageSeverity::Warning, Message);
 }
 
 void FGLTFMessageBuilder::AddErrorMessage(const FString& Message)
 {
-	AddMessage(EGLTFMessageSeverity::Error, Message);
+	AddMessage(ESKGLTFMessageSeverity::Error, Message);
 }
 
 const TArray<FGLTFMessageBuilder::FLogMessage>& FGLTFMessageBuilder::GetMessages() const
@@ -41,7 +41,7 @@ const TArray<FGLTFMessageBuilder::FLogMessage>& FGLTFMessageBuilder::GetMessages
 	return Messages;
 }
 
-TArray<FGLTFMessageBuilder::FLogMessage> FGLTFMessageBuilder::GetMessages(EGLTFMessageSeverity Severity) const
+TArray<FGLTFMessageBuilder::FLogMessage> FGLTFMessageBuilder::GetMessages(ESKGLTFMessageSeverity Severity) const
 {
 	return Messages.FilterByPredicate(
 		[Severity](const FLogMessage& LogMessage)
@@ -52,17 +52,17 @@ TArray<FGLTFMessageBuilder::FLogMessage> FGLTFMessageBuilder::GetMessages(EGLTFM
 
 TArray<FGLTFMessageBuilder::FLogMessage> FGLTFMessageBuilder::GetInfoMessages() const
 {
-	return GetMessages(EGLTFMessageSeverity::Info);
+	return GetMessages(ESKGLTFMessageSeverity::Info);
 }
 
 TArray<FGLTFMessageBuilder::FLogMessage> FGLTFMessageBuilder::GetWarningMessages() const
 {
-	return GetMessages(EGLTFMessageSeverity::Warning);
+	return GetMessages(ESKGLTFMessageSeverity::Warning);
 }
 
 TArray<FGLTFMessageBuilder::FLogMessage> FGLTFMessageBuilder::GetErrorMessages() const
 {
-	return GetMessages(EGLTFMessageSeverity::Error);
+	return GetMessages(ESKGLTFMessageSeverity::Error);
 }
 
 int32 FGLTFMessageBuilder::GetMessageCount() const
@@ -90,7 +90,7 @@ void FGLTFMessageBuilder::ShowMessages() const
 	if (Messages.Num() > 0)
 	{
 		FMessageLogModule& MessageLogModule = FModuleManager::LoadModuleChecked<FMessageLogModule>("MessageLog");
-		const TSharedRef<IMessageLogListing> LogListing = MessageLogModule.GetLogListing(GLTFEXPORTER_MODULE_NAME);
+		const TSharedRef<IMessageLogListing> LogListing = MessageLogModule.GetLogListing(SKGLTFEXPORTER_MODULE_NAME);
 
 		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("Sketchfab");
 		const FPluginDescriptor& PluginDescriptor = Plugin->GetDescriptor();
@@ -103,7 +103,7 @@ void FGLTFMessageBuilder::ShowMessages() const
 			LogListing->AddMessage(CreateTokenizedMessage(Message));
 		}
 
-		MessageLogModule.OpenMessageLog(GLTFEXPORTER_MODULE_NAME);
+		MessageLogModule.OpenMessageLog(SKGLTFEXPORTER_MODULE_NAME);
 	}
 }
 
@@ -119,9 +119,9 @@ void FGLTFMessageBuilder::WriteMessageToConsole(const FLogMessage& LogMessage)
 {
 	switch (LogMessage.Key)
 	{
-		case EGLTFMessageSeverity::Info:    UE_LOG(LogGLTFExporter, Display, TEXT("%s"), *LogMessage.Value); break;
-		case EGLTFMessageSeverity::Warning: UE_LOG(LogGLTFExporter, Warning, TEXT("%s"), *LogMessage.Value); break;
-		case EGLTFMessageSeverity::Error:   UE_LOG(LogGLTFExporter, Error, TEXT("%s"), *LogMessage.Value); break;
+		case ESKGLTFMessageSeverity::Info:    UE_LOG(LogGLTFExporter, Display, TEXT("%s"), *LogMessage.Value); break;
+		case ESKGLTFMessageSeverity::Warning: UE_LOG(LogGLTFExporter, Warning, TEXT("%s"), *LogMessage.Value); break;
+		case ESKGLTFMessageSeverity::Error:   UE_LOG(LogGLTFExporter, Error, TEXT("%s"), *LogMessage.Value); break;
 		default:
 			checkNoEntry();
 			break;
@@ -134,9 +134,9 @@ TSharedRef<FTokenizedMessage> FGLTFMessageBuilder::CreateTokenizedMessage(const 
 
 	switch (LogMessage.Key)
 	{
-		case EGLTFMessageSeverity::Info:    MessageSeverity = EMessageSeverity::Type::Info; break;
-		case EGLTFMessageSeverity::Warning: MessageSeverity = EMessageSeverity::Type::Warning; break;
-		case EGLTFMessageSeverity::Error:   MessageSeverity = EMessageSeverity::Type::Error; break;
+		case ESKGLTFMessageSeverity::Info:    MessageSeverity = EMessageSeverity::Type::Info; break;
+		case ESKGLTFMessageSeverity::Warning: MessageSeverity = EMessageSeverity::Type::Warning; break;
+		case ESKGLTFMessageSeverity::Error:   MessageSeverity = EMessageSeverity::Type::Error; break;
 		default:
 			checkNoEntry();
 			break;

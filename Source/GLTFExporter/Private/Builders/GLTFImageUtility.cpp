@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFImageUtility.h"
+#include "Builders/SKGLTFImageUtility.h"
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
 

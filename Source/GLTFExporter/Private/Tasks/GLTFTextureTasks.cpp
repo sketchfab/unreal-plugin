@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Tasks/GLTFTextureTasks.h"
-#include "Builders/GLTFContainerBuilder.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFTextureUtility.h"
-#include "Converters/GLTFNameUtility.h"
+#include "Tasks/SKGLTFTextureTasks.h"
+#include "Builders/SKGLTFContainerBuilder.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFTextureUtility.h"
+#include "Converters/SKGLTFNameUtility.h"
 
 void FGLTFTexture2DTask::Complete()
 {
@@ -36,9 +36,9 @@ void FGLTFTexture2DTask::Complete()
 	}
 
 	const bool bIgnoreAlpha = FGLTFTextureUtility::IsAlphaless(Texture2D->GetPixelFormat());
-	const EGLTFTextureType Type =
-		Texture2D->IsNormalMap() ? EGLTFTextureType::Normalmaps :
-		bIsHDR ? EGLTFTextureType::HDR : EGLTFTextureType::None;
+	const ESKGLTFTextureType Type =
+		Texture2D->IsNormalMap() ? ESKGLTFTextureType::Normalmaps :
+		bIsHDR ? ESKGLTFTextureType::HDR : ESKGLTFTextureType::None;
 
 	JsonTexture.Source = Builder.AddImage(Pixels, Size, bIgnoreAlpha, Type, JsonTexture.Name);
 	JsonTexture.Sampler = Builder.GetOrAddSampler(Texture2D);
@@ -79,7 +79,7 @@ void FGLTFTextureCubeTask::Complete()
 	}
 
 	const bool bIgnoreAlpha = FGLTFTextureUtility::IsAlphaless(TextureCube->GetPixelFormat());
-	const EGLTFTextureType Type = bIsHDR ? EGLTFTextureType::HDR : EGLTFTextureType::None;
+	const ESKGLTFTextureType Type = bIsHDR ? ESKGLTFTextureType::HDR : ESKGLTFTextureType::None;
 
 	JsonTexture.Source = Builder.AddImage(Pixels, Size, bIgnoreAlpha, Type, JsonTexture.Name);
 	JsonTexture.Sampler = Builder.GetOrAddSampler(TextureCube);
@@ -106,7 +106,7 @@ void FGLTFTextureRenderTarget2DTask::Complete()
 	}
 
 	const bool bIgnoreAlpha = FGLTFTextureUtility::IsAlphaless(RenderTarget2D->GetFormat());
-	const EGLTFTextureType Type = bIsHDR ? EGLTFTextureType::HDR : EGLTFTextureType::None;
+	const ESKGLTFTextureType Type = bIsHDR ? ESKGLTFTextureType::HDR : ESKGLTFTextureType::None;
 
 	JsonTexture.Source = Builder.AddImage(Pixels, Size, bIgnoreAlpha, Type, JsonTexture.Name);
 	JsonTexture.Sampler = Builder.GetOrAddSampler(RenderTarget2D);
@@ -146,7 +146,7 @@ void FGLTFTextureRenderTargetCubeTask::Complete()
 	}
 
 	const bool bIgnoreAlpha = FGLTFTextureUtility::IsAlphaless(RenderTargetCube->GetFormat());
-	const EGLTFTextureType Type = bIsHDR ? EGLTFTextureType::HDR : EGLTFTextureType::None;
+	const ESKGLTFTextureType Type = bIsHDR ? ESKGLTFTextureType::HDR : ESKGLTFTextureType::None;
 
 	JsonTexture.Source = Builder.AddImage(Pixels, Size, bIgnoreAlpha, Type, JsonTexture.Name);
 	JsonTexture.Sampler = Builder.GetOrAddSampler(RenderTargetCube);
@@ -178,7 +178,7 @@ void FGLTFTextureLightMapTask::Complete()
 	const int64 ByteLength = Source.CalcMipSize(0);
 
 	const bool bIgnoreAlpha = false;
-	const EGLTFTextureType Type = EGLTFTextureType::Lightmaps;
+	const ESKGLTFTextureType Type = ESKGLTFTextureType::Lightmaps;
 
 	const void* RawData = Source.LockMip(0);
 	JsonTexture.Source = Builder.AddImage(static_cast<const FColor*>(RawData), ByteLength, Size, bIgnoreAlpha, Type, JsonTexture.Name);

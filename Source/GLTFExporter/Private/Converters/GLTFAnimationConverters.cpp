@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFAnimationConverters.h"
-#include "Builders/GLTFConvertBuilder.h"
-#include "Tasks/GLTFAnimationTasks.h"
+#include "Converters/SKGLTFAnimationConverters.h"
+#include "Builders/SKGLTFConvertBuilder.h"
+#include "Tasks/SKGLTFAnimationTasks.h"
 #include "Animation/AnimSequence.h"
 
 FGLTFJsonAnimationIndex FGLTFAnimationConverter::Convert(FGLTFJsonNodeIndex RootNode, const USkeletalMesh* SkeletalMesh, const UAnimSequence* AnimSequence)

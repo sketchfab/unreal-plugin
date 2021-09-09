@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFHotspotConverters.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Converters/SKGLTFHotspotConverters.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "Animation/SkeletalMeshActor.h"
 
-FGLTFJsonHotspotIndex FGLTFHotspotConverter::Convert(const AGLTFHotspotActor* HotspotActor)
+FGLTFJsonHotspotIndex FGLTFHotspotConverter::Convert(const ASKGLTFHotspotActor* HotspotActor)
 {
 	FGLTFJsonHotspot JsonHotspot;
 	HotspotActor->GetName(JsonHotspot.Name);
@@ -63,10 +63,10 @@ FGLTFJsonHotspotIndex FGLTFHotspotConverter::Convert(const AGLTFHotspotActor* Ho
 		// TODO: report warning
 	}
 
-	JsonHotspot.Image = Builder.GetOrAddTexture(HotspotActor->GetImageForState(EGLTFHotspotState::Default));
-	JsonHotspot.HoveredImage = Builder.GetOrAddTexture(HotspotActor->GetImageForState(EGLTFHotspotState::Hovered));
-	JsonHotspot.ToggledImage = Builder.GetOrAddTexture(HotspotActor->GetImageForState(EGLTFHotspotState::Toggled));
-	JsonHotspot.ToggledHoveredImage = Builder.GetOrAddTexture(HotspotActor->GetImageForState(EGLTFHotspotState::ToggledHovered));
+	JsonHotspot.Image = Builder.GetOrAddTexture(HotspotActor->GetImageForState(ESKGLTFHotspotState::Default));
+	JsonHotspot.HoveredImage = Builder.GetOrAddTexture(HotspotActor->GetImageForState(ESKGLTFHotspotState::Hovered));
+	JsonHotspot.ToggledImage = Builder.GetOrAddTexture(HotspotActor->GetImageForState(ESKGLTFHotspotState::Toggled));
+	JsonHotspot.ToggledHoveredImage = Builder.GetOrAddTexture(HotspotActor->GetImageForState(ESKGLTFHotspotState::ToggledHovered));
 
 	return Builder.AddHotspot(JsonHotspot);
 }

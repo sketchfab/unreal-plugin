@@ -1,16 +1,16 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Exporters/GLTFSkeletalMeshExporter.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Exporters/SKGLTFSkeletalMeshExporter.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "Engine/SkeletalMesh.h"
 
-UGLTFSkeletalMeshExporter::UGLTFSkeletalMeshExporter(const FObjectInitializer& ObjectInitializer)
+USKGLTFSkeletalMeshExporter::USKGLTFSkeletalMeshExporter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	SupportedClass = USkeletalMesh::StaticClass();
 }
 
-bool UGLTFSkeletalMeshExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
+bool USKGLTFSkeletalMeshExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
 {
 	const USkeletalMesh* SkeletalMesh = CastChecked<USkeletalMesh>(Object);
 

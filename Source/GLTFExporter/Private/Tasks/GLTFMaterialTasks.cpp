@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Tasks/GLTFMaterialTasks.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFNameUtility.h"
-#include "Converters/GLTFMaterialUtility.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Tasks/SKGLTFMaterialTasks.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFNameUtility.h"
+#include "Converters/SKGLTFMaterialUtility.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "MaterialPropertyEx.h"
 #include "Materials/MaterialExpressionConstant.h"
 #include "Materials/MaterialExpressionConstant2Vector.h"
@@ -64,14 +64,14 @@ void FGLTFMaterialTask::Complete()
 	ConvertAlphaMode(JsonMaterial.AlphaMode, JsonMaterial.BlendMode);
 	ConvertShadingModel(JsonMaterial.ShadingModel);
 
-	if (JsonMaterial.ShadingModel != EGLTFJsonShadingModel::None)
+	if (JsonMaterial.ShadingModel != ESKGLTFJsonShadingModel::None)
 	{
-		const FMaterialPropertyEx BaseColorProperty = JsonMaterial.ShadingModel == EGLTFJsonShadingModel::Unlit ? MP_EmissiveColor : MP_BaseColor;
-		const FMaterialPropertyEx OpacityProperty = JsonMaterial.AlphaMode == EGLTFJsonAlphaMode::Mask ? MP_OpacityMask : MP_Opacity;
+		const FMaterialPropertyEx BaseColorProperty = JsonMaterial.ShadingModel == ESKGLTFJsonShadingModel::Unlit ? MP_EmissiveColor : MP_BaseColor;
+		const FMaterialPropertyEx OpacityProperty = JsonMaterial.AlphaMode == ESKGLTFJsonAlphaMode::Mask ? MP_OpacityMask : MP_Opacity;
 
 		// TODO: check if a property is active before trying to get it (i.e. Material->IsPropertyActive)
 
-		if (JsonMaterial.AlphaMode == EGLTFJsonAlphaMode::Opaque)
+		if (JsonMaterial.AlphaMode == ESKGLTFJsonAlphaMode::Opaque)
 		{
 			if (!TryGetConstantColor(JsonMaterial.PBRMetallicRoughness.BaseColorFactor, BaseColorProperty))
 			{
@@ -94,7 +94,7 @@ void FGLTFMaterialTask::Complete()
 			}
 		}
 
-		if (JsonMaterial.ShadingModel == EGLTFJsonShadingModel::Default || JsonMaterial.ShadingModel == EGLTFJsonShadingModel::ClearCoat)
+		if (JsonMaterial.ShadingModel == ESKGLTFJsonShadingModel::Default || JsonMaterial.ShadingModel == ESKGLTFJsonShadingModel::ClearCoat)
 		{
 			const FMaterialPropertyEx MetallicProperty = MP_Metallic;
 			const FMaterialPropertyEx RoughnessProperty = MP_Roughness;
@@ -110,7 +110,7 @@ void FGLTFMaterialTask::Complete()
 				Builder.AddWarningMessage(FString::Printf(TEXT("Failed to export %s for material %s"), *EmissiveProperty.ToString(), *Material->GetName()));
 			}
 
-			const FMaterialPropertyEx NormalProperty = JsonMaterial.ShadingModel == EGLTFJsonShadingModel::ClearCoat ? FMaterialPropertyEx(TEXT("ClearCoatBottomNormal")) : FMaterialPropertyEx(MP_Normal);
+			const FMaterialPropertyEx NormalProperty = JsonMaterial.ShadingModel == ESKGLTFJsonShadingModel::ClearCoat ? FMaterialPropertyEx(TEXT("ClearCoatBottomNormal")) : FMaterialPropertyEx(MP_Normal);
 			if (IsPropertyNonDefault(NormalProperty))
 			{
 				if (!TryGetSourceTexture(JsonMaterial.NormalTexture, NormalProperty, DefaultColorInputMasks))
@@ -134,7 +134,7 @@ void FGLTFMaterialTask::Complete()
 				}
 			}
 
-			if (JsonMaterial.ShadingModel == EGLTFJsonShadingModel::ClearCoat)
+			if (JsonMaterial.ShadingModel == ESKGLTFJsonShadingModel::ClearCoat)
 			{
 				const FMaterialPropertyEx ClearCoatProperty = MP_CustomData0;
 				const FMaterialPropertyEx ClearCoatRoughnessProperty = MP_CustomData1;
@@ -184,15 +184,15 @@ void FGLTFMaterialTask::Complete()
 	}
 }
 
-void FGLTFMaterialTask::ConvertAlphaMode(EGLTFJsonAlphaMode& OutAlphaMode, EGLTFJsonBlendMode& OutBlendMode) const
+void FGLTFMaterialTask::ConvertAlphaMode(ESKGLTFJsonAlphaMode& OutAlphaMode, ESKGLTFJsonBlendMode& OutBlendMode) const
 {
 	const EBlendMode BlendMode = Material->GetBlendMode();
 
 	OutAlphaMode = FGLTFConverterUtility::ConvertAlphaMode(BlendMode);
-	if (OutAlphaMode == EGLTFJsonAlphaMode::None)
+	if (OutAlphaMode == ESKGLTFJsonAlphaMode::None)
 	{
-		OutAlphaMode = EGLTFJsonAlphaMode::Blend;
-		OutBlendMode = EGLTFJsonBlendMode::None;
+		OutAlphaMode = ESKGLTFJsonAlphaMode::Blend;
+		OutBlendMode = ESKGLTFJsonBlendMode::None;
 
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("Unsupported blend mode (%s) in material %s, will export as %s"),
@@ -202,12 +202,12 @@ void FGLTFMaterialTask::ConvertAlphaMode(EGLTFJsonAlphaMode& OutAlphaMode, EGLTF
 		return;
 	}
 
-	if (OutAlphaMode == EGLTFJsonAlphaMode::Blend)
+	if (OutAlphaMode == ESKGLTFJsonAlphaMode::Blend)
 	{
 		OutBlendMode = FGLTFConverterUtility::ConvertBlendMode(BlendMode);
-		if (OutBlendMode != EGLTFJsonBlendMode::None && !Builder.ExportOptions->bExportExtraBlendModes)
+		if (OutBlendMode != ESKGLTFJsonBlendMode::None && !Builder.ExportOptions->bExportExtraBlendModes)
 		{
-			OutBlendMode = EGLTFJsonBlendMode::None;
+			OutBlendMode = ESKGLTFJsonBlendMode::None;
 
 			Builder.AddWarningMessage(FString::Printf(
 				TEXT("Extra blend mode (%s) in material %s disabled by export options, will export as %s"),
@@ -218,7 +218,7 @@ void FGLTFMaterialTask::ConvertAlphaMode(EGLTFJsonAlphaMode& OutAlphaMode, EGLTF
 	}
 }
 
-void FGLTFMaterialTask::ConvertShadingModel(EGLTFJsonShadingModel& OutShadingModel) const
+void FGLTFMaterialTask::ConvertShadingModel(ESKGLTFJsonShadingModel& OutShadingModel) const
 {
 	EMaterialShadingModel ShadingModel;
 	{
@@ -255,9 +255,9 @@ void FGLTFMaterialTask::ConvertShadingModel(EGLTFJsonShadingModel& OutShadingMod
 	}
 
 	OutShadingModel = FGLTFConverterUtility::ConvertShadingModel(ShadingModel);
-	if (OutShadingModel == EGLTFJsonShadingModel::None)
+	if (OutShadingModel == ESKGLTFJsonShadingModel::None)
 	{
-		OutShadingModel = EGLTFJsonShadingModel::Default;
+		OutShadingModel = ESKGLTFJsonShadingModel::Default;
 
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("Unsupported shading model (%s) in material %s, will export as %s"),
@@ -267,9 +267,9 @@ void FGLTFMaterialTask::ConvertShadingModel(EGLTFJsonShadingModel& OutShadingMod
 		return;
 	}
 
-	if (OutShadingModel == EGLTFJsonShadingModel::Unlit && !Builder.ExportOptions->bExportUnlitMaterials)
+	if (OutShadingModel == ESKGLTFJsonShadingModel::Unlit && !Builder.ExportOptions->bExportUnlitMaterials)
 	{
-		OutShadingModel = EGLTFJsonShadingModel::Default;
+		OutShadingModel = ESKGLTFJsonShadingModel::Default;
 
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("Shading model (%s) in material %s disabled by export options, will export as %s"),
@@ -279,9 +279,9 @@ void FGLTFMaterialTask::ConvertShadingModel(EGLTFJsonShadingModel& OutShadingMod
 		return;
 	}
 
-	if (OutShadingModel == EGLTFJsonShadingModel::ClearCoat && !Builder.ExportOptions->bExportClearCoatMaterials)
+	if (OutShadingModel == ESKGLTFJsonShadingModel::ClearCoat && !Builder.ExportOptions->bExportClearCoatMaterials)
 	{
-		OutShadingModel = EGLTFJsonShadingModel::Default;
+		OutShadingModel = ESKGLTFJsonShadingModel::Default;
 
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("Shading model (%s) in material %s disabled by export options, will export as %s"),
@@ -329,7 +329,7 @@ bool FGLTFMaterialTask::TryGetBaseColorAndOpacity(FGLTFJsonPBRMetallicRoughness&
 		return true;
 	}
 
-	if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::Disabled)
+	if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::Disabled)
 	{
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("%s and %s for material %s needs to bake, but material baking is disabled by export options"),
@@ -342,12 +342,12 @@ bool FGLTFMaterialTask::TryGetBaseColorAndOpacity(FGLTFJsonPBRMetallicRoughness&
 	FIntPoint TextureSize = Builder.GetBakeSizeForMaterialProperty(Material, BaseColorProperty);
 
 	const TextureAddress TextureAddress = Builder.GetBakeTilingForMaterialProperty(Material, BaseColorProperty);
-	const EGLTFJsonTextureWrap TextureWrapS = FGLTFConverterUtility::ConvertWrap(TextureAddress);
-	const EGLTFJsonTextureWrap TextureWrapT = FGLTFConverterUtility::ConvertWrap(TextureAddress);
+	const ESKGLTFJsonTextureWrap TextureWrapS = FGLTFConverterUtility::ConvertWrap(TextureAddress);
+	const ESKGLTFJsonTextureWrap TextureWrapT = FGLTFConverterUtility::ConvertWrap(TextureAddress);
 
 	const TextureFilter TextureFilter = Builder.GetBakeFilterForMaterialProperty(Material, BaseColorProperty);
-	const EGLTFJsonTextureFilter TextureMinFilter = FGLTFConverterUtility::ConvertMinFilter(TextureFilter);
-	const EGLTFJsonTextureFilter TextureMagFilter = FGLTFConverterUtility::ConvertMagFilter(TextureFilter);
+	const ESKGLTFJsonTextureFilter TextureMinFilter = FGLTFConverterUtility::ConvertMinFilter(TextureFilter);
+	const ESKGLTFJsonTextureFilter TextureMagFilter = FGLTFConverterUtility::ConvertMagFilter(TextureFilter);
 
 	const FGLTFPropertyBakeOutput BaseColorBakeOutput = BakeMaterialProperty(BaseColorProperty, BaseColorTexCoord, TextureSize);
 	const FGLTFPropertyBakeOutput OpacityBakeOutput = BakeMaterialProperty(OpacityProperty, OpacityTexCoord, TextureSize, true);
@@ -363,7 +363,7 @@ bool FGLTFMaterialTask::TryGetBaseColorAndOpacity(FGLTFJsonPBRMetallicRoughness&
 		return true;
 	}
 
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return true;
 	}
@@ -454,7 +454,7 @@ bool FGLTFMaterialTask::TryGetMetallicAndRoughness(FGLTFJsonPBRMetallicRoughness
 		return true;
 	}
 
-	if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::Disabled)
+	if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::Disabled)
 	{
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("%s and %s for material %s needs to bake, but material baking is disabled by export options"),
@@ -468,12 +468,12 @@ bool FGLTFMaterialTask::TryGetMetallicAndRoughness(FGLTFJsonPBRMetallicRoughness
 	FIntPoint TextureSize = Builder.GetBakeSizeForMaterialProperty(Material, MetallicProperty);
 
 	const TextureAddress TextureAddress = Builder.GetBakeTilingForMaterialProperty(Material, MetallicProperty);
-	const EGLTFJsonTextureWrap TextureWrapS = FGLTFConverterUtility::ConvertWrap(TextureAddress);
-	const EGLTFJsonTextureWrap TextureWrapT = FGLTFConverterUtility::ConvertWrap(TextureAddress);
+	const ESKGLTFJsonTextureWrap TextureWrapS = FGLTFConverterUtility::ConvertWrap(TextureAddress);
+	const ESKGLTFJsonTextureWrap TextureWrapT = FGLTFConverterUtility::ConvertWrap(TextureAddress);
 
 	const TextureFilter TextureFilter = Builder.GetBakeFilterForMaterialProperty(Material, MetallicProperty);
-	const EGLTFJsonTextureFilter TextureMinFilter = FGLTFConverterUtility::ConvertMinFilter(TextureFilter);
-	const EGLTFJsonTextureFilter TextureMagFilter = FGLTFConverterUtility::ConvertMagFilter(TextureFilter);
+	const ESKGLTFJsonTextureFilter TextureMinFilter = FGLTFConverterUtility::ConvertMinFilter(TextureFilter);
+	const ESKGLTFJsonTextureFilter TextureMagFilter = FGLTFConverterUtility::ConvertMagFilter(TextureFilter);
 
 	FGLTFPropertyBakeOutput MetallicBakeOutput = BakeMaterialProperty(MetallicProperty, MetallicTexCoord, TextureSize);
 	FGLTFPropertyBakeOutput RoughnessBakeOutput = BakeMaterialProperty(RoughnessProperty, RoughnessTexCoord, TextureSize);
@@ -486,7 +486,7 @@ bool FGLTFMaterialTask::TryGetMetallicAndRoughness(FGLTFJsonPBRMetallicRoughness
 		return true;
 	}
 
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return true;
 	}
@@ -582,7 +582,7 @@ bool FGLTFMaterialTask::TryGetClearCoatRoughness(FGLTFJsonClearCoatExtension& Ou
 		return true;
 	}
 
-	if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::Disabled)
+	if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::Disabled)
 	{
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("%s and %s for material %s needs to bake, but material baking is disabled by export options"),
@@ -595,12 +595,12 @@ bool FGLTFMaterialTask::TryGetClearCoatRoughness(FGLTFJsonClearCoatExtension& Ou
 	FIntPoint TextureSize = Builder.GetBakeSizeForMaterialProperty(Material, IntensityProperty);
 
 	const TextureAddress TextureAddress = Builder.GetBakeTilingForMaterialProperty(Material, IntensityProperty);
-	const EGLTFJsonTextureWrap TextureWrapS = FGLTFConverterUtility::ConvertWrap(TextureAddress);
-	const EGLTFJsonTextureWrap TextureWrapT = FGLTFConverterUtility::ConvertWrap(TextureAddress);
+	const ESKGLTFJsonTextureWrap TextureWrapS = FGLTFConverterUtility::ConvertWrap(TextureAddress);
+	const ESKGLTFJsonTextureWrap TextureWrapT = FGLTFConverterUtility::ConvertWrap(TextureAddress);
 
 	const TextureFilter TextureFilter = Builder.GetBakeFilterForMaterialProperty(Material, IntensityProperty);
-	const EGLTFJsonTextureFilter TextureMinFilter = FGLTFConverterUtility::ConvertMinFilter(TextureFilter);
-	const EGLTFJsonTextureFilter TextureMagFilter = FGLTFConverterUtility::ConvertMagFilter(TextureFilter);
+	const ESKGLTFJsonTextureFilter TextureMinFilter = FGLTFConverterUtility::ConvertMinFilter(TextureFilter);
+	const ESKGLTFJsonTextureFilter TextureMagFilter = FGLTFConverterUtility::ConvertMagFilter(TextureFilter);
 
 	const FGLTFPropertyBakeOutput IntensityBakeOutput = BakeMaterialProperty(IntensityProperty, IntensityTexCoord, TextureSize);
 	const FGLTFPropertyBakeOutput RoughnessBakeOutput = BakeMaterialProperty(RoughnessProperty, RoughnessTexCoord, TextureSize);
@@ -613,7 +613,7 @@ bool FGLTFMaterialTask::TryGetClearCoatRoughness(FGLTFJsonClearCoatExtension& Ou
 		return true;
 	}
 
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return true;
 	}
@@ -682,7 +682,7 @@ bool FGLTFMaterialTask::TryGetEmissive(FGLTFJsonMaterial& JsonMaterial, const FM
 		return true;
 	}
 
-	if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::Disabled)
+	if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::Disabled)
 	{
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("%s for material %s needs to bake, but material baking is disabled by export options"),
@@ -701,7 +701,7 @@ bool FGLTFMaterialTask::TryGetEmissive(FGLTFJsonMaterial& JsonMaterial, const FM
 	}
 	else
 	{
-		if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+		if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 		{
 			JsonMaterial.EmissiveTexture.Index = FGLTFJsonTextureIndex(INDEX_NONE);
 			return true;
@@ -994,7 +994,7 @@ bool FGLTFMaterialTask::TryGetSourceTexture(FGLTFJsonTextureInfo& OutTexInfo, co
 
 bool FGLTFMaterialTask::TryGetSourceTexture(const UTexture2D*& OutTexture, int32& OutTexCoord, FGLTFJsonTextureTransform& OutTransform, const FMaterialPropertyEx& Property, const TArray<FLinearColor>& AllowedMasks) const
 {
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return false;
 	}
@@ -1110,7 +1110,7 @@ bool FGLTFMaterialTask::TryGetSourceTexture(const UTexture2D*& OutTexture, int32
 
 bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTexInfo, FGLTFJsonColor3& OutConstant, const FMaterialPropertyEx& Property, const FString& PropertyName, bool bTransformToLinear)
 {
-	if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::Disabled)
+	if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::Disabled)
 	{
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("%s for material %s needs to bake, but material baking is disabled by export options"),
@@ -1127,7 +1127,7 @@ bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTex
 		return true;
 	}
 
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		OutTexInfo.Index = FGLTFJsonTextureIndex(INDEX_NONE);
 		return true;
@@ -1149,7 +1149,7 @@ bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTex
 
 bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTexInfo, FGLTFJsonColor4& OutConstant, const FMaterialPropertyEx& Property, const FString& PropertyName, bool bTransformToLinear)
 {
-	if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::Disabled)
+	if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::Disabled)
 	{
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("%s for material %s needs to bake, but material baking is disabled by export options"),
@@ -1166,7 +1166,7 @@ bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTex
 		return true;
 	}
 
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		OutTexInfo.Index = FGLTFJsonTextureIndex(INDEX_NONE);
 		return true;
@@ -1188,7 +1188,7 @@ bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTex
 
 inline bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTexInfo, float& OutConstant, const FMaterialPropertyEx& Property, const FString& PropertyName, bool bTransformToLinear)
 {
-	if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::Disabled)
+	if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::Disabled)
 	{
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("%s for material %s needs to bake, but material baking is disabled by export options"),
@@ -1205,7 +1205,7 @@ inline bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo&
 		return true;
 	}
 
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		OutTexInfo.Index = FGLTFJsonTextureIndex(INDEX_NONE);
 		return true;
@@ -1227,7 +1227,7 @@ inline bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo&
 
 bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTexInfo, const FMaterialPropertyEx& Property, const FString& PropertyName, bool bTransformToLinear)
 {
-	if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::Disabled)
+	if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::Disabled)
 	{
 		Builder.AddWarningMessage(FString::Printf(
 			TEXT("%s for material %s needs to bake, but material baking is disabled by export options"),
@@ -1240,7 +1240,7 @@ bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTex
 
 	if (!PropertyBakeOutput.bIsConstant)
 	{
-		if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+		if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 		{
 			OutTexInfo.Index = FGLTFJsonTextureIndex(INDEX_NONE);
 			return true;
@@ -1283,10 +1283,10 @@ bool FGLTFMaterialTask::TryGetBakedMaterialProperty(FGLTFJsonTextureInfo& OutTex
 		true, // NOTE: we can ignore alpha in everything but TryGetBaseColorAndOpacity
 		false, // Normal and ClearCoatBottomNormal are handled above
 		GetBakedTextureName(PropertyName),
-		EGLTFJsonTextureFilter::Nearest,
-		EGLTFJsonTextureFilter::Nearest,
-		EGLTFJsonTextureWrap::ClampToEdge,
-		EGLTFJsonTextureWrap::ClampToEdge);
+		ESKGLTFJsonTextureFilter::Nearest,
+		ESKGLTFJsonTextureFilter::Nearest,
+		ESKGLTFJsonTextureWrap::ClampToEdge,
+		ESKGLTFJsonTextureWrap::ClampToEdge);
 
 	OutTexInfo.Index = TextureIndex;
 	return true;
@@ -1347,12 +1347,12 @@ FGLTFPropertyBakeOutput FGLTFMaterialTask::BakeMaterialProperty(const FMaterialP
 bool FGLTFMaterialTask::StoreBakedPropertyTexture(FGLTFJsonTextureInfo& OutTexInfo, const FGLTFPropertyBakeOutput& PropertyBakeOutput, const FString& PropertyName) const
 {
 	const TextureAddress TextureAddress = Builder.GetBakeTilingForMaterialProperty(Material, PropertyBakeOutput.Property);
-	const EGLTFJsonTextureWrap TextureWrapS = FGLTFConverterUtility::ConvertWrap(TextureAddress);
-	const EGLTFJsonTextureWrap TextureWrapT = FGLTFConverterUtility::ConvertWrap(TextureAddress);
+	const ESKGLTFJsonTextureWrap TextureWrapS = FGLTFConverterUtility::ConvertWrap(TextureAddress);
+	const ESKGLTFJsonTextureWrap TextureWrapT = FGLTFConverterUtility::ConvertWrap(TextureAddress);
 
 	const TextureFilter TextureFilter = Builder.GetBakeFilterForMaterialProperty(Material, PropertyBakeOutput.Property);
-	const EGLTFJsonTextureFilter TextureMinFilter = FGLTFConverterUtility::ConvertMinFilter(TextureFilter);
-	const EGLTFJsonTextureFilter TextureMagFilter = FGLTFConverterUtility::ConvertMagFilter(TextureFilter);
+	const ESKGLTFJsonTextureFilter TextureMinFilter = FGLTFConverterUtility::ConvertMinFilter(TextureFilter);
+	const ESKGLTFJsonTextureFilter TextureMagFilter = FGLTFConverterUtility::ConvertMagFilter(TextureFilter);
 
 	const FGLTFJsonTextureIndex TextureIndex = FGLTFMaterialUtility::AddTexture(
 		Builder,

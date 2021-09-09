@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFUVDegenerateChecker.h"
+#include "Converters/SKGLTFUVDegenerateChecker.h"
 #include "StaticMeshAttributes.h"
 #include "MeshDescription.h"
 

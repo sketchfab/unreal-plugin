@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Tasks/GLTFAnimationTasks.h"
-#include "Builders/GLTFContainerBuilder.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFBoneUtility.h"
+#include "Tasks/SKGLTFAnimationTasks.h"
+#include "Builders/SKGLTFContainerBuilder.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFBoneUtility.h"
 #include "LevelSequence.h"
 #include "LevelSequencePlayer.h"
 #include "MovieSceneTimeHelpers.h"
@@ -37,8 +37,8 @@ void FGLTFAnimSequenceTask::Complete()
 
 	FGLTFJsonAccessor JsonInputAccessor;
 	JsonInputAccessor.BufferView = Builder.AddBufferView(Timestamps);
-	JsonInputAccessor.ComponentType = EGLTFJsonComponentType::F32;
-	JsonInputAccessor.Type = EGLTFJsonAccessorType::Scalar;
+	JsonInputAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
+	JsonInputAccessor.Type = ESKGLTFJsonAccessorType::Scalar;
 	JsonInputAccessor.MinMaxLength = 1;
 	JsonInputAccessor.Min[0] = 0;
 
@@ -48,10 +48,10 @@ void FGLTFAnimSequenceTask::Complete()
 		FGLTFBoneUtility::InitializeToSkeleton(BoneContainer, Skeleton);
 	}
 
-	EGLTFJsonInterpolation Interpolation = FGLTFConverterUtility::ConvertInterpolation(AnimSequence->Interpolation);
-	if (Interpolation == EGLTFJsonInterpolation::None)
+	ESKGLTFJsonInterpolation Interpolation = FGLTFConverterUtility::ConvertInterpolation(AnimSequence->Interpolation);
+	if (Interpolation == ESKGLTFJsonInterpolation::None)
 	{
-		Interpolation = EGLTFJsonInterpolation::Linear;
+		Interpolation = ESKGLTFJsonInterpolation::Linear;
 		// TODO: report warning (about unknown interpolation exported as linear)
 	}
 
@@ -110,9 +110,9 @@ void FGLTFAnimSequenceTask::Complete()
 
 			FGLTFJsonAccessor JsonOutputAccessor;
 			JsonOutputAccessor.BufferView = Builder.AddBufferView(Translations);
-			JsonOutputAccessor.ComponentType = EGLTFJsonComponentType::F32;
+			JsonOutputAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
 			JsonOutputAccessor.Count = Translations.Num();
-			JsonOutputAccessor.Type = EGLTFJsonAccessorType::Vec3;
+			JsonOutputAccessor.Type = ESKGLTFJsonAccessorType::Vec3;
 
 			FGLTFJsonAnimationSampler JsonSampler;
 			JsonSampler.Input = Builder.AddAccessor(JsonInputAccessor);
@@ -121,7 +121,7 @@ void FGLTFAnimSequenceTask::Complete()
 
 			FGLTFJsonAnimationChannel JsonChannel;
 			JsonChannel.Sampler = FGLTFJsonAnimationSamplerIndex(JsonAnimation.Samplers.Add(JsonSampler));
-			JsonChannel.Target.Path = EGLTFJsonTargetPath::Translation;
+			JsonChannel.Target.Path = ESKGLTFJsonTargetPath::Translation;
 			JsonChannel.Target.Node = NodeIndex;
 			JsonAnimation.Channels.Add(JsonChannel);
 		}
@@ -142,9 +142,9 @@ void FGLTFAnimSequenceTask::Complete()
 
 			FGLTFJsonAccessor JsonOutputAccessor;
 			JsonOutputAccessor.BufferView = Builder.AddBufferView(Rotations);
-			JsonOutputAccessor.ComponentType = EGLTFJsonComponentType::F32;
+			JsonOutputAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
 			JsonOutputAccessor.Count = Rotations.Num();
-			JsonOutputAccessor.Type = EGLTFJsonAccessorType::Vec4;
+			JsonOutputAccessor.Type = ESKGLTFJsonAccessorType::Vec4;
 
 			FGLTFJsonAnimationSampler JsonSampler;
 			JsonSampler.Input = Builder.AddAccessor(JsonInputAccessor);;
@@ -153,7 +153,7 @@ void FGLTFAnimSequenceTask::Complete()
 
 			FGLTFJsonAnimationChannel JsonChannel;
 			JsonChannel.Sampler = FGLTFJsonAnimationSamplerIndex(JsonAnimation.Samplers.Add(JsonSampler));
-			JsonChannel.Target.Path = EGLTFJsonTargetPath::Rotation;
+			JsonChannel.Target.Path = ESKGLTFJsonTargetPath::Rotation;
 			JsonChannel.Target.Node = NodeIndex;
 			JsonAnimation.Channels.Add(JsonChannel);
 		}
@@ -174,9 +174,9 @@ void FGLTFAnimSequenceTask::Complete()
 
 			FGLTFJsonAccessor JsonOutputAccessor;
 			JsonOutputAccessor.BufferView = Builder.AddBufferView(Scales);
-			JsonOutputAccessor.ComponentType = EGLTFJsonComponentType::F32;
+			JsonOutputAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
 			JsonOutputAccessor.Count = Scales.Num();
-			JsonOutputAccessor.Type = EGLTFJsonAccessorType::Vec3;
+			JsonOutputAccessor.Type = ESKGLTFJsonAccessorType::Vec3;
 
 			FGLTFJsonAnimationSampler JsonSampler;
 			JsonSampler.Input = Builder.AddAccessor(JsonInputAccessor);
@@ -185,7 +185,7 @@ void FGLTFAnimSequenceTask::Complete()
 
 			FGLTFJsonAnimationChannel JsonChannel;
 			JsonChannel.Sampler = FGLTFJsonAnimationSamplerIndex(JsonAnimation.Samplers.Add(JsonSampler));
-			JsonChannel.Target.Path = EGLTFJsonTargetPath::Scale;
+			JsonChannel.Target.Path = ESKGLTFJsonTargetPath::Scale;
 			JsonChannel.Target.Node = NodeIndex;
 			JsonAnimation.Channels.Add(JsonChannel);
 		}
@@ -229,8 +229,8 @@ void FGLTFLevelSequenceTask::Complete()
 
 	FGLTFJsonAccessor JsonInputAccessor;
 	JsonInputAccessor.BufferView = Builder.AddBufferView(Timestamps);
-	JsonInputAccessor.ComponentType = EGLTFJsonComponentType::F32;
-	JsonInputAccessor.Type = EGLTFJsonAccessorType::Scalar;
+	JsonInputAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
+	JsonInputAccessor.Type = ESKGLTFJsonAccessorType::Scalar;
 	JsonInputAccessor.Count = FrameCount;
 	JsonInputAccessor.MinMaxLength = 1;
 	JsonInputAccessor.Min[0] = 0;
@@ -314,18 +314,18 @@ void FGLTFLevelSequenceTask::Complete()
 
 						FGLTFJsonAccessor JsonOutputAccessor;
 						JsonOutputAccessor.BufferView = Builder.AddBufferView(Translations);
-						JsonOutputAccessor.ComponentType = EGLTFJsonComponentType::F32;
+						JsonOutputAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
 						JsonOutputAccessor.Count = Translations.Num();
-						JsonOutputAccessor.Type = EGLTFJsonAccessorType::Vec3;
+						JsonOutputAccessor.Type = ESKGLTFJsonAccessorType::Vec3;
 
 						FGLTFJsonAnimationSampler JsonSampler;
 						JsonSampler.Input = InputAccessorIndex;
 						JsonSampler.Output = Builder.AddAccessor(JsonOutputAccessor);
-						JsonSampler.Interpolation = EGLTFJsonInterpolation::Linear;
+						JsonSampler.Interpolation = ESKGLTFJsonInterpolation::Linear;
 
 						FGLTFJsonAnimationChannel JsonChannel;
 						JsonChannel.Sampler = FGLTFJsonAnimationSamplerIndex(JsonAnimation.Samplers.Add(JsonSampler));
-						JsonChannel.Target.Path = EGLTFJsonTargetPath::Translation;
+						JsonChannel.Target.Path = ESKGLTFJsonTargetPath::Translation;
 						JsonChannel.Target.Node = NodeIndex;
 						JsonAnimation.Channels.Add(JsonChannel);
 					}
@@ -352,18 +352,18 @@ void FGLTFLevelSequenceTask::Complete()
 
 						FGLTFJsonAccessor JsonOutputAccessor;
 						JsonOutputAccessor.BufferView = Builder.AddBufferView(Rotations);
-						JsonOutputAccessor.ComponentType = EGLTFJsonComponentType::F32;
+						JsonOutputAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
 						JsonOutputAccessor.Count = Rotations.Num();
-						JsonOutputAccessor.Type = EGLTFJsonAccessorType::Vec4;
+						JsonOutputAccessor.Type = ESKGLTFJsonAccessorType::Vec4;
 
 						FGLTFJsonAnimationSampler JsonSampler;
 						JsonSampler.Input = InputAccessorIndex;
 						JsonSampler.Output = Builder.AddAccessor(JsonOutputAccessor);
-						JsonSampler.Interpolation = EGLTFJsonInterpolation::Linear;
+						JsonSampler.Interpolation = ESKGLTFJsonInterpolation::Linear;
 
 						FGLTFJsonAnimationChannel JsonChannel;
 						JsonChannel.Sampler = FGLTFJsonAnimationSamplerIndex(JsonAnimation.Samplers.Add(JsonSampler));
-						JsonChannel.Target.Path = EGLTFJsonTargetPath::Rotation;
+						JsonChannel.Target.Path = ESKGLTFJsonTargetPath::Rotation;
 						JsonChannel.Target.Node = NodeIndex;
 						JsonAnimation.Channels.Add(JsonChannel);
 					}
@@ -387,18 +387,18 @@ void FGLTFLevelSequenceTask::Complete()
 
 						FGLTFJsonAccessor JsonOutputAccessor;
 						JsonOutputAccessor.BufferView = Builder.AddBufferView(Scales);
-						JsonOutputAccessor.ComponentType = EGLTFJsonComponentType::F32;
+						JsonOutputAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
 						JsonOutputAccessor.Count = Scales.Num();
-						JsonOutputAccessor.Type = EGLTFJsonAccessorType::Vec3;
+						JsonOutputAccessor.Type = ESKGLTFJsonAccessorType::Vec3;
 
 						FGLTFJsonAnimationSampler JsonSampler;
 						JsonSampler.Input = InputAccessorIndex;
 						JsonSampler.Output = Builder.AddAccessor(JsonOutputAccessor);
-						JsonSampler.Interpolation = EGLTFJsonInterpolation::Linear;
+						JsonSampler.Interpolation = ESKGLTFJsonInterpolation::Linear;
 
 						FGLTFJsonAnimationChannel JsonChannel;
 						JsonChannel.Sampler = FGLTFJsonAnimationSamplerIndex(JsonAnimation.Samplers.Add(JsonSampler));
-						JsonChannel.Target.Path = EGLTFJsonTargetPath::Scale;
+						JsonChannel.Target.Path = ESKGLTFJsonTargetPath::Scale;
 						JsonChannel.Target.Node = NodeIndex;
 						JsonAnimation.Channels.Add(JsonChannel);
 					}

@@ -18,6 +18,6 @@ public:
 		return FModuleManager::Get().IsModuleLoaded( "SketchfabGLTF" );
 	}
 
-	virtual class UGLTFImporter* GetImporter() = 0;
+	virtual class USKGLTFImporter* GetImporter() = 0;
 };
 

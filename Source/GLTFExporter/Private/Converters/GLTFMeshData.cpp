@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFMeshData.h"
-#include "Converters/GLTFNameUtility.h"
-#include "Converters/GLTFMeshUtility.h"
+#include "Converters/SKGLTFMeshData.h"
+#include "Converters/SKGLTFNameUtility.h"
+#include "Converters/SKGLTFMeshUtility.h"
 #include "StaticMeshAttributes.h"
 #include "Developer/MeshMergeUtilities/Private/MeshMergeHelpers.h"
 #include "Rendering/SkeletalMeshRenderData.h"

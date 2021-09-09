@@ -20,6 +20,7 @@ namespace UnrealBuildTool.Rules
 					"SketchfabAssetBrowser/Private/Commons",
 					"SketchfabAssetBrowser/Private/AssetBrowser",
 					"SketchfabAssetBrowser/Private/Exporter",
+					"GLTFExporter/Private/Builders"
 					// ... add other private include paths required here ...
 				}
 			);
@@ -44,9 +45,9 @@ namespace UnrealBuildTool.Rules
 					"RHI",
 					"MessageLog",
 					"JsonUtilities",
-					"ZipUtility", //https://github.com/GameLogicDesign/ZipUtility-ue4
+					//"ZipUtility", //https://github.com/GameLogicDesign/ZipUtility-ue4
 					"SketchfabGLTF",
-					"GLTFExporter",
+					"SKGLTFExporter",
 					"EditorStyle",
 					"Http",
 					"Json",

@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Actors/GLTFHotspotActor.h"
+#include "Actors/SKGLTFHotspotActor.h"
+#include "Actors/SKGLTFCameraActor.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Animation/AnimSequence.h"
 #include "LevelSequenceActor.h"
@@ -34,7 +35,7 @@ namespace
 	const FName NAME_OpacityParameter = TEXT("OpacityMask");
 }
 
-AGLTFHotspotActor::AGLTFHotspotActor(const FObjectInitializer& ObjectInitializer)
+ASKGLTFHotspotActor::ASKGLTFHotspotActor(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer),
 	Image(nullptr),
 	HoveredImage(nullptr),
@@ -79,9 +80,9 @@ AGLTFHotspotActor::AGLTFHotspotActor(const FObjectInitializer& ObjectInitializer
 	SphereComponent->SetGenerateOverlapEvents(false);
 
 	// Respond to interactions with the sphere-component
-	SphereComponent->OnBeginCursorOver.AddDynamic(this, &AGLTFHotspotActor::BeginCursorOver);
-	SphereComponent->OnEndCursorOver.AddDynamic(this, &AGLTFHotspotActor::EndCursorOver);
-	SphereComponent->OnClicked.AddDynamic(this, &AGLTFHotspotActor::Clicked);
+	SphereComponent->OnBeginCursorOver.AddDynamic(this, &ASKGLTFHotspotActor::BeginCursorOver);
+	SphereComponent->OnEndCursorOver.AddDynamic(this, &ASKGLTFHotspotActor::EndCursorOver);
+	SphereComponent->OnClicked.AddDynamic(this, &ASKGLTFHotspotActor::Clicked);
 
 	DefaultMaterial = nullptr;
 	DefaultIconMaterial = nullptr;
@@ -98,7 +99,7 @@ AGLTFHotspotActor::AGLTFHotspotActor(const FObjectInitializer& ObjectInitializer
 
 
 #if WITH_EDITOR
-void AGLTFHotspotActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void ASKGLTFHotspotActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
@@ -110,7 +111,7 @@ void AGLTFHotspotActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
 
 		if (PropertyFName == GET_MEMBER_NAME_CHECKED(ThisClass, Image))
 		{
-			UpdateActiveImageFromState(EGLTFHotspotState::Default);
+			UpdateActiveImageFromState(ESKGLTFHotspotState::Default);
 		}
 		else if (PropertyFName == GET_MEMBER_NAME_CHECKED(ThisClass, SkeletalMeshActor))
 		{
@@ -128,15 +129,15 @@ void AGLTFHotspotActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
 }
 #endif // WITH_EDITOR
 
-void AGLTFHotspotActor::PostRegisterAllComponents()
+void ASKGLTFHotspotActor::PostRegisterAllComponents()
 {
 	Super::PostRegisterAllComponents();
 
 	SetupSpriteElement();
-	UpdateActiveImageFromState(EGLTFHotspotState::Default);
+	UpdateActiveImageFromState(ESKGLTFHotspotState::Default);
 }
 
-void AGLTFHotspotActor::Tick(float DeltaTime)
+void ASKGLTFHotspotActor::Tick(float DeltaTime)
 {
 	UWorld* World = GetWorld();
 
@@ -219,7 +220,7 @@ void AGLTFHotspotActor::Tick(float DeltaTime)
 	}
 }
 
-void AGLTFHotspotActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void ASKGLTFHotspotActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (LevelSequencePlayer != nullptr)
 	{
@@ -230,20 +231,20 @@ void AGLTFHotspotActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 }
 
-void AGLTFHotspotActor::BeginCursorOver(UPrimitiveComponent* TouchedComponent)
+void ASKGLTFHotspotActor::BeginCursorOver(UPrimitiveComponent* TouchedComponent)
 {
 	if (bIsInteractable)
 	{
-		UpdateActiveImageFromState(bToggled ? EGLTFHotspotState::ToggledHovered :  EGLTFHotspotState::Hovered);
+		UpdateActiveImageFromState(bToggled ? ESKGLTFHotspotState::ToggledHovered :  ESKGLTFHotspotState::Hovered);
 	}
 }
 
-void AGLTFHotspotActor::EndCursorOver(UPrimitiveComponent* TouchedComponent)
+void ASKGLTFHotspotActor::EndCursorOver(UPrimitiveComponent* TouchedComponent)
 {
-	UpdateActiveImageFromState(bToggled ? EGLTFHotspotState::Toggled :  EGLTFHotspotState::Default);
+	UpdateActiveImageFromState(bToggled ? ESKGLTFHotspotState::Toggled :  ESKGLTFHotspotState::Default);
 }
 
-void AGLTFHotspotActor::Clicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+void ASKGLTFHotspotActor::Clicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
 {
 	if (!bIsInteractable)
 	{
@@ -252,10 +253,10 @@ void AGLTFHotspotActor::Clicked(UPrimitiveComponent* TouchedComponent, FKey Butt
 
 	ToggleAnimation();
 
-	UpdateActiveImageFromState(bToggled ? EGLTFHotspotState::ToggledHovered :  EGLTFHotspotState::Hovered);
+	UpdateActiveImageFromState(bToggled ? ESKGLTFHotspotState::ToggledHovered :  ESKGLTFHotspotState::Hovered);
 }
 
-void AGLTFHotspotActor::UpdateActiveImageFromState(EGLTFHotspotState State)
+void ASKGLTFHotspotActor::UpdateActiveImageFromState(ESKGLTFHotspotState State)
 {
 	UTexture2D* NewImage = const_cast<UTexture2D*>(GetImageForState(State));
 
@@ -272,7 +273,7 @@ void AGLTFHotspotActor::UpdateActiveImageFromState(EGLTFHotspotState State)
 	UpdateSpriteSize();
 }
 
-void AGLTFHotspotActor::SetupSpriteElement() const
+void ASKGLTFHotspotActor::SetupSpriteElement() const
 {
 	UMaterialInstanceDynamic* MaterialInstance;
 
@@ -296,12 +297,12 @@ void AGLTFHotspotActor::SetupSpriteElement() const
 	BillboardComponent->SetElements({ Element });
 }
 
-UMaterialInstanceDynamic* AGLTFHotspotActor::GetSpriteMaterial() const
+UMaterialInstanceDynamic* ASKGLTFHotspotActor::GetSpriteMaterial() const
 {
 	return static_cast<UMaterialInstanceDynamic*>(BillboardComponent->GetMaterial(0));
 }
 
-void AGLTFHotspotActor::UpdateSpriteSize()
+void ASKGLTFHotspotActor::UpdateSpriteSize()
 {
 	const FIntPoint ViewportSize = GetCurrentViewportSize();
 
@@ -325,12 +326,12 @@ void AGLTFHotspotActor::UpdateSpriteSize()
 	}
 }
 
-void AGLTFHotspotActor::SetSpriteOpacity(const float Opacity) const
+void ASKGLTFHotspotActor::SetSpriteOpacity(const float Opacity) const
 {
 	GetSpriteMaterial()->SetScalarParameterValue(NAME_OpacityParameter, Opacity);
 }
 
-FIntPoint AGLTFHotspotActor::GetCurrentViewportSize()
+FIntPoint ASKGLTFHotspotActor::GetCurrentViewportSize()
 {
 	// TODO: verify that correct size is calculated in the various play-modes and in the editor
 
@@ -365,7 +366,7 @@ FIntPoint AGLTFHotspotActor::GetCurrentViewportSize()
 	{
 		if (!Viewport->ViewportResizedEvent.IsBoundToObject(this))
 		{
-			Viewport->ViewportResizedEvent.AddUObject(this, &AGLTFHotspotActor::ViewportResized);
+			Viewport->ViewportResizedEvent.AddUObject(this, &ASKGLTFHotspotActor::ViewportResized);
 		}
 
 		return Viewport->GetSizeXY();
@@ -376,12 +377,12 @@ FIntPoint AGLTFHotspotActor::GetCurrentViewportSize()
 	}
 }
 
-void AGLTFHotspotActor::ViewportResized(FViewport*, uint32)
+void ASKGLTFHotspotActor::ViewportResized(FViewport*, uint32)
 {
 	UpdateSpriteSize();
 }
 
-void AGLTFHotspotActor::ToggleAnimation()
+void ASKGLTFHotspotActor::ToggleAnimation()
 {
 	const bool bReverseAnimation = bToggled;
 	const float TargetPlayRate = bToggled ? -1.0f : 1.0f;
@@ -431,7 +432,7 @@ void AGLTFHotspotActor::ToggleAnimation()
 	bToggled = !bToggled;
 }
 
-void AGLTFHotspotActor::ValidateAnimation()
+void ASKGLTFHotspotActor::ValidateAnimation()
 {
 	if (SkeletalMeshActor != nullptr && AnimationSequence != nullptr)
 	{
@@ -454,7 +455,7 @@ void AGLTFHotspotActor::ValidateAnimation()
 	}
 }
 
-const UTexture2D* AGLTFHotspotActor::GetImageForState(EGLTFHotspotState State) const
+const UTexture2D* ASKGLTFHotspotActor::GetImageForState(ESKGLTFHotspotState State) const
 {
 	const UTexture2D* CurrentImage = DefaultImage;
 	const UTexture2D* CurrentHoveredImage = DefaultHoveredImage;
@@ -487,10 +488,10 @@ const UTexture2D* AGLTFHotspotActor::GetImageForState(EGLTFHotspotState State) c
 
 	switch (State)
 	{
-		case EGLTFHotspotState::Default:        return CurrentImage;
-		case EGLTFHotspotState::Hovered:        return CurrentHoveredImage;
-		case EGLTFHotspotState::Toggled:        return CurrentToggledImage;
-		case EGLTFHotspotState::ToggledHovered: return CurrentToggledHoveredImage;
+		case ESKGLTFHotspotState::Default:        return CurrentImage;
+		case ESKGLTFHotspotState::Hovered:        return CurrentHoveredImage;
+		case ESKGLTFHotspotState::Toggled:        return CurrentToggledImage;
+		case ESKGLTFHotspotState::ToggledHovered: return CurrentToggledHoveredImage;
 		default:
 			checkNoEntry();
 			return nullptr;

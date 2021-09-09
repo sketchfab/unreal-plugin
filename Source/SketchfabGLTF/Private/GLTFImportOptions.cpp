@@ -1,17 +1,17 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#include "GLTFImportOptions_SKETCHFAB.h"
+#include "SKGLTFImportOptions_SKETCHFAB.h"
 #include "UObject/UnrealType.h"
 
-UGLTFImportOptions_SKETCHFAB::UGLTFImportOptions_SKETCHFAB(const FObjectInitializer& ObjectInitializer)
+USKGLTFImportOptions_SKETCHFAB::USKGLTFImportOptions_SKETCHFAB(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	MeshImportType = EGLTFMeshImportType::StaticMesh;
+	MeshImportType = ESKGLTFMeshImportType::StaticMesh;
 	bApplyWorldTransformToGeometry = true;
 	bImportMaterials = true;
 }
 
-void UGLTFImportOptions_SKETCHFAB::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+void USKGLTFImportOptions_SKETCHFAB::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
@@ -21,7 +21,7 @@ void UGLTFImportOptions_SKETCHFAB::PostEditChangeProperty(struct FPropertyChange
 	}
 }
 
-UGLTFSceneImportOptions::UGLTFSceneImportOptions(const FObjectInitializer& ObjectInitializer)
+USKGLTFSceneImportOptions::USKGLTFSceneImportOptions(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	bFlattenHierarchy = true;
@@ -32,21 +32,21 @@ UGLTFSceneImportOptions::UGLTFSceneImportOptions(const FObjectInitializer& Objec
 	bImportMaterials = true;
 }
 
-void UGLTFSceneImportOptions::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+void USKGLTFSceneImportOptions::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 
-bool UGLTFSceneImportOptions::CanEditChange(const FProperty* InProperty) const
+bool USKGLTFSceneImportOptions::CanEditChange(const FProperty* InProperty) const
 {
 	bool bCanEdit = Super::CanEditChange(InProperty);
 
 	FName PropertyName = InProperty ? InProperty->GetFName() : NAME_None;
 
-	if (GET_MEMBER_NAME_CHECKED(UGLTFImportOptions_SKETCHFAB, MeshImportType) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions_SKETCHFAB, bApplyWorldTransformToGeometry) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions_SKETCHFAB, bGenerateUniquePathPerMesh) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(UGLTFImportOptions_SKETCHFAB, bImportMaterials) == PropertyName)
+	if (GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, MeshImportType) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bApplyWorldTransformToGeometry) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bGenerateUniquePathPerMesh) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bImportMaterials) == PropertyName)
 	{
 		bCanEdit &= bImportMeshes;
 	}

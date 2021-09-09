@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFSkinConverters.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFBoneUtility.h"
-#include "Builders/GLTFConvertBuilder.h"
+#include "Converters/SKGLTFSkinConverters.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFBoneUtility.h"
+#include "Builders/SKGLTFConvertBuilder.h"
 
 FGLTFJsonSkinIndex FGLTFSkinConverter::Convert(FGLTFJsonNodeIndex RootNode, const USkeletalMesh* SkeletalMesh)
 {
@@ -36,9 +36,9 @@ FGLTFJsonSkinIndex FGLTFSkinConverter::Convert(FGLTFJsonNodeIndex RootNode, cons
 
 	FGLTFJsonAccessor JsonAccessor;
 	JsonAccessor.BufferView = Builder.AddBufferView(InverseBindMatrices);
-	JsonAccessor.ComponentType = EGLTFJsonComponentType::F32;
+	JsonAccessor.ComponentType = ESKGLTFJsonComponentType::F32;
 	JsonAccessor.Count = BoneCount;
-	JsonAccessor.Type = EGLTFJsonAccessorType::Mat4;
+	JsonAccessor.Type = ESKGLTFJsonAccessorType::Mat4;
 
 	Skin.InverseBindMatrices = Builder.AddAccessor(JsonAccessor);
 

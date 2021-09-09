@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFContainerBuilder.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 
-FGLTFContainerBuilder::FGLTFContainerBuilder(const FString& FilePath, const UGLTFExportOptions* ExportOptions, bool bSelectedActorsOnly)
+FGLTFContainerBuilder::FGLTFContainerBuilder(const FString& FilePath, const USKGLTFExportOptions* ExportOptions, bool bSelectedActorsOnly)
 	: FGLTFConvertBuilder(FilePath, ExportOptions, bSelectedActorsOnly)
 {
 }

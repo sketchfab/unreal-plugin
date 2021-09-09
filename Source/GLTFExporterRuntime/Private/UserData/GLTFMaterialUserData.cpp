@@ -1,12 +1,12 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "UserData/GLTFMaterialUserData.h"
+#include "UserData/SKGLTFMaterialUserData.h"
 #include "Materials/MaterialInstance.h"
 #include "Engine/Texture.h"
 
-FGLTFOverrideMaterialBakeSettings::FGLTFOverrideMaterialBakeSettings()
+FSKGLTFOverrideMaterialBakeSettings::FSKGLTFOverrideMaterialBakeSettings()
 	: bOverrideSize(false)
-	, Size(EGLTFMaterialBakeSizePOT::POT_1024)
+	, Size(ESKGLTFMaterialBakeSizePOT::POT_1024)
 	, bOverrideFilter(false)
 	, Filter(TF_Trilinear)
 	, bOverrideTiling(false)
@@ -14,9 +14,9 @@ FGLTFOverrideMaterialBakeSettings::FGLTFOverrideMaterialBakeSettings()
 {
 }
 
-EGLTFMaterialBakeSizePOT UGLTFMaterialExportOptions::GetBakeSizeForPropertyGroup(const UMaterialInterface* Material, EGLTFMaterialPropertyGroup PropertyGroup, EGLTFMaterialBakeSizePOT DefaultValue)
+ESKGLTFMaterialBakeSizePOT USKGLTFMaterialExportOptions::GetBakeSizeForPropertyGroup(const UMaterialInterface* Material, ESKGLTFMaterialPropertyGroup PropertyGroup, ESKGLTFMaterialBakeSizePOT DefaultValue)
 {
-	if (const FGLTFOverrideMaterialBakeSettings* BakeSettings = GetBakeSettingsByPredicate(Material, PropertyGroup, [](const FGLTFOverrideMaterialBakeSettings& Settings) { return Settings.bOverrideSize; }))
+	if (const FSKGLTFOverrideMaterialBakeSettings* BakeSettings = GetBakeSettingsByPredicate(Material, PropertyGroup, [](const FSKGLTFOverrideMaterialBakeSettings& Settings) { return Settings.bOverrideSize; }))
 	{
 		return BakeSettings->Size;
 	}
@@ -24,9 +24,9 @@ EGLTFMaterialBakeSizePOT UGLTFMaterialExportOptions::GetBakeSizeForPropertyGroup
 	return DefaultValue;
 }
 
-TextureFilter UGLTFMaterialExportOptions::GetBakeFilterForPropertyGroup(const UMaterialInterface* Material, EGLTFMaterialPropertyGroup PropertyGroup, TextureFilter DefaultValue)
+TextureFilter USKGLTFMaterialExportOptions::GetBakeFilterForPropertyGroup(const UMaterialInterface* Material, ESKGLTFMaterialPropertyGroup PropertyGroup, TextureFilter DefaultValue)
 {
-	if (const FGLTFOverrideMaterialBakeSettings* BakeSettings = GetBakeSettingsByPredicate(Material, PropertyGroup, [](const FGLTFOverrideMaterialBakeSettings& Settings) { return Settings.bOverrideFilter; }))
+	if (const FSKGLTFOverrideMaterialBakeSettings* BakeSettings = GetBakeSettingsByPredicate(Material, PropertyGroup, [](const FSKGLTFOverrideMaterialBakeSettings& Settings) { return Settings.bOverrideFilter; }))
 	{
 		return BakeSettings->Filter;
 	}
@@ -34,9 +34,9 @@ TextureFilter UGLTFMaterialExportOptions::GetBakeFilterForPropertyGroup(const UM
 	return DefaultValue;
 }
 
-TextureAddress UGLTFMaterialExportOptions::GetBakeTilingForPropertyGroup(const UMaterialInterface* Material, EGLTFMaterialPropertyGroup PropertyGroup, TextureAddress DefaultValue)
+TextureAddress USKGLTFMaterialExportOptions::GetBakeTilingForPropertyGroup(const UMaterialInterface* Material, ESKGLTFMaterialPropertyGroup PropertyGroup, TextureAddress DefaultValue)
 {
-	if (const FGLTFOverrideMaterialBakeSettings* BakeSettings = GetBakeSettingsByPredicate(Material, PropertyGroup, [](const FGLTFOverrideMaterialBakeSettings& Settings) { return Settings.bOverrideTiling; }))
+	if (const FSKGLTFOverrideMaterialBakeSettings* BakeSettings = GetBakeSettingsByPredicate(Material, PropertyGroup, [](const FSKGLTFOverrideMaterialBakeSettings& Settings) { return Settings.bOverrideTiling; }))
 	{
 		return BakeSettings->Tiling;
 	}
@@ -45,13 +45,13 @@ TextureAddress UGLTFMaterialExportOptions::GetBakeTilingForPropertyGroup(const U
 }
 
 template <typename Predicate>
-const FGLTFOverrideMaterialBakeSettings* UGLTFMaterialExportOptions::GetBakeSettingsByPredicate(const UMaterialInterface* Material, EGLTFMaterialPropertyGroup PropertyGroup, Predicate Pred)
+const FSKGLTFOverrideMaterialBakeSettings* USKGLTFMaterialExportOptions::GetBakeSettingsByPredicate(const UMaterialInterface* Material, ESKGLTFMaterialPropertyGroup PropertyGroup, Predicate Pred)
 {
 	do
 	{
-		if (const UGLTFMaterialExportOptions* UserData = const_cast<UMaterialInterface*>(Material)->GetAssetUserData<UGLTFMaterialExportOptions>())
+		if (const USKGLTFMaterialExportOptions* UserData = const_cast<UMaterialInterface*>(Material)->GetAssetUserData<USKGLTFMaterialExportOptions>())
 		{
-			if (const FGLTFOverrideMaterialBakeSettings* BakeSettings = UserData->Inputs.Find(PropertyGroup))
+			if (const FSKGLTFOverrideMaterialBakeSettings* BakeSettings = UserData->Inputs.Find(PropertyGroup))
 			{
 				if (Pred(*BakeSettings))
 				{

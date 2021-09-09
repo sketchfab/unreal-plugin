@@ -1,11 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFNodeConverters.h"
-#include "Builders/GLTFContainerBuilder.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFActorUtility.h"
-#include "Converters/GLTFNameUtility.h"
-#include "Actors/GLTFHotspotActor.h"
+#include "Converters/SKGLTFNodeConverters.h"
+#include "Builders/SKGLTFContainerBuilder.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFActorUtility.h"
+#include "Converters/SKGLTFNameUtility.h"
+#include "Actors/SKGLTFCameraActor.h"
 #include "LevelSequenceActor.h"
 
 FGLTFJsonNodeIndex FGLTFActorConverter::Convert(const AActor* Actor)
@@ -42,7 +42,7 @@ FGLTFJsonNodeIndex FGLTFActorConverter::Convert(const AActor* Actor)
 			Builder.GetOrAddAnimation(LevelSequenceActor);
 		}
 	}
-	else if (const AGLTFHotspotActor* HotspotActor = Cast<AGLTFHotspotActor>(Actor))
+	else if (const ASKGLTFHotspotActor* HotspotActor = Cast<ASKGLTFHotspotActor>(Actor))
 	{
 		if (Builder.ExportOptions->bExportAnimationHotspots)
 		{

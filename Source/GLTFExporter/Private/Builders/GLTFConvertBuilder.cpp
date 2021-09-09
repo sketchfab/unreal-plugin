@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFConvertBuilder.h"
+#include "Builders/SKGLTFConvertBuilder.h"
 
-FGLTFConvertBuilder::FGLTFConvertBuilder(const FString& FilePath, const UGLTFExportOptions* ExportOptions, bool bSelectedActorsOnly)
+FGLTFConvertBuilder::FGLTFConvertBuilder(const FString& FilePath, const USKGLTFExportOptions* ExportOptions, bool bSelectedActorsOnly)
 	: FGLTFImageBuilder(FilePath, ExportOptions)
 	, bSelectedActorsOnly(bSelectedActorsOnly)
 {
@@ -397,7 +397,7 @@ FGLTFJsonLightMapIndex FGLTFConvertBuilder::GetOrAddLightMap(const UStaticMeshCo
 	return LightMapConverter.GetOrAdd(StaticMeshComponent);
 }
 
-FGLTFJsonHotspotIndex FGLTFConvertBuilder::GetOrAddHotspot(const AGLTFHotspotActor* HotspotActor)
+FGLTFJsonHotspotIndex FGLTFConvertBuilder::GetOrAddHotspot(const ASKGLTFHotspotActor* HotspotActor)
 {
 	if (HotspotActor == nullptr)
 	{

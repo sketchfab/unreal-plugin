@@ -1,16 +1,16 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Exporters/GLTFStaticMeshExporter.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Exporters/SKGLTFStaticMeshExporter.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "Engine/StaticMesh.h"
 
-UGLTFStaticMeshExporter::UGLTFStaticMeshExporter(const FObjectInitializer& ObjectInitializer)
+USKGLTFStaticMeshExporter::USKGLTFStaticMeshExporter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	SupportedClass = UStaticMesh::StaticClass();
 }
 
-bool UGLTFStaticMeshExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
+bool USKGLTFStaticMeshExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
 {
 	const UStaticMesh* StaticMesh = CastChecked<UStaticMesh>(Object);
 

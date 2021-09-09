@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFCurveUtility.h"
+#include "Converters/SKGLTFCurveUtility.h"
 #include "Curves/CurveLinearColor.h"
 
 bool FGLTFCurveUtility::HasAnyAdjustment(const UCurveLinearColor& ColorCurve)

@@ -20,9 +20,9 @@
 #include "Misc/FileHelper.h"
 #endif
 
-IMPLEMENT_MODULE(FMaterialBakingModule, GLTFMaterialBaking);
+IMPLEMENT_MODULE(FSKMaterialBakingModule, SKGLTFMaterialBaking);
 
-#define LOCTEXT_NAMESPACE "MaterialBakingModule"
+#define LOCTEXT_NAMESPACE "SKMaterialBakingModule"
 
 /** Cvars for advanced features */
 static TAutoConsoleVariable<int32> CVarUseMaterialProxyCaching(
@@ -41,7 +41,7 @@ static TAutoConsoleVariable<int32> CVarSaveIntermediateTextures(
 	TEXT("1: Turned On"),
 	ECVF_Default);
 
-namespace FMaterialBakingModuleImpl
+namespace FSKMaterialBakingModuleImpl
 {
 	// Custom dynamic mesh allocator specifically tailored for Material Baking.
 	// This will always reuse the same couple buffers, so searching linearly is not a problem.
@@ -232,7 +232,7 @@ namespace FMaterialBakingModuleImpl
 	}
 }
 
-void FMaterialBakingModule::StartupModule()
+void FSKMaterialBakingModule::StartupModule()
 {
 	// Set which properties should enforce gamma correction
 	PerPropertyGamma.Add(MP_Normal);
@@ -260,10 +260,10 @@ void FMaterialBakingModule::StartupModule()
 	PerPropertyFormat.Add(TEXT("ClearCoatBottomNormal"), PF_B8G8R8A8);
 
 	// Register callback for modified objects
-	FCoreUObjectDelegates::OnObjectModified.AddRaw(this, &FMaterialBakingModule::OnObjectModified);
+	FCoreUObjectDelegates::OnObjectModified.AddRaw(this, &FSKMaterialBakingModule::OnObjectModified);
 }
 
-void FMaterialBakingModule::ShutdownModule()
+void FSKMaterialBakingModule::ShutdownModule()
 {
 	// Unregister customization and callback
 	FPropertyEditorModule* PropertyEditorModule = FModuleManager::GetModulePtr<FPropertyEditorModule>("PropertyEditor");
@@ -275,7 +275,7 @@ void FMaterialBakingModule::ShutdownModule()
 	FCoreUObjectDelegates::OnObjectModified.RemoveAll(this);
 }
 
-void FMaterialBakingModule::BakeMaterials(const TArray<FMaterialData*>& MaterialSettings, const TArray<FMeshData*>& MeshSettings, TArray<FBakeOutput>& Output)
+void FSKMaterialBakingModule::BakeMaterials(const TArray<FMaterialData*>& MaterialSettings, const TArray<FMeshData*>& MeshSettings, TArray<FBakeOutput>& Output)
 {
 	TArray<FMaterialDataEx> MaterialDataExs;
 	TArray<FMaterialDataEx*> MaterialSettingsEx;
@@ -317,15 +317,15 @@ void FMaterialBakingModule::BakeMaterials(const TArray<FMaterialData*>& Material
 	}
 }
 
-void FMaterialBakingModule::BakeMaterials(const TArray<FMaterialDataEx*>& MaterialSettings, const TArray<FMeshData*>& MeshSettings, TArray<FBakeOutputEx>& Output)
+void FSKMaterialBakingModule::BakeMaterials(const TArray<FMaterialDataEx*>& MaterialSettings, const TArray<FMeshData*>& MeshSettings, TArray<FBakeOutputEx>& Output)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FMaterialBakingModule::BakeMaterials)
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSKMaterialBakingModule::BakeMaterials)
 
 	checkf(MaterialSettings.Num() == MeshSettings.Num(), TEXT("Number of material settings does not match that of MeshSettings"));
 	const int32 NumMaterials = MaterialSettings.Num();
 	const bool bSaveIntermediateTextures = CVarSaveIntermediateTextures.GetValueOnAnyThread() == 1;
 
-	using namespace FMaterialBakingModuleImpl;
+	using namespace FSKMaterialBakingModuleImpl;
 	FMaterialBakingDynamicMeshBufferAllocator MaterialBakingDynamicMeshBufferAllocator;
 
 	FScopedSlowTask Progress(NumMaterials, LOCTEXT("BakeMaterials", "Baking Materials..."), true );
@@ -368,7 +368,7 @@ void FMaterialBakingModule::BakeMaterials(const TArray<FMaterialDataEx*>& Materi
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(PrepareRenderItems);
 		
-		TMap<FMaterialBakingModuleImpl::FRenderItemKey, FMeshMaterialRenderItem*>* RenderItems = new TMap<FRenderItemKey, FMeshMaterialRenderItem *>();
+		TMap<FSKMaterialBakingModuleImpl::FRenderItemKey, FMeshMaterialRenderItem*>* RenderItems = new TMap<FRenderItemKey, FMeshMaterialRenderItem *>();
 		const FMaterialDataEx* CurrentMaterialSettings = MaterialSettings[MaterialIndex];
 		const FMeshData* CurrentMeshSettings = MeshSettings[MaterialIndex];
 
@@ -564,7 +564,7 @@ void FMaterialBakingModule::BakeMaterials(const TArray<FMaterialDataEx*>& Materi
 									if (Property.Type == MP_EmissiveColor)
 									{
 										// Only one thread will write to CurrentOutput.EmissiveScale since there can be only one emissive channel property per FBakeOutputEx
-										FMaterialBakingModule::ProcessEmissiveOutput((const FFloat16Color*)Data, DataWidth, OutputSize, OutputColor, CurrentOutput.EmissiveScale);
+										FSKMaterialBakingModule::ProcessEmissiveOutput((const FFloat16Color*)Data, DataWidth, OutputSize, OutputColor, CurrentOutput.EmissiveScale);
 									}
 									else
 									{
@@ -690,7 +690,7 @@ void FMaterialBakingModule::BakeMaterials(const TArray<FMaterialDataEx*>& Materi
 	}
 }
 
-void FMaterialBakingModule::CleanupMaterialProxies()
+void FSKMaterialBakingModule::CleanupMaterialProxies()
 {
 	for (auto Iterator : MaterialProxyPool)
 	{
@@ -699,9 +699,9 @@ void FMaterialBakingModule::CleanupMaterialProxies()
 	MaterialProxyPool.Reset();
 }
 
-UTextureRenderTarget2D* FMaterialBakingModule::CreateRenderTarget(bool bInForceLinearGamma, EPixelFormat InPixelFormat, const FIntPoint& InTargetSize)
+UTextureRenderTarget2D* FSKMaterialBakingModule::CreateRenderTarget(bool bInForceLinearGamma, EPixelFormat InPixelFormat, const FIntPoint& InTargetSize)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FMaterialBakingModule::CreateRenderTarget)
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSKMaterialBakingModule::CreateRenderTarget)
 
 	UTextureRenderTarget2D* RenderTarget = nullptr;
 	const int32 MaxTextureSize = 1 << (MAX_TEXTURE_MIP_COUNT - 1); // Don't use GetMax2DTextureDimension() as this is for the RHI only.
@@ -738,9 +738,9 @@ UTextureRenderTarget2D* FMaterialBakingModule::CreateRenderTarget(bool bInForceL
 	return RenderTarget;
 }
 
-FExportMaterialProxy* FMaterialBakingModule::CreateMaterialProxy(const FMaterialDataEx& MatSettings, const FMaterialPropertyEx& Property)
+FExportMaterialProxy* FSKMaterialBakingModule::CreateMaterialProxy(const FMaterialDataEx& MatSettings, const FMaterialPropertyEx& Property)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FMaterialBakingModule::CreateMaterialProxy)
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSKMaterialBakingModule::CreateMaterialProxy)
 
 	FExportMaterialProxy* Proxy = nullptr;
 
@@ -768,9 +768,9 @@ FExportMaterialProxy* FMaterialBakingModule::CreateMaterialProxy(const FMaterial
 	return Proxy;
 }
 
-void FMaterialBakingModule::ProcessEmissiveOutput(const FFloat16Color* Color16, int32 Color16Pitch, const FIntPoint& OutputSize, TArray<FColor>& OutputColor, float& EmissiveScale)
+void FSKMaterialBakingModule::ProcessEmissiveOutput(const FFloat16Color* Color16, int32 Color16Pitch, const FIntPoint& OutputSize, TArray<FColor>& OutputColor, float& EmissiveScale)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FMaterialBakingModule::ProcessEmissiveOutput)
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSKMaterialBakingModule::ProcessEmissiveOutput)
 
 	const int32 NumThreads = [&]()
 	{
@@ -858,9 +858,9 @@ void FMaterialBakingModule::ProcessEmissiveOutput(const FFloat16Color* Color16, 
 	EmissiveScale = GlobalMaxValue;
 }
 
-void FMaterialBakingModule::OnObjectModified(UObject* Object)
+void FSKMaterialBakingModule::OnObjectModified(UObject* Object)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(FMaterialBakingModule::OnObjectModified)
+	TRACE_CPUPROFILER_EVENT_SCOPE(FSKMaterialBakingModule::OnObjectModified)
 
 	if (CVarUseMaterialProxyCaching.GetValueOnAnyThread())
 	{

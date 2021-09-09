@@ -1,15 +1,17 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#include "GLTFAssetImportFactory.h"
-#include "GLTFImporter.h"
+#include "SKGLTFAssetImportFactory.h"
+#include "SKGLTFImporter.h"
 #include "IGLTFImporterModule.h"
 #include "ActorFactories/ActorFactoryStaticMesh.h"
 #include "ProfilingDebugging/ScopedTimers.h"
-#include "GLTFImportOptions_SKETCHFAB.h"
+#include "SKGLTFImportOptions_SKETCHFAB.h"
 #include "Engine/StaticMesh.h"
 #include "Misc/Paths.h"
 #include "JsonObjectConverter.h"
-#include "ZipFileFunctionLibrary.h"
+//#include "ZipFileFunctionLibrary.h"
+
+#include "SKGLTFZipUtility.h"
 
 void FGLTFAssetImportContext::Init(UObject* InParent, const FString& InName, const FString& InBasePath, class tinygltf::Model* InModel)
 {
@@ -17,14 +19,14 @@ void FGLTFAssetImportContext::Init(UObject* InParent, const FString& InName, con
 }
 
 
-UGLTFAssetImportFactory::UGLTFAssetImportFactory(const FObjectInitializer& ObjectInitializer)
+USKGLTFAssetImportFactory::USKGLTFAssetImportFactory(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	bCreateNew = false;
 	bEditAfterNew = true;
 	SupportedClass = UStaticMesh::StaticClass();
 
-	ImportOptions = ObjectInitializer.CreateDefaultSubobject<UGLTFImportOptions_SKETCHFAB>(this, TEXT("GLTFImportOptions"));
+	ImportOptions = ObjectInitializer.CreateDefaultSubobject<USKGLTFImportOptions_SKETCHFAB>(this, TEXT("GLTFImportOptions"));
 
 	bEditorImport = true;
 	bText = false;
@@ -34,11 +36,11 @@ UGLTFAssetImportFactory::UGLTFAssetImportFactory(const FObjectInitializer& Objec
 	Formats.Add(TEXT("zip;GL Transmission Format (Zip)"));
 }
 
-UObject* UGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, const FString& Filename, const TCHAR* Parms, FFeedbackContext* Warn, bool& bOutOperationCanceled)
+UObject* USKGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, const FString& Filename, const TCHAR* Parms, FFeedbackContext* Warn, bool& bOutOperationCanceled)
 {
 	UObject* ImportedObject = nullptr;
 
-	UGLTFImporter* GLTFImporter = IGLTFImporterModule::Get().GetImporter();
+	USKGLTFImporter* GLTFImporter = IGLTFImporterModule::Get().GetImporter();
 
 	// For now we won't show the import options and just import the full mesh each time
 	// When we require more options that are useful then show this dialog and also add new parameters to it.
@@ -62,12 +64,27 @@ UObject* UGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* In
 			}
 
 			//Unzip at current location
+
+			UE_LOG(LogGLTFImport, Error, TEXT("Filename: %s"), *Filename);
+			UE_LOG(LogGLTFImport, Error, TEXT("destDir: %s"), *destDir);
+
+			if (!FGLTFZipUtility::ExtractAllFiles(Filename, destDir))
+			{
+				return nullptr;
+			}
+			/*
 			if (!UZipFileFunctionLibrary::UnzipTo(Filename, destDir, this))
 			{
 				return nullptr;
 			}
+			*/
+
+			UE_LOG(LogGLTFImport, Error, TEXT("We should be passing here!!"));
+			ZipFileName = "scene.gltf";
 
 			gltfFile = destDir / ZipFileName;
+
+			UE_LOG(LogGLTFImport, Error, TEXT("gltfFile: %s"), *gltfFile);
 
 			deleteZippedData = true;
 		}
@@ -114,7 +131,7 @@ UObject* UGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* In
 	return ImportedObject;
 }
 
-bool UGLTFAssetImportFactory::FactoryCanImport(const FString& Filename)
+bool USKGLTFAssetImportFactory::FactoryCanImport(const FString& Filename)
 {
 	const FString Extension = FPaths::GetExtension(Filename);
 
@@ -129,8 +146,8 @@ bool UGLTFAssetImportFactory::FactoryCanImport(const FString& Filename)
 
 	if (Extension == TEXT("zip"))
 	{
-		if (!UZipFileFunctionLibrary::ListFilesInArchive(Filename, this))
-			return false;
+		//if (!UZipFileFunctionLibrary::ListFilesInArchive(Filename, this))
+		//	return false;
 
 		return bFoundGLTFInZip;
 	}
@@ -138,12 +155,12 @@ bool UGLTFAssetImportFactory::FactoryCanImport(const FString& Filename)
 	return false;
 }
 
-void UGLTFAssetImportFactory::CleanUp()
+void USKGLTFAssetImportFactory::CleanUp()
 {
 	ImportContext = FGLTFAssetImportContext();
 }
 
-void UGLTFAssetImportFactory::ParseFromJson(TSharedRef<class FJsonObject> ImportSettingsJson)
+void USKGLTFAssetImportFactory::ParseFromJson(TSharedRef<class FJsonObject> ImportSettingsJson)
 {
 	FJsonObjectConverter::JsonObjectToUStruct(ImportSettingsJson, ImportOptions->GetClass(), ImportOptions, 0, CPF_InstancedReference);
 }
@@ -151,27 +168,29 @@ void UGLTFAssetImportFactory::ParseFromJson(TSharedRef<class FJsonObject> Import
 
 //=====================================================================================================
 // IZipUtilityInterface overrides
-void UGLTFAssetImportFactory::OnProgress_Implementation(const FString& archive, float percentage, int32 bytes)
+/*
+void USKGLTFAssetImportFactory::OnProgress_Implementation(const FString& archive, float percentage, int32 bytes)
 {
 
 }
 
-void UGLTFAssetImportFactory::OnDone_Implementation(const FString& archive, EZipUtilityCompletionState CompletionState)
+void USKGLTFAssetImportFactory::OnDone_Implementation(const FString& archive, EZipUtilityCompletionState CompletionState)
 {
 	bZipDone = true;
 }
 
-void UGLTFAssetImportFactory::OnStartProcess_Implementation(const FString& archive, int32 bytes)
+void USKGLTFAssetImportFactory::OnStartProcess_Implementation(const FString& archive, int32 bytes)
 {
 
 }
 
-void UGLTFAssetImportFactory::OnFileDone_Implementation(const FString& archive, const FString& file)
+void USKGLTFAssetImportFactory::OnFileDone_Implementation(const FString& archive, const FString& file)
 {
 
 }
 
-void UGLTFAssetImportFactory::OnFileFound_Implementation(const FString& archive, const FString& file, int32 size)
+
+void USKGLTFAssetImportFactory::OnFileFound_Implementation(const FString& archive, const FString& file, int32 size)
 {
 	const FString Extension = FPaths::GetExtension(file);
 	if (Extension == TEXT("gltf") || Extension == TEXT("glb"))
@@ -180,3 +199,4 @@ void UGLTFAssetImportFactory::OnFileFound_Implementation(const FString& archive,
 		bFoundGLTFInZip = true;
 	}
 }
+*/

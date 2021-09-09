@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFUVOverlapChecker.h"
+#include "Converters/SKGLTFUVOverlapChecker.h"
 #include "StaticMeshAttributes.h"
 #include "MeshDescription.h"
 #include "Modules/ModuleManager.h"
@@ -61,7 +61,7 @@ float FGLTFUVOverlapChecker::Convert(const FMeshDescription* Description, FGLTFI
 	MatSettings.Add(&MatSet);
 
 	TArray<FBakeOutputEx> BakeOutputs;
-	IMaterialBakingModule& Module = FModuleManager::Get().LoadModuleChecked<IMaterialBakingModule>("GLTFMaterialBaking");
+	ISKMaterialBakingModule& Module = FModuleManager::Get().LoadModuleChecked<ISKMaterialBakingModule>("SKGLTFMaterialBaking");
 
 	Module.BakeMaterials(MatSettings, MeshSettings, BakeOutputs);
 

@@ -1,12 +1,12 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFTextureConverters.h"
-#include "Builders/GLTFContainerBuilder.h"
-#include "Tasks/GLTFTextureTasks.h"
+#include "Converters/SKGLTFTextureConverters.h"
+#include "Builders/SKGLTFContainerBuilder.h"
+#include "Tasks/SKGLTFTextureTasks.h"
 
 FGLTFJsonTextureIndex FGLTFTexture2DConverter::Convert(const UTexture2D* Texture2D)
 {
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return FGLTFJsonTextureIndex(INDEX_NONE);
 	}
@@ -18,7 +18,7 @@ FGLTFJsonTextureIndex FGLTFTexture2DConverter::Convert(const UTexture2D* Texture
 
 FGLTFJsonTextureIndex FGLTFTextureCubeConverter::Convert(const UTextureCube* TextureCube, ECubeFace CubeFace)
 {
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return FGLTFJsonTextureIndex(INDEX_NONE);
 	}
@@ -30,7 +30,7 @@ FGLTFJsonTextureIndex FGLTFTextureCubeConverter::Convert(const UTextureCube* Tex
 
 FGLTFJsonTextureIndex FGLTFTextureRenderTarget2DConverter::Convert(const UTextureRenderTarget2D* RenderTarget2D)
 {
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return FGLTFJsonTextureIndex(INDEX_NONE);
 	}
@@ -42,7 +42,7 @@ FGLTFJsonTextureIndex FGLTFTextureRenderTarget2DConverter::Convert(const UTextur
 
 FGLTFJsonTextureIndex FGLTFTextureRenderTargetCubeConverter::Convert(const UTextureRenderTargetCube* RenderTargetCube, ECubeFace CubeFace)
 {
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return FGLTFJsonTextureIndex(INDEX_NONE);
 	}
@@ -54,7 +54,7 @@ FGLTFJsonTextureIndex FGLTFTextureRenderTargetCubeConverter::Convert(const UText
 
 FGLTFJsonTextureIndex FGLTFTextureLightMapConverter::Convert(const ULightMapTexture2D* LightMap)
 {
-	if (Builder.ExportOptions->TextureImageFormat == EGLTFTextureImageFormat::None)
+	if (Builder.ExportOptions->TextureImageFormat == ESKGLTFTextureImageFormat::None)
 	{
 		return FGLTFJsonTextureIndex(INDEX_NONE);
 	}

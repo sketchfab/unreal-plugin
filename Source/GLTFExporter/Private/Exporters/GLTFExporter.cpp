@@ -1,13 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Exporters/GLTFExporter.h"
-#include "GLTFExportOptions.h"
-#include "UI/GLTFExportOptionsWindow.h"
-#include "Builders/GLTFWebBuilder.h"
+#include "Exporters/SKGLTFExporter.h"
+#include "SKGLTFExportOptions.h"
+#include "UI/SKGLTFExportOptionsWindow.h"
+#include "Builders/SKGLTFWebBuilder.h"
 #include "UObject/GCObjectScopeGuard.h"
 #include "AssetExportTask.h"
 
-UGLTFExporter::UGLTFExporter(const FObjectInitializer& ObjectInitializer)
+USKGLTFExporter::USKGLTFExporter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	SupportedClass = nullptr;
@@ -21,9 +21,9 @@ UGLTFExporter::UGLTFExporter(const FObjectInitializer& ObjectInitializer)
 	FormatDescription.Add(TEXT("GL Transmission Format (Binary)"));
 }
 
-bool UGLTFExporter::ExportBinary(UObject* Object, const TCHAR* Type, FArchive& Archive, FFeedbackContext* Warn, int32 FileIndex, uint32 PortFlags)
+bool USKGLTFExporter::ExportBinary(UObject* Object, const TCHAR* Type, FArchive& Archive, FFeedbackContext* Warn, int32 FileIndex, uint32 PortFlags)
 {
-	UGLTFExportOptions* Options = GetExportOptions();
+	USKGLTFExportOptions* Options = GetExportOptions();
 	if (Options == nullptr)
 	{
 		// User cancelled the export
@@ -60,19 +60,19 @@ bool UGLTFExporter::ExportBinary(UObject* Object, const TCHAR* Type, FArchive& A
 	return bSuccess;
 }
 
-bool UGLTFExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
+bool USKGLTFExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
 {
 	return false;
 }
 
-UGLTFExportOptions* UGLTFExporter::GetExportOptions()
+USKGLTFExportOptions* USKGLTFExporter::GetExportOptions()
 {
-	UGLTFExportOptions* Options = nullptr;
+	USKGLTFExportOptions* Options = nullptr;
 	bool bAutomatedTask = GIsAutomationTesting || FApp::IsUnattended();
 
 	if (ExportTask != nullptr)
 	{
-		Options = Cast<UGLTFExportOptions>(ExportTask->Options);
+		Options = Cast<USKGLTFExportOptions>(ExportTask->Options);
 
 		if (ExportTask->bAutomated)
 		{
@@ -82,7 +82,7 @@ UGLTFExportOptions* UGLTFExporter::GetExportOptions()
 
 	if (Options == nullptr)
 	{
-		Options = NewObject<UGLTFExportOptions>();
+		Options = NewObject<USKGLTFExportOptions>();
 	}
 
 	if (GetShowExportOption() && !bAutomatedTask)

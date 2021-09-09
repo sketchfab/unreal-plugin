@@ -1,8 +1,8 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#include "GLTFPrimResolver.h"
-#include "GLTFImporter.h"
-#include "GLTFConversionUtils.h"
+#include "SKGLTFPrimResolver.h"
+#include "SKGLTFImporter.h"
+#include "SKGLTFConversionUtils.h"
 #include "AssetData.h"
 #include "Modules/ModuleManager.h"
 #include "AssetRegistryModule.h"
@@ -14,12 +14,12 @@
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
 
-void UGLTFPrimResolver::Init()
+void USKGLTFPrimResolver::Init()
 {
 	AssetRegistry = &FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
 }
 
-void UGLTFPrimResolver::FindPrimsToImport(FGLTFImportContext& ImportContext, TArray<FGLTFPrimToImport>& OutPrimsToImport)
+void USKGLTFPrimResolver::FindPrimsToImport(FGLTFImportContext& ImportContext, TArray<FGLTFPrimToImport>& OutPrimsToImport)
 {
 	if (ImportContext.Model->scenes.size() == 0)
 		return;
@@ -34,7 +34,7 @@ void UGLTFPrimResolver::FindPrimsToImport(FGLTFImportContext& ImportContext, TAr
 	}
 }
 
-void UGLTFPrimResolver::FindPrimsToImport_Recursive(FGLTFImportContext& ImportContext, tinygltf::Node* Prim, TArray<FGLTFPrimToImport>& OutTopLevelPrims, FMatrix ParentMat)
+void USKGLTFPrimResolver::FindPrimsToImport_Recursive(FGLTFImportContext& ImportContext, tinygltf::Node* Prim, TArray<FGLTFPrimToImport>& OutTopLevelPrims, FMatrix ParentMat)
 {
 	const FString PrimName = GLTFToUnreal::ConvertString(Prim->name);
 
@@ -64,7 +64,7 @@ void UGLTFPrimResolver::FindPrimsToImport_Recursive(FGLTFImportContext& ImportCo
 	}
 }
 
-bool UGLTFPrimResolver::IsValidPathForImporting(const FString& TestPath) const
+bool USKGLTFPrimResolver::IsValidPathForImporting(const FString& TestPath) const
 {
 	return FPackageName::GetPackageMountPoint(TestPath) != NAME_None;
 }

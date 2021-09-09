@@ -1,8 +1,8 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "StaticMeshImporter.h"
-#include "GLTFImporter.h"
-#include "GLTFConversionUtils.h"
+#include "SKGLTFImporter.h"
+#include "SKGLTFConversionUtils.h"
 #include "RawMesh.h"
 #include "MeshUtilities.h"
 #include "Engine/StaticMesh.h"

@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFMeshUtility.h"
+#include "Converters/SKGLTFMeshUtility.h"
 #include "Rendering/SkeletalMeshRenderData.h"
 #include "PlatformInfo.h"
 

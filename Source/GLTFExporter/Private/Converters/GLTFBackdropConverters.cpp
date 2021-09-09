@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFBackdropConverters.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFMaterialUtility.h"
-#include "Converters/GLTFActorUtility.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Converters/SKGLTFBackdropConverters.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFMaterialUtility.h"
+#include "Converters/SKGLTFActorUtility.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 
 FGLTFJsonBackdropIndex FGLTFBackdropConverter::Convert(const AActor* BackdropActor)
 {
@@ -45,7 +45,7 @@ FGLTFJsonBackdropIndex FGLTFBackdropConverter::Convert(const AActor* BackdropAct
 		for (int32 CubeFaceIndex = 0; CubeFaceIndex < CubeFace_MAX; ++CubeFaceIndex)
 		{
 			const ECubeFace CubeFace = static_cast<ECubeFace>(CubeFaceIndex);
-			const EGLTFJsonCubeFace JsonCubeFace = FGLTFConverterUtility::ConvertCubeFace(CubeFace);
+			const ESKGLTFJsonCubeFace JsonCubeFace = FGLTFConverterUtility::ConvertCubeFace(CubeFace);
 			JsonBackdrop.Cubemap[static_cast<int32>(JsonCubeFace)] = Builder.GetOrAddTexture(Cubemap, CubeFace);
 		}
 	}

@@ -19,7 +19,7 @@ struct FMaterialData;
 struct FMeshData;
 struct FBakeOutput;
 
-class MATERIALBAKING_API FMaterialBakingModule : public IMaterialBakingModule
+class SKMATERIALBAKING_API FSKMaterialBakingModule : public ISKMaterialBakingModule
 {
 public:
 	/** IModuleInterface overrides begin */

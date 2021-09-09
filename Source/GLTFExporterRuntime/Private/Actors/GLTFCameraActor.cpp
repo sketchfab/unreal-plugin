@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Actors/GLTFCameraActor.h"
+#include "Actors/SKGLTFCameraActor.h"
 #include "Components/InputComponent.h"
 
 namespace
@@ -11,9 +11,9 @@ namespace
 	const float DollySensitivityScale = 0.1f;
 }
 
-AGLTFCameraActor::AGLTFCameraActor(const FObjectInitializer& ObjectInitializer)
+ASKGLTFCameraActor::ASKGLTFCameraActor(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, Mode(EGLTFCameraControlMode::FreeLook)
+	, Mode(ESKGLTFCameraControlMode::FreeLook)
 	, Target(nullptr)
 	, PitchAngleMin(-90.0f)
 	, PitchAngleMax(90.0f)
@@ -38,7 +38,7 @@ AGLTFCameraActor::AGLTFCameraActor(const FObjectInitializer& ObjectInitializer)
 }
 
 #if WITH_EDITOR
-void AGLTFCameraActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void ASKGLTFCameraActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
@@ -83,11 +83,11 @@ void AGLTFCameraActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyCha
 }
 #endif // WITH_EDITOR
 
-void AGLTFCameraActor::BeginPlay()
+void ASKGLTFCameraActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (Mode == EGLTFCameraControlMode::FreeLook)
+	if (Mode == ESKGLTFCameraControlMode::FreeLook)
 	{
 		const FRotator Rotation = GetActorRotation();
 
@@ -96,7 +96,7 @@ void AGLTFCameraActor::BeginPlay()
 		TargetPitch = Pitch;
 		TargetYaw = Yaw;
 	}
-	else if (Mode == EGLTFCameraControlMode::Orbital)
+	else if (Mode == ESKGLTFCameraControlMode::Orbital)
 	{
 		const FVector FocusPosition = GetFocusPosition();
 
@@ -121,17 +121,17 @@ void AGLTFCameraActor::BeginPlay()
 
 	if (InputComponent)
 	{
-		InputComponent->BindAxisKey(EKeys::MouseX, this, &AGLTFCameraActor::OnMouseX);
-		InputComponent->BindAxisKey(EKeys::MouseY, this, &AGLTFCameraActor::OnMouseY);
-		InputComponent->BindAxisKey(EKeys::MouseWheelAxis, this, &AGLTFCameraActor::OnMouseWheelAxis);
+		InputComponent->BindAxisKey(EKeys::MouseX, this, &ASKGLTFCameraActor::OnMouseX);
+		InputComponent->BindAxisKey(EKeys::MouseY, this, &ASKGLTFCameraActor::OnMouseY);
+		InputComponent->BindAxisKey(EKeys::MouseWheelAxis, this, &ASKGLTFCameraActor::OnMouseWheelAxis);
 	}
 }
 
-void AGLTFCameraActor::Tick(float DeltaSeconds)
+void ASKGLTFCameraActor::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (Mode == EGLTFCameraControlMode::FreeLook)
+	if (Mode == ESKGLTFCameraControlMode::FreeLook)
 	{
 		const float Alpha = (RotationInertia == 0.0f) ? 1.0f : FMath::Min(DeltaSeconds / RotationInertia, 1.0f);
 		Yaw = FMath::Lerp(Yaw, TargetYaw, Alpha);
@@ -139,7 +139,7 @@ void AGLTFCameraActor::Tick(float DeltaSeconds)
 
 		SetActorRotation(FQuat::MakeFromEuler(FVector(0.0f, Pitch, Yaw)));
 	}
-	else if (Mode == EGLTFCameraControlMode::Orbital)
+	else if (Mode == ESKGLTFCameraControlMode::Orbital)
 	{
 		if (DollyTime != 0.0f)
 		{
@@ -160,19 +160,19 @@ void AGLTFCameraActor::Tick(float DeltaSeconds)
 	}
 }
 
-void AGLTFCameraActor::PreInitializeComponents()
+void ASKGLTFCameraActor::PreInitializeComponents()
 {
 	AutoReceiveInput = static_cast<EAutoReceiveInput::Type>(GetAutoActivatePlayerIndex() + 1);
 
 	Super::PreInitializeComponents();
 }
 
-void AGLTFCameraActor::PostActorCreated()
+void ASKGLTFCameraActor::PostActorCreated()
 {
 	SetAutoActivateForPlayer(EAutoReceiveInput::Player0);
 }
 
-void AGLTFCameraActor::OnMouseX(float AxisValue)
+void ASKGLTFCameraActor::OnMouseX(float AxisValue)
 {
 	TargetYaw = ClampYaw(TargetYaw + AxisValue * RotationSensitivity * RotationSensitivityScale);
 
@@ -186,14 +186,14 @@ void AGLTFCameraActor::OnMouseX(float AxisValue)
 	}
 }
 
-void AGLTFCameraActor::OnMouseY(float AxisValue)
+void ASKGLTFCameraActor::OnMouseY(float AxisValue)
 {
 	TargetPitch = ClampPitch(TargetPitch + AxisValue * RotationSensitivity * RotationSensitivityScale);
 }
 
-void AGLTFCameraActor::OnMouseWheelAxis(float AxisValue)
+void ASKGLTFCameraActor::OnMouseWheelAxis(float AxisValue)
 {
-	if (Mode == EGLTFCameraControlMode::Orbital)
+	if (Mode == ESKGLTFCameraControlMode::Orbital)
 	{
 		if (!FMath::IsNearlyZero(AxisValue))
 		{
@@ -206,41 +206,41 @@ void AGLTFCameraActor::OnMouseWheelAxis(float AxisValue)
 	}
 }
 
-float AGLTFCameraActor::ClampDistance(float Value) const
+float ASKGLTFCameraActor::ClampDistance(float Value) const
 {
 	return FMath::Clamp(Value, DistanceMin, DistanceMax);
 }
 
-float AGLTFCameraActor::ClampPitch(float Value) const
+float ASKGLTFCameraActor::ClampPitch(float Value) const
 {
 	return FMath::Clamp(Value, PitchAngleMin, PitchAngleMax);
 }
 
-float AGLTFCameraActor::ClampYaw(float Value) const
+float ASKGLTFCameraActor::ClampYaw(float Value) const
 {
 	return UsesYawLimits() ? FMath::Clamp(Value, YawAngleMin, YawAngleMax) : Value;
 }
 
-void AGLTFCameraActor::RemoveInertia()
+void ASKGLTFCameraActor::RemoveInertia()
 {
 	Yaw = TargetYaw;
 	Pitch = TargetPitch;
 	Distance = TargetDistance;
 }
 
-FRotator AGLTFCameraActor::GetLookAtRotation(const FVector TargetPosition) const
+FRotator ASKGLTFCameraActor::GetLookAtRotation(const FVector TargetPosition) const
 {
 	const FVector EyePosition = GetActorLocation();
 
 	return FRotationMatrix::MakeFromXZ(TargetPosition - EyePosition, FVector::UpVector).Rotator();
 }
 
-FVector AGLTFCameraActor::GetFocusPosition() const
+FVector ASKGLTFCameraActor::GetFocusPosition() const
 {
 	return this->Target != nullptr ? this->Target->GetActorLocation() : FVector::ZeroVector;
 }
 
-bool AGLTFCameraActor::SetAutoActivateForPlayer(const EAutoReceiveInput::Type Player)
+bool ASKGLTFCameraActor::SetAutoActivateForPlayer(const EAutoReceiveInput::Type Player)
 {
 	// TODO: remove hack by adding proper API access to ACameraActor (or by other means)
 	FProperty* Property = GetClass()->FindPropertyByName(TEXT("AutoActivateForPlayer"));
@@ -259,7 +259,7 @@ bool AGLTFCameraActor::SetAutoActivateForPlayer(const EAutoReceiveInput::Type Pl
 	return true;
 }
 
-bool AGLTFCameraActor::UsesYawLimits() const
+bool ASKGLTFCameraActor::UsesYawLimits() const
 {
 	return !FMath::IsNearlyEqual(YawAngleMax - YawAngleMin, 360.0f);
 }

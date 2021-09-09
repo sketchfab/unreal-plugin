@@ -3,7 +3,7 @@
 #pragma once
 
 #include "SSketchfabWindow.h"
-#include "UserData/GLTFMaterialUserData.h"
+#include "UserData/SKGLTFMaterialUserData.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSketchfabExporterWindow, Log, All);
 

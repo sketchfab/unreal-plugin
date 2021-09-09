@@ -17,6 +17,7 @@ namespace UnrealBuildTool.Rules
 			PrivateIncludePaths.AddRange(
 				new string[] {
                     "SketchfabGLTF/Private",
+					"GLTFExporter/Private/Builders"
 					// ... add other private include paths required here ...
 				}
                 );
@@ -35,11 +36,12 @@ namespace UnrealBuildTool.Rules
                     "RawMesh",
                     "GeometryCache",
                     "MeshUtilities",
-                    "RenderCore",
+					"SKGLTFExporter",
+					"RenderCore",
                     "RHI",
                     "MessageLog",
                     "JsonUtilities",
-					"ZipUtility" //https://github.com/GameLogicDesign/ZipUtility-ue4
+					//"ZipUtility" //https://github.com/GameLogicDesign/ZipUtility-ue4
 					// ... add other public dependencies that you statically link with here ...
 				}
 				);
@@ -68,7 +70,7 @@ namespace UnrealBuildTool.Rules
 				}
 				);
 
-            PrivatePCHHeaderFile = "Private/GLTFImporterPrivatePCH.h";
+            PrivatePCHHeaderFile = "Private/SKGLTFImporterPrivatePCH.h";
         }
 	}
 }

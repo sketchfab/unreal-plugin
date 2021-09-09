@@ -2,21 +2,23 @@
 
 #include "SSketchfabExporterWindow.h"
 
-#include "GLTFExportOptions.h"
-#include "Exporters/GLTFExporter.h"
-#include "Exporters/GLTFLevelExporter.h"
+#include "SKGLTFExportOptions.h"
+#include "Exporters/SKGLTFExporter.h"
+#include "Exporters/SKGLTFLevelExporter.h"
 #include "Exporters/Exporter.h"
 
 #include "AssetExportTask.h"
 #include "EditorLevelLibrary.h"
 
-#include "ZipFileFunctionLibrary.h"
+//#include "ZipFileFunctionLibrary.h"
 
 #include "GameFramework/Actor.h"
 #include "UObject/Object.h"
 #include "UObject/GCObjectScopeGuard.h"
 #include "GenericPlatform/GenericPlatformFile.h"
 #include "Widgets/Input/STextComboBox.h"
+
+#include "SKGLTFZipUtility.h"
 
 
 #define LOCTEXT_NAMESPACE "SketchfabExporter"
@@ -316,18 +318,18 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 	if (Exporter)
 	{
 		// Get the GlTF Exporter object from the identified exporter
-		UGLTFLevelExporter* gltfExp = Cast<UGLTFLevelExporter>(Exporter);
+		USKGLTFLevelExporter* gltfExp = Cast<USKGLTFLevelExporter>(Exporter);
 		gltfExp->CurrentFilename = GlbPath;
 		gltfExp->SetShowExportOption(false);
 
 		// Set the exporter options (linked to Sketchfab Export)
-		UGLTFExportOptions* opts = gltfExp->GetExportOptions();
+		USKGLTFExportOptions* opts = gltfExp->GetExportOptions();
 		opts->ResetToDefault();
 		// Hidden models
 		opts->bExportHiddenInGame = false; // Hidden meshes not exported
-		opts->BakeMaterialInputs = bBakeMaterials ? EGLTFMaterialBakeMode::UseMeshData : EGLTFMaterialBakeMode::Disabled; // Don't bake the material inputs
+		opts->BakeMaterialInputs = bBakeMaterials ? ESKGLTFMaterialBakeMode::UseMeshData : ESKGLTFMaterialBakeMode::Disabled; // Don't bake the material inputs
 		// Behaviour and Epic web additional options
-		opts->DefaultMaterialBakeSize = static_cast<EGLTFMaterialBakeSizePOT>(BakingResolutionIndex + 7); // Align on EGLTFMaterialBakeSizePOT::POT_128
+		opts->DefaultMaterialBakeSize = static_cast<ESKGLTFMaterialBakeSizePOT>(BakingResolutionIndex + 7); // Align on ESKGLTFMaterialBakeSizePOT::POT_128
 		opts->bExportPreviewMesh = false;
 		opts->bBundleWebViewer = false;
 		opts->bShowFilesWhenDone = false;
@@ -343,7 +345,7 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 		opts->bExportVisibilityVariants = false;
 		opts->bExportMeshQuantization = false; // We don't support Draco compression
 		// Various exports (lights, cameras, skyspheres...)
-		opts->TextureHDREncoding = EGLTFTextureHDREncoding::RGBM;
+		opts->TextureHDREncoding = ESKGLTFTextureHDREncoding::RGBM;
 		opts->bExportLightmaps = false;
 		opts->ExportLights = 0;
 		opts->bExportCameras = false;
@@ -369,7 +371,7 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 		task->bAutomated = true;
 
 		// Run the actual export
-		bool GltfSuccess = UGLTFExporter::RunAssetExportTask(task);
+		bool GltfSuccess = USKGLTFExporter::RunAssetExportTask(task);
 		if (GltfSuccess) {
 			UE_LOG(LogSketchfabExporterWindow, Log, TEXT("Export successful to %s"), *GlbPath);
 		}
@@ -379,6 +381,7 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 	}
 
 	// Create a zip archive of the file
+	/*
 	bool ZipSuccess = UZipFileFunctionLibrary::ZipWithLambda(GlbPath, zipSuccessPlaceHolder);
 	if (!ZipSuccess) {
 		UE_LOG(LogSketchfabExporterWindow, Error, TEXT("Failure encountered while zipping the file"));
@@ -389,6 +392,27 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 			"The plugin encountered an error during the compression of your scene.\n"
 				"Please check that UE has writing permissions in \n"
 				+ FPaths::GetPath(ZipPath),
+			"Open directory",
+			"Back to Unreal Engine"
+		);
+		if (popup->Confirmed())
+		{
+			FPlatformMisc::OsExecute(TEXT("open"), *(FPaths::GetPath(ZipPath).Replace(TEXT("/"), TEXT("\\"))));
+		}
+		CleanUploadArtifacts();
+		return FReply::Handled();
+	}
+	*/
+
+	if (FGLTFZipUtility::CompressDirectory(ZipPath, GlbPath)) {
+		UE_LOG(LogSketchfabExporterWindow, Error, TEXT("Failure encountered while zipping the file"));
+		TSharedPtr<SPopUpWindow> popup = CreatePopUp
+		(
+			"Archive error",
+			"Your model did not compress correctly",
+			"The plugin encountered an error during the compression of your scene.\n"
+			"Please check that UE has writing permissions in \n"
+			+ FPaths::GetPath(ZipPath),
 			"Open directory",
 			"Back to Unreal Engine"
 		);

@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFCameraConverters.h"
-#include "Builders/GLTFContainerBuilder.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFNameUtility.h"
-#include "Actors/GLTFCameraActor.h"
+#include "Converters/SKGLTFCameraConverters.h"
+#include "Builders/SKGLTFContainerBuilder.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFNameUtility.h"
+#include "Actors/SKGLTFCameraActor.h"
 
 FGLTFJsonCameraIndex FGLTFCameraConverter::Convert(const UCameraComponent* CameraComponent)
 {
@@ -18,7 +18,7 @@ FGLTFJsonCameraIndex FGLTFCameraConverter::Convert(const UCameraComponent* Camer
 
 	switch (Camera.Type)
 	{
-		case EGLTFJsonCameraType::Orthographic:
+		case ESKGLTFJsonCameraType::Orthographic:
 			if (!DesiredView.bConstrainAspectRatio)
 			{
 				Builder.AddWarningMessage(FString::Printf(TEXT("Aspect ratio for orthographic camera component %s (in actor %s) will be constrainted in glTF"), *CameraComponent->GetName(), *CameraComponent->GetOwner()->GetName()));
@@ -29,7 +29,7 @@ FGLTFJsonCameraIndex FGLTFCameraConverter::Convert(const UCameraComponent* Camer
 			Camera.Orthographic.ZNear = FGLTFConverterUtility::ConvertLength(DesiredView.OrthoNearClipPlane, ExportScale);
 			break;
 
-		case EGLTFJsonCameraType::Perspective:
+		case ESKGLTFJsonCameraType::Perspective:
 			if (DesiredView.bConstrainAspectRatio)
 			{
 				Camera.Perspective.AspectRatio = DesiredView.AspectRatio;
@@ -40,7 +40,7 @@ FGLTFJsonCameraIndex FGLTFCameraConverter::Convert(const UCameraComponent* Camer
 			Camera.Perspective.ZNear = FGLTFConverterUtility::ConvertLength(GNearClippingPlane, ExportScale);
 			break;
 
-		case EGLTFJsonCameraType::None:
+		case ESKGLTFJsonCameraType::None:
 			// TODO: report error (unsupported camera type)
 			return FGLTFJsonCameraIndex(INDEX_NONE);
 
@@ -50,7 +50,7 @@ FGLTFJsonCameraIndex FGLTFCameraConverter::Convert(const UCameraComponent* Camer
 	}
 
 	const AActor* Owner = CameraComponent->GetOwner();
-	const AGLTFCameraActor* CameraActor = Owner != nullptr ? Cast<AGLTFCameraActor>(Owner) : nullptr;
+	const ASKGLTFCameraActor* CameraActor = Owner != nullptr ? Cast<ASKGLTFCameraActor>(Owner) : nullptr;
 
 	if (CameraActor != nullptr)
 	{

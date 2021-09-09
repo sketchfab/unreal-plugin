@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFWebBuilder.h"
-#include "Builders/GLTFFileUtility.h"
-#include "Builders/GLTFZipUtility.h"
+#include "Builders/SKGLTFWebBuilder.h"
+#include "Builders/SKGLTFFileUtility.h"
+#include "Builders/SKGLTFZipUtility.h"
 
-FGLTFWebBuilder::FGLTFWebBuilder(const FString& FilePath, const UGLTFExportOptions* ExportOptions, bool bSelectedActorsOnly)
+FGLTFWebBuilder::FGLTFWebBuilder(const FString& FilePath, const USKGLTFExportOptions* ExportOptions, bool bSelectedActorsOnly)
 	: FGLTFContainerBuilder(FilePath, ExportOptions, bSelectedActorsOnly)
 {
 }
@@ -30,11 +30,11 @@ void FGLTFWebBuilder::Write(FArchive& Archive, FFeedbackContext* Context)
 	}
 	else
 	{
-		const TSet<EGLTFJsonExtension> CustomExtensions = GetCustomExtensionsUsed();
+		const TSet<ESKGLTFJsonExtension> CustomExtensions = GetCustomExtensionsUsed();
 		if (CustomExtensions.Num() > 0)
 		{
 			const FString ExtensionsString = FString::JoinBy(CustomExtensions, TEXT(", "),
-				[](EGLTFJsonExtension Extension)
+				[](ESKGLTFJsonExtension Extension)
 			{
 				return FGLTFJsonUtility::ToString(Extension);
 			});

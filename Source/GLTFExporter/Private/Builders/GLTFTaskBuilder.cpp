@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFTaskBuilder.h"
+#include "Builders/SKGLTFTaskBuilder.h"
 #include "Misc/FeedbackContext.h"
 #include "Misc/ScopedSlowTask.h"
 
-FGLTFTaskBuilder::FGLTFTaskBuilder(const FString& FilePath, const UGLTFExportOptions* ExportOptions)
+FGLTFTaskBuilder::FGLTFTaskBuilder(const FString& FilePath, const USKGLTFExportOptions* ExportOptions)
 	: FGLTFMessageBuilder(FilePath, ExportOptions)
 	, PriorityIndexLock(INDEX_NONE)
 {
@@ -12,11 +12,11 @@ FGLTFTaskBuilder::FGLTFTaskBuilder(const FString& FilePath, const UGLTFExportOpt
 
 void FGLTFTaskBuilder::CompleteAllTasks(FFeedbackContext* Context)
 {
-	const int32 PriorityCount = static_cast<int32>(EGLTFTaskPriority::MAX);
+	const int32 PriorityCount = static_cast<int32>(ESKGLTFTaskPriority::MAX);
 	for (int32 PriorityIndex = 0; PriorityIndex < PriorityCount; PriorityIndex++)
 	{
 		PriorityIndexLock = PriorityIndex;
-		const EGLTFTaskPriority Priority = static_cast<EGLTFTaskPriority>(PriorityIndex);
+		const ESKGLTFTaskPriority Priority = static_cast<ESKGLTFTaskPriority>(PriorityIndex);
 
 		TArray<TUniquePtr<FGLTFTask>>* Tasks = TasksByPriority.Find(Priority);
 		if (Tasks == nullptr)
@@ -44,8 +44,8 @@ void FGLTFTaskBuilder::CompleteAllTasks(FFeedbackContext* Context)
 
 bool FGLTFTaskBuilder::SetupTask(TUniquePtr<FGLTFTask> Task)
 {
-	const EGLTFTaskPriority Priority = Task->Priority;
-	if (static_cast<int32>(Priority) >= static_cast<int32>(EGLTFTaskPriority::MAX))
+	const ESKGLTFTaskPriority Priority = Task->Priority;
+	if (static_cast<int32>(Priority) >= static_cast<int32>(ESKGLTFTaskPriority::MAX))
 	{
 		checkNoEntry();
 		return false;
@@ -61,14 +61,14 @@ bool FGLTFTaskBuilder::SetupTask(TUniquePtr<FGLTFTask> Task)
 	return true;
 }
 
-FText FGLTFTaskBuilder::GetPriorityMessageFormat(EGLTFTaskPriority Priority)
+FText FGLTFTaskBuilder::GetPriorityMessageFormat(ESKGLTFTaskPriority Priority)
 {
 	switch (Priority)
 	{
-		case EGLTFTaskPriority::Animation: return NSLOCTEXT("GLTFExporter", "AnimationTaskMessage", "Animation(s): {0}");
-		case EGLTFTaskPriority::Mesh:      return NSLOCTEXT("GLTFExporter", "MeshTaskMessage", "Mesh(es): {0}");
-		case EGLTFTaskPriority::Material:  return NSLOCTEXT("GLTFExporter", "MaterialTaskMessage", "Material(s): {0}");
-		case EGLTFTaskPriority::Texture:   return NSLOCTEXT("GLTFExporter", "TextureTaskMessage", "Texture(s): {0}");
+		case ESKGLTFTaskPriority::Animation: return NSLOCTEXT("GLTFExporter", "AnimationTaskMessage", "Animation(s): {0}");
+		case ESKGLTFTaskPriority::Mesh:      return NSLOCTEXT("GLTFExporter", "MeshTaskMessage", "Mesh(es): {0}");
+		case ESKGLTFTaskPriority::Material:  return NSLOCTEXT("GLTFExporter", "MaterialTaskMessage", "Material(s): {0}");
+		case ESKGLTFTaskPriority::Texture:   return NSLOCTEXT("GLTFExporter", "TextureTaskMessage", "Texture(s): {0}");
 		default:
 			checkNoEntry();
 			return {};

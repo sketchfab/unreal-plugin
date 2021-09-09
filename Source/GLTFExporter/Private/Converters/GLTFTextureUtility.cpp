@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFTextureUtility.h"
+#include "Converters/SKGLTFTextureUtility.h"
 #include "NormalMapPreview.h"
 
 bool FGLTFTextureUtility::IsHDR(EPixelFormat Format)
@@ -268,7 +268,7 @@ UTexture2D* FGLTFTextureUtility::CreateTextureFromCubeFace(const UTextureRenderT
 	return FaceTexture;
 }
 
-bool FGLTFTextureUtility::ReadPixels(const UTextureRenderTarget2D* InRenderTarget, TArray<FColor>& OutPixels, EGLTFJsonHDREncoding Encoding)
+bool FGLTFTextureUtility::ReadPixels(const UTextureRenderTarget2D* InRenderTarget, TArray<FColor>& OutPixels, ESKGLTFJsonHDREncoding Encoding)
 {
 	FTextureRenderTarget2DResource* Resource = static_cast<FTextureRenderTarget2DResource*>(InRenderTarget->Resource);
 	if (Resource == nullptr)
@@ -276,7 +276,7 @@ bool FGLTFTextureUtility::ReadPixels(const UTextureRenderTarget2D* InRenderTarge
 		return false;
 	}
 
-	if (Encoding == EGLTFJsonHDREncoding::None)
+	if (Encoding == ESKGLTFJsonHDREncoding::None)
 	{
 		return Resource->ReadPixels(OutPixels);
 	}
@@ -289,10 +289,10 @@ bool FGLTFTextureUtility::ReadPixels(const UTextureRenderTarget2D* InRenderTarge
 
 	switch (Encoding)
 	{
-		case EGLTFJsonHDREncoding::RGBM:
+		case ESKGLTFJsonHDREncoding::RGBM:
 			EncodeRGBM(HDRPixels, OutPixels);
 			break;
-		case EGLTFJsonHDREncoding::RGBE:
+		case ESKGLTFJsonHDREncoding::RGBE:
 			EncodeRGBE(HDRPixels, OutPixels);
 			break;
 		default:

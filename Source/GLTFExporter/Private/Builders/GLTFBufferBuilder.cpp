@@ -1,11 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFBufferBuilder.h"
+#include "Builders/SKGLTFBufferBuilder.h"
 #include "Serialization/BufferArchive.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
-FGLTFBufferBuilder::FGLTFBufferBuilder(const FString& FilePath, const UGLTFExportOptions* ExportOptions)
+FGLTFBufferBuilder::FGLTFBufferBuilder(const FString& FilePath, const USKGLTFExportOptions* ExportOptions)
 	: FGLTFJsonBuilder(FilePath, ExportOptions)
 {
 	FGLTFJsonBuffer JsonBuffer;
@@ -43,7 +43,7 @@ const TArray<uint8>& FGLTFBufferBuilder::GetBufferData() const
 	return *static_cast<FBufferArchive*>(BufferArchive.Get());
 }
 
-FGLTFJsonBufferViewIndex FGLTFBufferBuilder::AddBufferView(const void* RawData, uint64 ByteLength, EGLTFJsonBufferTarget BufferTarget, uint8 DataAlignment)
+FGLTFJsonBufferViewIndex FGLTFBufferBuilder::AddBufferView(const void* RawData, uint64 ByteLength, ESKGLTFJsonBufferTarget BufferTarget, uint8 DataAlignment)
 {
 	if (BufferArchive == nullptr)
 	{

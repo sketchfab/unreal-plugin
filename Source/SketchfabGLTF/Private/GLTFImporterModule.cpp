@@ -1,10 +1,10 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#include "GLTFImporterPrivatePCH.h"
+#include "SKGLTFImporterPrivatePCH.h"
 #include "Misc/Paths.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/GCObject.h"
-#include "GLTFImporter.h"
+#include "SKGLTFImporter.h"
 #include "ISettingsModule.h"
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
@@ -15,7 +15,7 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override
 	{
-		GLTFImporter = NewObject<UGLTFImporter>();
+		GLTFImporter = NewObject<USKGLTFImporter>();
 	}
 
 	virtual void ShutdownModule() override
@@ -23,7 +23,7 @@ public:
 		GLTFImporter = nullptr;
 	}
 
-	class UGLTFImporter* GetImporter() override
+	class USKGLTFImporter* GetImporter() override
 	{
 		return GLTFImporter;
 	}
@@ -34,7 +34,7 @@ public:
 		Collector.AddReferencedObject(GLTFImporter);
 	}
 private:
-	UGLTFImporter* GLTFImporter;
+	USKGLTFImporter* GLTFImporter;
 };
 
 #undef LOCTEXT_NAMESPACE

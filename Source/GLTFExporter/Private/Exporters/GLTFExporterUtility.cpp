@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Exporters/GLTFExporterUtility.h"
+#include "Exporters/SKGLTFExporterUtility.h"
 #include "AssetRegistryModule.h"
 #include "LevelSequence.h"
 #include "UnrealEd.h"

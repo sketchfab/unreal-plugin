@@ -1,6 +1,6 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
-#include "GLTFImporter.h"
+#include "SKGLTFImporter.h"
 #include "Misc/ScopedSlowTask.h"
 #include "AssetSelection.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
@@ -12,14 +12,14 @@
 #include "IMessageLogListing.h"
 #include "AssetRegistryModule.h"
 #include "PackageTools.h"
-#include "GLTFConversionUtils.h"
+#include "SKGLTFConversionUtils.h"
 #include "StaticMeshImporter.h"
 #include "Engine/StaticMesh.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Input/SButton.h"
 #include "Framework/Application/SlateApplication.h"
 #include "HAL/FileManager.h"
-#include "GLTFImporterProjectSettings.h"
+#include "SKGLTFImporterProjectSettings.h"
 
 #include "Misc/FileHelper.h"
 #include "Materials/MaterialInterface.h"
@@ -169,12 +169,12 @@ private:
 	bool bShouldImport;
 };
 
-UGLTFImporter::UGLTFImporter(const FObjectInitializer& Initializer)
+USKGLTFImporter::USKGLTFImporter(const FObjectInitializer& Initializer)
 	: Super(Initializer)
 {
 }
 
-UObject* UGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const TArray<FGLTFPrimToImport>& PrimsToImport)
+UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const TArray<FGLTFPrimToImport>& PrimsToImport)
 {
 	FScopedSlowTask SlowTask(1.0f, LOCTEXT("ImportingGLTFMeshes", "Importing glTF Meshes"));
 	SlowTask.Visibility = ESlowTaskVisibility::ForceVisible;
@@ -182,7 +182,7 @@ UObject* UGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const TA
 
 	const FTransform& ConversionTransform = ImportContext.ConversionTransform;
 
-	EGLTFMeshImportType MeshImportType = ImportContext.ImportOptions->MeshImportType;
+	ESKGLTFMeshImportType MeshImportType = ImportContext.ImportOptions->MeshImportType;
 
 	// Make unique names
 	TMap<FString, int> ExistingNamesToCount;
@@ -304,11 +304,11 @@ UObject* UGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const TA
 	return ImportContext.PathToImportAssetMap.Num() ? ImportContext.PathToImportAssetMap.CreateIterator().Value() : nullptr;
 }
 
-UStaticMesh* UGLTFImporter::ImportSingleMesh(FGLTFImportContext& ImportContext, EGLTFMeshImportType ImportType, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
+UStaticMesh* USKGLTFImporter::ImportSingleMesh(FGLTFImportContext& ImportContext, ESKGLTFMeshImportType ImportType, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
 {
 	UStaticMesh* NewMesh = nullptr;
 
-	if (ImportType == EGLTFMeshImportType::StaticMesh)
+	if (ImportType == ESKGLTFMeshImportType::StaticMesh)
 	{
 		NewMesh = FGLTFStaticMeshImporter::ImportStaticMesh(ImportContext, PrimToImport, RawTriangles, singleMesh);
 	}
@@ -316,7 +316,7 @@ UStaticMesh* UGLTFImporter::ImportSingleMesh(FGLTFImportContext& ImportContext, 
 	return NewMesh;
 }
 
-bool UGLTFImporter::ShowImportOptions(UObject& ImportOptions)
+bool USKGLTFImporter::ShowImportOptions(UObject& ImportOptions)
 {
 	TSharedPtr<SWindow> ParentWindow;
 
@@ -344,7 +344,7 @@ bool UGLTFImporter::ShowImportOptions(UObject& ImportOptions)
 	return OptionsWindow->ShouldImport();
 }
 
-tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGLTFImportContext& ImportContext, const FString& Filename)
+tinygltf::Model* USKGLTFImporter::ReadGLTFFile(FGLTFImportContext& ImportContext, const FString& Filename)
 {
 	FString FilePath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*Filename);
 	FString CleanFilename = FPaths::GetCleanFilename(Filename);
@@ -367,6 +367,8 @@ tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGLTFImportContext& ImportContext, 
 		success = gltf.LoadBinaryFromFile(Model, &err, filename);
 	}
 
+	UE_LOG(LogGLTFImport, Error, TEXT("Issue with file %s"), *Filename);
+
 	if (!success)
 	{
 		delete Model;
@@ -383,7 +385,7 @@ tinygltf::Model* UGLTFImporter::ReadGLTFFile(FGLTFImportContext& ImportContext, 
 	return Model;
 }
 
-UTexture* UGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty)
+UTexture* USKGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty)
 {
 	if (!img)
 	{
@@ -520,7 +522,7 @@ UTexture* UGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tinygl
 	return UnrealTexture;
 }
 
-void UGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, tinygltf::Material *Mat, TArray<UMaterialInterface*>& OutMaterials)
+void USKGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, tinygltf::Material *Mat, TArray<UMaterialInterface*>& OutMaterials)
 {
 	// Make sure we have a parent
 	if (!ImportContext.Parent)
@@ -747,7 +749,7 @@ UMaterialExpressionOneMinus* CreateOneMinusExpression(UMaterial* UnrealMaterial,
 	return OneMinusExpression;
 }
 
-void UGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel)
+void USKGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel)
 {
 	if (MaterialInput.Expression)
 	{
@@ -790,7 +792,7 @@ void UGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel 
 	}
 }
 
-bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
+bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	FScopedSlowTask &MaterialProgress,
 	FGLTFImportContext& ImportContext,
 	tinygltf::Material *mat,
@@ -1337,7 +1339,7 @@ bool UGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	return bCreated;
 }
 
-int32 UGLTFImporter::CreateNodeMaterials(FGLTFImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials)
+int32 USKGLTFImporter::CreateNodeMaterials(FGLTFImportContext &ImportContext, TArray<UMaterialInterface*>& OutMaterials)
 {
 	FScopedSlowTask SlowTask(1.0f, LOCTEXT("ImportingGLTFMaterials", "Importing glTF Materials"));
 	SlowTask.Visibility = ESlowTaskVisibility::ForceVisible;
@@ -1369,13 +1371,13 @@ void FGLTFImportContext::Init(UObject* InParent, const FString& InName, const FS
 
 	ImportObjectFlags = RF_Public | RF_Standalone | RF_Transactional;
 
-	TSubclassOf<UGLTFPrimResolver> ResolverClass = GetDefault<UGLTFImporterProjectSettings>()->CustomPrimResolver;
+	TSubclassOf<USKGLTFPrimResolver> ResolverClass = GetDefault<USKGLTFImporterProjectSettings>()->CustomPrimResolver;
 	if (!ResolverClass)
 	{
-		ResolverClass = UGLTFPrimResolver::StaticClass();
+		ResolverClass = USKGLTFPrimResolver::StaticClass();
 	}
 
-	PrimResolver = NewObject<UGLTFPrimResolver>(GetTransientPackage(), ResolverClass);
+	PrimResolver = NewObject<USKGLTFPrimResolver>(GetTransientPackage(), ResolverClass);
 	PrimResolver->Init();
 
 	// A matrix that converts Y up right handed coordinate system to Z up left handed (unreal)

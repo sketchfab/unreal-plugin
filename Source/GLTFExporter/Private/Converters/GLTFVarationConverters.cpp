@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFVarationConverters.h"
-#include "Converters/GLTFMeshUtility.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Converters/SKGLTFVarationConverters.h"
+#include "Converters/SKGLTFMeshUtility.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "Rendering/SkeletalMeshRenderData.h"
 #include "VariantObjectBinding.h"
 #include "PropertyValueMaterial.h"
@@ -100,7 +100,7 @@ bool FGLTFVariationConverter::TryParseVariantBinding(FGLTFJsonVariant& OutVarian
 
 		if (Property->IsA<UPropertyValueMaterial>())
 		{
-			if (Builder.ExportOptions->ExportMaterialVariants != EGLTFMaterialVariantMode::None && TryParseMaterialPropertyValue(OutVariant, Property))
+			if (Builder.ExportOptions->ExportMaterialVariants != ESKGLTFMaterialVariantMode::None && TryParseMaterialPropertyValue(OutVariant, Property))
 			{
 				bHasParsedAnyProperty = true;
 			}
@@ -238,9 +238,9 @@ bool FGLTFVariationConverter::TryParseMaterialPropertyValue(FGLTFJsonVariant& Ou
 	const FGLTFMeshData* MeshData = nullptr;
 	FGLTFIndexArray SectionIndices;
 
-	if (Builder.ExportOptions->ExportMaterialVariants == EGLTFMaterialVariantMode::UseMeshData)
+	if (Builder.ExportOptions->ExportMaterialVariants == ESKGLTFMaterialVariantMode::UseMeshData)
 	{
-		if (Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::UseMeshData)
+		if (Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::UseMeshData)
 		{
 			const int32 DefaultLODIndex = Builder.ExportOptions->DefaultLevelOfDetail;
 

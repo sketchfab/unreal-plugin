@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Tasks/GLTFMeshTasks.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFMeshUtility.h"
-#include "Builders/GLTFConvertBuilder.h"
+#include "Tasks/SKGLTFMeshTasks.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFMeshUtility.h"
+#include "Builders/SKGLTFConvertBuilder.h"
 #include "Rendering/SkeletalMeshRenderData.h"
 
 namespace
@@ -112,7 +112,7 @@ void FGLTFStaticMeshTask::Complete()
 		ColorBuffer = LODInfo.OverrideVertexColors != nullptr ? LODInfo.OverrideVertexColors : ColorBuffer;
 	}
 
-	const FGLTFMeshData* MeshData = Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::UseMeshData ?
+	const FGLTFMeshData* MeshData = Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::UseMeshData ?
 		Builder.StaticMeshDataConverter.GetOrAdd(StaticMesh, StaticMeshComponent, LODIndex) : nullptr;
 
 	if (MeshData != nullptr)
@@ -204,7 +204,7 @@ void FGLTFSkeletalMeshTask::Complete()
 		SkinWeightBuffer = LODInfo.OverrideSkinWeights != nullptr ? LODInfo.OverrideSkinWeights : SkinWeightBuffer;
 	}
 
-	const FGLTFMeshData* MeshData = Builder.ExportOptions->BakeMaterialInputs == EGLTFMaterialBakeMode::UseMeshData ?
+	const FGLTFMeshData* MeshData = Builder.ExportOptions->BakeMaterialInputs == ESKGLTFMaterialBakeMode::UseMeshData ?
 		Builder.SkeletalMeshDataConverter.GetOrAdd(SkeletalMesh, SkeletalMeshComponent, LODIndex) : nullptr;
 
 	if (MeshData != nullptr)

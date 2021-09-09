@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Json/GLTFJsonRoot.h"
-#include "GLTFExporterModule.h"
+#include "Json/SKGLTFJsonRoot.h"
+#include "SKGLTFExporterModule.h"
 #include "Interfaces/IPluginManager.h"
 #include "Runtime/Launch/Resources/Version.h"
 

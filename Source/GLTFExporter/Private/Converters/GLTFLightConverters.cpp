@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFLightConverters.h"
-#include "Builders/GLTFContainerBuilder.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFNameUtility.h"
+#include "Converters/SKGLTFLightConverters.h"
+#include "Builders/SKGLTFContainerBuilder.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFNameUtility.h"
 
 FGLTFJsonLightIndex FGLTFLightConverter::Convert(const ULightComponent* LightComponent)
 {
@@ -12,7 +12,7 @@ FGLTFJsonLightIndex FGLTFLightConverter::Convert(const ULightComponent* LightCom
 	Light.Name = FGLTFNameUtility::GetName(LightComponent);
 	Light.Type = FGLTFConverterUtility::ConvertLightType(LightComponent->GetLightType());
 
-	if (Light.Type == EGLTFJsonLightType::None)
+	if (Light.Type == ESKGLTFJsonLightType::None)
 	{
 		// TODO: report error (unsupported light component type)
 		return FGLTFJsonLightIndex(INDEX_NONE);

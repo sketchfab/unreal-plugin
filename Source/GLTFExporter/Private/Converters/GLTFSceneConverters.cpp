@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFSceneConverters.h"
-#include "Builders/GLTFContainerBuilder.h"
-#include "Converters/GLTFConverterUtility.h"
-#include "Converters/GLTFActorUtility.h"
+#include "Converters/SKGLTFSceneConverters.h"
+#include "Builders/SKGLTFContainerBuilder.h"
+#include "Converters/SKGLTFConverterUtility.h"
+#include "Converters/SKGLTFActorUtility.h"
 #include "LevelVariantSetsActor.h"
 
 FGLTFJsonSceneIndex FGLTFSceneConverter::Convert(const UWorld* World)

@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFActorUtility.h"
+#include "Converters/SKGLTFActorUtility.h"
 #include "Engine/Blueprint.h"
 
 bool FGLTFActorUtility::IsRootActor(const AActor* Actor, bool bSelectedOnly)

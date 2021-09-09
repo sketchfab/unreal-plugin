@@ -6,7 +6,7 @@
 
 struct FColor;
 
-class MATERIALBAKING_API FMaterialBakingHelpers
+class SKMATERIALBAKING_API FMaterialBakingHelpers
 {
 public:
 	/** 

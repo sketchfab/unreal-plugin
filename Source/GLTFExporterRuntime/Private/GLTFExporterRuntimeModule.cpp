@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "GLTFExporterRuntimeModule.h"
+#include "SKGLTFExporterRuntimeModule.h"
 
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
@@ -10,7 +10,7 @@ DEFINE_LOG_CATEGORY(LogGLTFExporterRuntime);
 /**
  * glTF Exporter runtime module implementation (private)
  */
-class FGLTFExporterRuntimeModule final : public IGLTFExporterRuntimeModule
+class FSKGLTFExporterRuntimeModule final : public ISKGLTFExporterRuntimeModule
 {
 
 public:
@@ -19,4 +19,4 @@ public:
 	virtual void ShutdownModule() override {}
 };
 
-IMPLEMENT_MODULE(FGLTFExporterRuntimeModule, GLTFExporterRuntime);
+IMPLEMENT_MODULE(FSKGLTFExporterRuntimeModule, SKGLTFExporterRuntime);

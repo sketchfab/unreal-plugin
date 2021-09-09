@@ -1,17 +1,17 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Exporters/GLTFAnimSequenceExporter.h"
-#include "Exporters/GLTFExporterUtility.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Exporters/SKGLTFAnimSequenceExporter.h"
+#include "Exporters/SKGLTFExporterUtility.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "Animation/AnimSequence.h"
 
-UGLTFAnimSequenceExporter::UGLTFAnimSequenceExporter(const FObjectInitializer& ObjectInitializer)
+USKGLTFAnimSequenceExporter::USKGLTFAnimSequenceExporter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	SupportedClass = UAnimSequence::StaticClass();
 }
 
-bool UGLTFAnimSequenceExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
+bool USKGLTFAnimSequenceExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
 {
 	const UAnimSequence* AnimSequence = CastChecked<UAnimSequence>(Object);
 

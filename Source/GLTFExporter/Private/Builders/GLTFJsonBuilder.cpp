@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFJsonBuilder.h"
+#include "Builders/SKGLTFJsonBuilder.h"
 
-FGLTFJsonBuilder::FGLTFJsonBuilder(const FString& FilePath, const UGLTFExportOptions* ExportOptions)
+FGLTFJsonBuilder::FGLTFJsonBuilder(const FString& FilePath, const USKGLTFExportOptions* ExportOptions)
 	: FGLTFTaskBuilder(FilePath, ExportOptions)
 	, DefaultScene(JsonRoot.DefaultScene)
 {
@@ -13,13 +13,13 @@ void FGLTFJsonBuilder::WriteJson(FArchive& Archive)
 	JsonRoot.ToJson(&Archive, bIsGlbFile);
 }
 
-TSet<EGLTFJsonExtension> FGLTFJsonBuilder::GetCustomExtensionsUsed() const
+TSet<ESKGLTFJsonExtension> FGLTFJsonBuilder::GetCustomExtensionsUsed() const
 {
 	const TCHAR CustomPrefix[] = TEXT("EPIC_");
 
-	TSet<EGLTFJsonExtension> CustomExtensions;
+	TSet<ESKGLTFJsonExtension> CustomExtensions;
 
-	for (EGLTFJsonExtension Extension : JsonRoot.Extensions.Used)
+	for (ESKGLTFJsonExtension Extension : JsonRoot.Extensions.Used)
 	{
 		const TCHAR* ExtensionString = FGLTFJsonUtility::ToString(Extension);
 		if (FCString::Strncmp(ExtensionString, CustomPrefix, (sizeof(CustomPrefix) / sizeof(TCHAR)) - 1) == 0)
@@ -31,7 +31,7 @@ TSet<EGLTFJsonExtension> FGLTFJsonBuilder::GetCustomExtensionsUsed() const
 	return CustomExtensions;
 }
 
-void FGLTFJsonBuilder::AddExtension(EGLTFJsonExtension Extension, bool bIsRequired)
+void FGLTFJsonBuilder::AddExtension(ESKGLTFJsonExtension Extension, bool bIsRequired)
 {
 	JsonRoot.Extensions.Used.Add(Extension);
 	if (bIsRequired)

@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFNameUtility.h"
+#include "Converters/SKGLTFNameUtility.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Engine.h"
 

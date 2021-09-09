@@ -1,17 +1,17 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Exporters/GLTFMaterialExporter.h"
-#include "Exporters/GLTFExporterUtility.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Exporters/SKGLTFMaterialExporter.h"
+#include "Exporters/SKGLTFExporterUtility.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "Materials/MaterialInterface.h"
 
-UGLTFMaterialExporter::UGLTFMaterialExporter(const FObjectInitializer& ObjectInitializer)
+USKGLTFMaterialExporter::USKGLTFMaterialExporter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	SupportedClass = UMaterialInterface::StaticClass();
 }
 
-bool UGLTFMaterialExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
+bool USKGLTFMaterialExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
 {
 	const UMaterialInterface* Material = CastChecked<UMaterialInterface>(Object);
 	const UStaticMesh* PreviewMesh = Builder.ExportOptions->bExportPreviewMesh ? FGLTFExporterUtility::GetPreviewMesh(Material) : nullptr;

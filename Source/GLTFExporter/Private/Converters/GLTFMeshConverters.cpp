@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFMeshConverters.h"
-#include "Converters/GLTFMeshUtility.h"
-#include "Converters/GLTFMaterialUtility.h"
-#include "Builders/GLTFConvertBuilder.h"
-#include "Tasks/GLTFMeshTasks.h"
+#include "Converters/SKGLTFMeshConverters.h"
+#include "Converters/SKGLTFMeshUtility.h"
+#include "Converters/SKGLTFMaterialUtility.h"
+#include "Builders/SKGLTFConvertBuilder.h"
+#include "Tasks/SKGLTFMeshTasks.h"
 
 void FGLTFStaticMeshConverter::Sanitize(const UStaticMesh*& StaticMesh, const UStaticMeshComponent*& StaticMeshComponent, FGLTFMaterialArray& Materials, int32& LODIndex)
 {
@@ -30,7 +30,7 @@ void FGLTFStaticMeshConverter::Sanitize(const UStaticMesh*& StaticMesh, const US
 	{
 		// Only use the component if it's needed for baking, since we would
 		// otherwise export a copy of this mesh for each mesh-component.
-		if (Builder.ExportOptions->BakeMaterialInputs != EGLTFMaterialBakeMode::UseMeshData ||
+		if (Builder.ExportOptions->BakeMaterialInputs != ESKGLTFMaterialBakeMode::UseMeshData ||
 			!FGLTFMaterialUtility::NeedsMeshData(Materials)) // TODO: if this expensive, cache the results for each material
 		{
 			StaticMeshComponent = nullptr;
@@ -69,7 +69,7 @@ void FGLTFSkeletalMeshConverter::Sanitize(const USkeletalMesh*& SkeletalMesh, co
 	{
 		// Only use the component if it's needed for baking, since we would
 		// otherwise export a copy of this mesh for each mesh-component.
-		if (Builder.ExportOptions->BakeMaterialInputs != EGLTFMaterialBakeMode::UseMeshData ||
+		if (Builder.ExportOptions->BakeMaterialInputs != ESKGLTFMaterialBakeMode::UseMeshData ||
 			!FGLTFMaterialUtility::NeedsMeshData(Materials)) // TODO: if this expensive, cache the results for each material
 		{
 			SkeletalMeshComponent = nullptr;

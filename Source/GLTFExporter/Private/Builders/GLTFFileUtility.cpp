@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Builders/GLTFFileUtility.h"
-#include "GLTFExporterModule.h"
+#include "Builders/SKGLTFFileUtility.h"
+#include "SKGLTFExporterModule.h"
 #include "Interfaces/IPluginManager.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -14,15 +14,15 @@
 
 FString FGLTFFileUtility::GetPluginDir()
 {
-	return IPluginManager::Get().FindPlugin(GLTFEXPORTER_MODULE_NAME)->GetBaseDir();
+	return IPluginManager::Get().FindPlugin(SKGLTFEXPORTER_MODULE_NAME)->GetBaseDir();
 }
 
-const TCHAR* FGLTFFileUtility::GetFileExtension(EGLTFJsonMimeType MimeType)
+const TCHAR* FGLTFFileUtility::GetFileExtension(ESKGLTFJsonMimeType MimeType)
 {
 	switch (MimeType)
 	{
-		case EGLTFJsonMimeType::PNG:  return TEXT(".png");
-		case EGLTFJsonMimeType::JPEG: return TEXT(".jpg");
+		case ESKGLTFJsonMimeType::PNG:  return TEXT(".png");
+		case ESKGLTFJsonMimeType::JPEG: return TEXT(".jpg");
 		default:
 			checkNoEntry();
 			return TEXT("");

@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Converters/GLTFLightMapConverters.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Converters/SKGLTFLightMapConverters.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "Engine/MapBuildDataRegistry.h"
 
 FGLTFJsonLightMapIndex FGLTFLightMapConverter::Convert(const UStaticMeshComponent* StaticMeshComponent)

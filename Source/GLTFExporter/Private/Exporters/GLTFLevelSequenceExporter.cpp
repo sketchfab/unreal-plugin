@@ -1,17 +1,17 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Exporters/GLTFLevelSequenceExporter.h"
-#include "Exporters/GLTFExporterUtility.h"
-#include "Builders/GLTFContainerBuilder.h"
+#include "Exporters/SKGLTFLevelSequenceExporter.h"
+#include "Exporters/SKGLTFExporterUtility.h"
+#include "Builders/SKGLTFContainerBuilder.h"
 #include "LevelSequence.h"
 
-UGLTFLevelSequenceExporter::UGLTFLevelSequenceExporter(const FObjectInitializer& ObjectInitializer)
+USKGLTFLevelSequenceExporter::USKGLTFLevelSequenceExporter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	SupportedClass = ULevelSequence::StaticClass();
 }
 
-bool UGLTFLevelSequenceExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
+bool USKGLTFLevelSequenceExporter::AddObject(FGLTFContainerBuilder& Builder, const UObject* Object)
 {
 	const ULevelSequence* LevelSequence = CastChecked<ULevelSequence>(Object);
 
