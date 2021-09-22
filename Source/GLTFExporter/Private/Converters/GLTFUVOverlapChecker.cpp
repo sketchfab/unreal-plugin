@@ -116,7 +116,7 @@ float FGLTFUVOverlapChecker::Convert(const FMeshDescription* Description, FGLTFI
 
 UMaterialInterface* FGLTFUVOverlapChecker::GetMaterial()
 {
-	static UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/GLTFExporter/Materials/OverlappingUVs.OverlappingUVs"));
+	static UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/Sketchfab/Materials/OverlappingUVs.OverlappingUVs"));
 	check(Material);
 	return Material;
 }
