@@ -65,7 +65,8 @@ void SSketchfabExporterWindow::Construct(const FArguments& InArgs)
 TSharedRef<SVerticalBox> SSketchfabExporterWindow::CreateUploadArea() {
 
 	// Upload area
-	TSharedRef<SVerticalBox> UploadNode = SNew(SVerticalBox);
+	TSharedRef<SVerticalBox> UploadNode = SNew(SVerticalBox)
+		.IsEnabled(this, &SSketchfabWindow::OnLogoutEnabled);
 	// Add some padding on the top (will allow to center the upload fields)
 	UploadNode->AddSlot();
 
