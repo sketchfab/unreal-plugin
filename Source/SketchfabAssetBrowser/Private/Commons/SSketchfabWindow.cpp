@@ -212,6 +212,7 @@ void SSketchfabWindow::OnUrlChanged(const FText &url)
 		{
 			Token = accesstoken;
 			GetUserData();
+			GetUserOrgs();
 			if (OAuthWindowPtr.IsValid())
 			{
 				OAuthWindowPtr->RequestDestroyWindow();
@@ -237,12 +238,15 @@ FReply SSketchfabWindow::OnLogout()
 	Token = "";
 	LoggedInUserName = "";
 	LoggedInUserDisplayName = "";
+	UsesOrgProfile = false;
+	CurrentOrgString = "";
+	CurrentProjectString = "";
+	OrgIndex = 0;
+	ProjectIndex = 0;
 
 	TSharedPtr<IWebBrowserCookieManager> cookieMan = IWebBrowserModule::Get().GetSingleton()->GetCookieManager();
 	cookieMan->DeleteCookies("sketchfab.com");
 
-	//FString url = "https://sketchfab.com/logout";
-	//DoLoginLogout(url);
 	return FReply::Handled();
 }
 
@@ -278,6 +282,9 @@ FReply SSketchfabWindow::OnCancel()
 
 TSharedRef<SVerticalBox> SSketchfabWindow::CreateLoginArea(bool isBrowser) {
 
+	OrgIndex = 0;
+	CurrentOrgString = TEXT("None");
+
 	TSharedRef<SVerticalBox> loginArea = SNew(SVerticalBox);
 
 	FString desc;
@@ -289,70 +296,191 @@ TSharedRef<SVerticalBox> SSketchfabWindow::CreateLoginArea(bool isBrowser) {
 	}
 
 	loginArea->AddSlot()
-		.AutoHeight()
-		.Padding(0, 0, 0, 2)
-		[
-			SNew(SBorder)
-			.Padding(FMargin(3))
+	.AutoHeight()
+	.Padding(0, 0, 0, 2)
+	[
+		SNew(SBorder)
+		.Padding(FMargin(3))
 		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 		[
-			SNew(SVerticalBox)
 
-			+ SVerticalBox::Slot()
-		.AutoHeight()
-		.HAlign(HAlign_Right)
-		.Padding(2)
-		[
-			SNew(SUniformGridPanel)
-			.SlotPadding(2)
+			SNew(SHorizontalBox)
 
-		+ SUniformGridPanel::Slot(0, 0)
-		[
-			SNew(STextBlock)
-			.Justification(ETextJustify::Center)
-		.Margin(FMargin(0.0f, 5.0f, 0.0f, 0.0f))
-		.Text(this, &SSketchfabWindow::GetLoginText)
-		.MinDesiredWidth(200.0f)
-		]
+			// Left side (use organization profile)
+			+ SHorizontalBox::Slot()
+			.HAlign(HAlign_Left)
+			//.MaxWidth(200.0f)
+			//.FillWidth(1.0f)
+			//.Padding(12.0f, 0.0f, 4.0f, 0.0f)
+			[
+				SNew(SVerticalBox)
+				.Visibility(this, &SSketchfabWindow::GetOrgCheckboxVisibility)
+				
+				// Checkbox
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(12.0f, 0.0f, 4.0f, 0.0f)
+				[
+					SNew(SCheckBox)
+					//.Visibility(this, &SSketchfabWindow::GetOrgCheckboxVisibility)
+					.OnCheckStateChanged(this, &SSketchfabWindow::OnUseOrgProfileCheckStateChanged)
+					[
+						SNew(STextBlock)
+						.Text(LOCTEXT("SSketchfabAssetBrowserWindow_Search_Animated", "Use organization profile ?"))
+					]
+				]
 
-	+ SUniformGridPanel::Slot(1, 0)
-		[
-			SNew(SButton)
-			.HAlign(HAlign_Center)
-		.Text(this, &SSketchfabWindow::GetLoginButtonText)
-		.OnClicked(this, &SSketchfabWindow::OnLogin)
-		]
-		]
-		]
-		];
+				// Org dropdown
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(12.0f, 0.0f, 4.0f, 0.0f)
+				[
+					SAssignNew(OrgsComboBox, SComboBox<TSharedPtr<FString>>)
+					.OptionsSource(&OrgComboList)
+					.OnGenerateWidget(this, &SSketchfabWindow::GenerateOrgComboItem)
+					.OnSelectionChanged(this, &SSketchfabWindow::HandleOrgComboChanged)
+					.Visibility(this, &SSketchfabWindow::GetOrgDropdownVisibility)
+					[
+						SNew(STextBlock)
+						.Text(this, &SSketchfabWindow::GetOrgComboText)
+					]
+				]
+			]
 
-	// Description, tutorial
-	loginArea->AddSlot()
-		.AutoHeight()
-		.Padding(0, 0, 0, 2)
-		[
-			SNew(SBorder)
-			.Padding(FMargin(3))
-		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
-		[
-			SNew(SVerticalBox)
+		
+			// Right side (login text and button)
+			+SHorizontalBox::Slot()
+			.HAlign(HAlign_Right)
+			//.MaxWidth(250.0f)
+			//.FillWidth(0.5f)
+			//.Padding(12.0f, 0.0f, 4.0f, 0.0f)
+			[
+				SNew(SVerticalBox)
 
-			+ SVerticalBox::Slot()
-		.AutoHeight()
-		.HAlign(HAlign_Center)
-		.Padding(2)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString(desc))
-		.Justification(ETextJustify::Center)
-		.AutoWrapText(true)
-		.MinDesiredWidth(400.0f)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Right)
+				.Padding(2)
+				[
+					SNew(SUniformGridPanel)
+					.SlotPadding(2)
+
+					+ SUniformGridPanel::Slot(0, 0)
+					[
+						SNew(STextBlock)
+						.Justification(ETextJustify::Center)
+						.Margin(FMargin(0.0f, 5.0f, 0.0f, 0.0f))
+						.Text(this, &SSketchfabWindow::GetLoginText)
+						.MinDesiredWidth(200.0f)
+					]
+
+					+ SUniformGridPanel::Slot(1, 0)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.Text(this, &SSketchfabWindow::GetLoginButtonText)
+						.OnClicked(this, &SSketchfabWindow::OnLogin)
+					]
+				]
+			]
 		]
-		]
-		];
+	];
 
 	return loginArea;
 }
+
+
+void SSketchfabWindow::OnUseOrgProfileCheckStateChanged(ECheckBoxState NewState) {
+	UsesOrgProfile = (NewState == ECheckBoxState::Checked);
+	OnOrgChanged();
+}
+bool SSketchfabWindow::UsesOrgProfileChecked() const {
+	return UsesOrgProfile;
+}
+
+// Orgs
+TSharedRef<SWidget> SSketchfabWindow::GenerateOrgComboItem(TSharedPtr<FString> InItem)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(*InItem))
+		.Margin(FMargin(4, 2));
+}
+
+void SSketchfabWindow::HandleOrgComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
+{
+	for (int32 i = 0; i < OrgComboList.Num(); i++)
+	{
+		if (Item == OrgComboList[i])
+		{
+			CurrentOrgString = *Item.Get();
+			OrgIndex = i;
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Selected an org: %s %d %s"), *(Orgs[i].name), OrgIndex, *CurrentOrgString);
+			
+			if(Orgs[i].Projects.Num() > 0)
+				GetOrgsProjects(&(Orgs[i]));
+
+			UpdateAvailableProjects();
+			//EVisibility GetProjectDropdownVisibility() const;
+			//OnSearchPressed();
+		}
+	}
+
+	OnOrgChanged();
+
+	GenerateProjectComboItems();
+}
+
+FText SSketchfabWindow::GetOrgComboText() const
+{
+	return FText::FromString(CurrentOrgString);
+}
+
+
+// Projects
+TSharedRef<SWidget> SSketchfabWindow::GenerateProjectComboItem(TSharedPtr<FString> InItem)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(*InItem))
+		.Margin(FMargin(4, 2));
+}
+void SSketchfabWindow::HandleProjectComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
+{
+	for (int32 i = 0; i < ProjectComboList.Num(); i++)
+	{
+		if (Item == ProjectComboList[i])
+		{
+			if(i>0)
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("Selected a project: %s %d %s"), *(Orgs[OrgIndex].Projects[i].name), ProjectIndex, *CurrentProjectString);
+			
+			CurrentProjectString = *Item.Get();
+			ProjectIndex = i;
+			
+
+			//EVisibility GetProjectDropdownVisibility() const;
+			//OnSearchPressed();
+		}
+	}
+}
+FText SSketchfabWindow::GetProjectComboText() const
+{
+	return FText::FromString(CurrentProjectString);
+}
+EVisibility SSketchfabWindow::GetProjectDropdownVisibility() const
+{
+	return ( UsesOrgProfile && (LoggedInUserName !="") ) ? EVisibility::Visible : EVisibility::Collapsed;
+}
+
+
+
+EVisibility SSketchfabWindow::GetOrgCheckboxVisibility() const
+{
+	return ( Orgs.Num() > 0 && (LoggedInUserName != "") ) ? EVisibility::Visible : EVisibility::Collapsed;
+}
+EVisibility SSketchfabWindow::GetOrgDropdownVisibility() const
+{
+	return ((Orgs.Num() > 0) && (UsesOrgProfile) && (LoggedInUserName != "")) ? EVisibility::Visible : EVisibility::Collapsed;
+}
+
 
 TSharedRef<SVerticalBox> SSketchfabWindow::CreateFooterArea(bool isBrowser) {
 	TSharedRef<SVerticalBox> FooterNode = SNew(SVerticalBox);
@@ -472,6 +600,37 @@ void SSketchfabWindow::GetUserData()
 	FSketchfabRESTClient::Get()->AddTask(Task);
 }
 
+void SSketchfabWindow::GetUserOrgs()
+{
+	FSketchfabTaskData TaskData;
+	TaskData.Token = Token;
+	TaskData.CacheFolder = CacheFolder;
+	TaskData.StateLock = new FCriticalSection();
+
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETUSERORGS);
+	Task->OnUserOrgs().BindRaw(this, &SSketchfabWindow::OnUserOrgs);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
+}
+
+void SSketchfabWindow::GetOrgsProjects(FSketchfabOrg* org)
+{
+	FSketchfabTaskData TaskData;
+	TaskData.Token = Token;
+	TaskData.CacheFolder = CacheFolder;
+	TaskData.StateLock = new FCriticalSection();
+	TaskData.org = org;
+
+	UE_LOG(LogSketchfabRESTClient, Display, TEXT("Created task with an org %s %s"), *(org->name), *(org->uid));
+	//UE_LOG(LogSketchfabRESTClient, Display, TEXT("%s"), *(org->uid));
+
+	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
+	Task->SetState(SRS_GETORGSPROJECTS);
+	Task->OnOrgsProjects().BindRaw(this, &SSketchfabWindow::OnOrgsProjects);
+	Task->OnTaskFailed().BindRaw(this, &SSketchfabWindow::OnTaskFailed);
+	FSketchfabRESTClient::Get()->AddTask(Task);
+}
 
 //=====================================================
 // Callback API calls
@@ -515,6 +674,54 @@ void SSketchfabWindow::OnUserData(const FSketchfabTask& InTask)
 		LoggedInUserAccountType = "(BASIC)";
 		IsLoggedUserPro = false;
 	}
+}
+
+
+void SSketchfabWindow::OnUserOrgs(const FSketchfabTask& InTask)
+{
+	UE_LOG(LogSketchfabRESTClient, Display, TEXT("IN ONUSERORGS %d"), InTask.TaskData.Orgs.Num());
+	Orgs = InTask.TaskData.Orgs;
+
+	if (Orgs.Num() > 0) {
+
+		OrgComboList.Empty();
+		OrgIndex = 0;
+		CurrentOrgString = Orgs[0].name;
+		
+		for (auto& org : Orgs) {
+			GetOrgsProjects(&org);
+			OrgComboList.Add(MakeShared<FString>(org.name));
+		}
+
+		OrgsComboBox->RefreshOptions();
+		GenerateProjectComboItems();
+	}
+	
+}
+
+void SSketchfabWindow::UpdateAvailableProjects() {
+	/*
+	ProjectComboList.Empty();
+	ProjectIndex = 0;
+	ProjectComboList.Add(MakeShared<FString>("All organization"));
+	for (auto& project : Orgs[OrgIndex].Projects)
+	{
+		ProjectComboList.Add(MakeShared<FString>(project.name));
+	}
+	ProjectComboBox->RefreshOptions();
+	*/
+}
+
+void SSketchfabWindow::OnOrgsProjects(const FSketchfabTask& InTask)
+{
+	UE_LOG(LogSketchfabRESTClient, Display, TEXT("IN ONORGSPROJECTS"));
+	(InTask.TaskData.org)->Projects = InTask.TaskData.Projects;
+
+	for (int i = 0; i < (InTask.TaskData.org)->Projects.Num(); i++) {
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("PROJECT %d, %s"), i, *((InTask.TaskData.org)->Projects[i].name));
+	}
+
+	GenerateProjectComboItems();
 }
 
 void SSketchfabWindow::OnCheckLatestVersion(const FSketchfabTask& InTask)

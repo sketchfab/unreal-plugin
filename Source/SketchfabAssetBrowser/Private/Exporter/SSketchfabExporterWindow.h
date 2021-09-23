@@ -69,6 +69,9 @@ private:
 	void HandleBakingResolutionComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
 	TArray<TSharedPtr<FString>> ResolutionComboList;
 	int32 BakingResolutionIndex;
+	void HandleProjectComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
+	
+	void GenerateProjectComboItems();
 
 private:
 	
@@ -78,6 +81,7 @@ private:
 	TSharedPtr<SEditableTextBox>          pTagsEditableBox;
 	TSharedPtr<SEditableTextBox>          pPasswordEditableBox;
 	TSharedPtr<SButton>                   pUploadButton;
+	TSharedPtr<STextComboBox>             pProjectComboBox;
 	
 	// UI elements values
 	bool bDraft;

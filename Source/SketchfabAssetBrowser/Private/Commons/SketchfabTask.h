@@ -47,6 +47,12 @@ enum SketchfabRESTState
 	SRS_GETUSERDATA,
 	SRS_GETUSERDATA_PROCESSING,
 	SRS_GETUSERDATA_DONE,
+	SRS_GETUSERORGS,
+	SRS_GETUSERORGS_PROCESSING,
+	SRS_GETUSERORGS_DONE,
+	SRS_GETORGSPROJECTS,
+	SRS_GETORGSPROJECTS_PROCESSING,
+	SRS_GETORGSPROJECTS_DONE,
 	SRS_GETUSERTHUMB,
 	SRS_GETUSERTHUMB_PROCESSING,
 	SRS_GETUSERTHUMB_DONE,
@@ -72,6 +78,35 @@ struct FSketchfabCategory
 	bool active;
 
 	FSketchfabCategory()
+	{
+		active = false;
+	}
+};
+
+struct FSketchfabProject
+{
+	FString uid;
+	FString name;
+	FString slug;
+	bool active;
+	int modelCount;
+	int memberCount;
+
+	FSketchfabProject()
+	{
+		active = false;
+	}
+};
+
+struct FSketchfabOrg
+{
+	FString uid;
+	FString name;
+	FString url;
+	bool active;
+	TArray<FSketchfabProject> Projects;
+
+	FSketchfabOrg()
 	{
 		active = false;
 	}
@@ -185,6 +220,14 @@ struct FSketchfabTaskData
 	FString NextURL;
 
 	TArray<FSketchfabCategory> Categories;
+	TArray<FSketchfabOrg> Orgs;
+	TArray<FSketchfabProject> Projects;
+	FSketchfabOrg* org;
+
+	bool OrgModel;
+	FString OrgUID;
+	FString ProjectUID;
+	bool UsesOrgProfile;
 
 	int32 ModelVertexCount;
 	int32 ModelFaceCount;
@@ -260,6 +303,8 @@ public:
 	FSketchfabTaskDelegate& OnModelDownloaded() { return OnModelDownloadedDelegate; }
 	FSketchfabTaskDelegate& OnModelDownloadProgress() { return OnModelDownloadProgressDelegate; }
 	FSketchfabTaskDelegate& OnUserData() { return OnUserDataDelegate; }
+	FSketchfabTaskDelegate& OnUserOrgs() { return OnUserOrgsDelegate; }
+	FSketchfabTaskDelegate& OnOrgsProjects() { return OnUserOrgsDelegate; }
 	FSketchfabTaskDelegate& OnUserThumbnail() { return OnUserThumbnailDelegate; }
 	FSketchfabTaskDelegate& OnCategories() { return OnCategoriesDelegate; }
 	FSketchfabTaskDelegate& OnModelInfo() { return OnModelInfoDelegate; }
@@ -274,6 +319,8 @@ public:
 	void GetModelLink();
 	void DownloadModel();
 	void GetUserData();
+	void GetUserOrgs();
+	void GetOrgsProjects();
 	void GetUserThumbnail();
 	void GetCategories();
 	void GetModelInfo();
@@ -291,6 +338,8 @@ public:
 	void GetModelLink_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void DownloadModel_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetUserData_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void GetUserOrgs_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void GetOrgsProjects_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetCategories_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	void GetModelInfo_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
@@ -330,6 +379,8 @@ private:
 	FSketchfabTaskDelegate OnModelDownloadedDelegate;
 	FSketchfabTaskDelegate OnModelDownloadProgressDelegate;
 	FSketchfabTaskDelegate OnUserDataDelegate;
+	FSketchfabTaskDelegate OnUserOrgsDelegate;
+	FSketchfabTaskDelegate OnOrgsProjectsDelegate;
 	FSketchfabTaskDelegate OnUserThumbnailDelegate;
 	FSketchfabTaskDelegate OnCategoriesDelegate;
 	FSketchfabTaskDelegate OnModelInfoDelegate;

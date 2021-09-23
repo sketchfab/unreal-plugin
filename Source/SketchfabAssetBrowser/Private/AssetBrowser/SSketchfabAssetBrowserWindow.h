@@ -109,6 +109,8 @@ private:
 	bool bSearchStaffPicked;
 
 	// Search domain
+	void GenerateSearchDomainList();
+	void UpdateSearchDomainList();
 	TSharedRef<SWidget> GenerateSearchDomainComboItem(TSharedPtr<FString> InItem);
 	void HandleSearchDomainComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
 	FText GetSearchDomainComboText() const;
@@ -146,7 +148,7 @@ private:
 	int32 FaceCountIndex;
 	FString CurrentFaceCountString;
 
-
+	virtual void GenerateProjectComboItems() {};
 	bool ShouldDownloadFile(const FString &FileName, const FDateTime &ModelPublishedAt);
 
 private:
@@ -161,6 +163,9 @@ private:
 	void OnCategories(const FSketchfabTask& InTask);
 	void OnGetModelSize(const FSketchfabTask& InTask);
 	void OnDownloadFailed(const FSketchfabTask& InTask);
+
+	//virtual void OnUseOrgProfileCheckStateChanged(ECheckBoxState NewState);
+	virtual void OnOrgChanged();
 
 	virtual EVisibility ShouldDisplayClearCache() const;
 	virtual FReply OnClearCache();

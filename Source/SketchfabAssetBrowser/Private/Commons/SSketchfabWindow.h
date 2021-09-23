@@ -95,6 +95,7 @@ public:
 	bool OnLoginEnabled() const;
 	bool OnLogoutEnabled() const;
 	bool IsUserPro() const;
+	bool UsesOrgProfileChecked() const;
 	FText GetLoginText() const;
 	FText GetLoginButtonText() const;
 
@@ -107,6 +108,9 @@ public:
 	
 	// User data
 	void GetUserData();
+	void GetUserOrgs();
+	void GetOrgsProjects(FSketchfabOrg* org);
+
 
 	FReply OnCancel();
 	
@@ -126,11 +130,20 @@ public:
 
 	void OnUrlChanged(const FText &url);
 	void OnUserData(const FSketchfabTask& InTask);
+	void OnUserOrgs(const FSketchfabTask& InTask);
+	void OnOrgsProjects(const FSketchfabTask& InTask);
 	void OnTaskFailed(const FSketchfabTask& InTask);
 	void OnOAuthWindowClosed(const TSharedRef<SWindow>& InWindow);
 
 	virtual EVisibility ShouldDisplayClearCache() const;
+	virtual EVisibility GetOrgDropdownVisibility() const;
+	virtual EVisibility GetOrgCheckboxVisibility() const;
+
+	void OnUseOrgProfileCheckStateChanged(ECheckBoxState NewState);
+	
 	virtual FReply OnClearCache() { return FReply::Handled(); };
+	virtual void OnOrgChanged() {};
+
 
 	TSharedPtr<SPopUpWindow> CreatePopUp(FString title, FString subtitle, FString content, FString ok, FString cancel);
 
@@ -149,6 +162,36 @@ public:
 	FString LoggedInUserAccountType;
 	bool IsLoggedUserPro;
 
+	bool IsMemberOfAnOrg;
+	bool UsesOrgProfile;
+
 	int WindowWidth;
 	int WindowHeight;
+
+	TArray<FSketchfabOrg> Orgs;
+
+	void UpdateAvailableProjects();
+
+	// Org dropdown
+	TSharedRef<SWidget> GenerateOrgComboItem(TSharedPtr<FString> InItem);
+	void HandleOrgComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
+	FText GetOrgComboText() const;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> OrgsComboBox;
+	TArray<TSharedPtr<FString>> OrgComboList;
+	int32 OrgIndex;
+	FString CurrentOrgString;
+
+
+	// Virtual function to react on org
+	virtual EVisibility GetProjectDropdownVisibility() const;
+	TSharedRef<SWidget> GenerateProjectComboItem(TSharedPtr<FString> InItem);
+	void HandleProjectComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
+	FText GetProjectComboText() const;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> ProjectsComboBox;
+	TArray<TSharedPtr<FString>> ProjectComboList;
+	int32 ProjectIndex;
+	FString CurrentProjectString;
+
+	virtual void GenerateProjectComboItems() {};
+
 };

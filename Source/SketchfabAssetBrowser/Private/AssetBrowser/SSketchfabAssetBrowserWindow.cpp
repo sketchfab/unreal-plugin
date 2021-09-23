@@ -6,6 +6,55 @@
 
 DEFINE_LOG_CATEGORY(LogSketchfabAssetBrowserWindow);
 
+void SSketchfabAssetBrowserWindow::UpdateSearchDomainList() {
+
+}
+
+void SSketchfabAssetBrowserWindow::GenerateSearchDomainList() {
+	SearchDomainIndex = (int32)SEARCHDOMAIN_Default;
+
+	if (SearchDomainComboList.Num() > 0)
+		SearchDomainComboList.Empty();
+
+	if (UsesOrgProfile) {
+		SearchDomainIndex = 0;
+		
+		CurrentSearchDomainString = TEXT("All organization");
+		SearchDomainComboList.Add(MakeShared<FString>(CurrentSearchDomainString));
+
+		for (int32 i = 0; i < Orgs[OrgIndex].Projects.Num() ; i++)
+		{
+			SearchDomainComboList.Add(MakeShared<FString>(Orgs[OrgIndex].Projects[i].name));
+		}
+	}
+	else {
+		CurrentSearchDomainString = TEXT("All site");
+		for (int32 i = 0; i < (int32)SEARCHDOMAIN_UNDEFINED; i++)
+		{
+			switch (i)
+			{
+			case SEARCHDOMAIN_Default:
+			{
+				SearchDomainComboList.Add(MakeShared<FString>(TEXT("All site")));
+			}
+			break;
+			case SEARCHDOMAIN_Own:
+			{
+				SearchDomainComboList.Add(MakeShared<FString>(TEXT("Own Models (PRO)")));
+			}
+			break;
+			case SEARCHDOMAIN_Store:
+			{
+				SearchDomainComboList.Add(MakeShared<FString>(TEXT("Store purchases")));
+			}
+			break;
+			}
+		}
+	}
+	
+	if(SearchDomainComboBox.IsValid())
+		SearchDomainComboBox->RefreshOptions();
+}
 
 void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 {
@@ -18,29 +67,7 @@ void SSketchfabAssetBrowserWindow::Construct(const FArguments& InArgs)
 	CategoryIndex = 0;
 	CurrentCategoryString = TEXT("All");
 
-	SearchDomainIndex = (int32)SEARCHDOMAIN_Default;
-	CurrentSearchDomainString = TEXT("All Site");
-	for (int32 i = 0; i < (int32)SEARCHDOMAIN_UNDEFINED; i++)
-	{
-		switch (i)
-		{
-		case SEARCHDOMAIN_Default:
-		{
-			SearchDomainComboList.Add(MakeShared<FString>(TEXT("All site")));
-		}
-		break;
-		case SEARCHDOMAIN_Own:
-		{
-			SearchDomainComboList.Add(MakeShared<FString>(TEXT("Own Models (PRO)")));
-		}
-		break;
-		case SEARCHDOMAIN_Store:
-		{
-			SearchDomainComboList.Add(MakeShared<FString>(TEXT("Store purchases")));
-		}
-		break;
-		}
-	}
+	GenerateSearchDomainList();
 
 	SortByIndex = (int32)SORTBY_MostRecent;
 	CurrentSortByString = TEXT("Most Recent");
@@ -540,6 +567,20 @@ FString SSketchfabAssetBrowserWindow::GetModelZipFileName(const FString &ModelUI
 	return CacheFolder + ModelUID + ".zip";
 }
 
+/*
+void SSketchfabAssetBrowserWindow::OnUseOrgProfileCheckStateChanged(ECheckBoxState NewState) {
+	UsesOrgProfile = (NewState == ECheckBoxState::Checked);
+	GenerateSearchDomainList();
+	OnSearchPressed();
+}
+*/
+
+void SSketchfabAssetBrowserWindow::OnOrgChanged() {
+	UE_LOG(LogSketchfabAssetBrowserWindow, Display, TEXT("In SketchfabAssetBrowser OnOrgChanged"));
+	GenerateSearchDomainList();
+	OnSearchPressed();
+}
+
 void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const FDateTime &ModelPublishedAt)
 {
 	if (LoggedInUserDisplayName.IsEmpty())
@@ -577,6 +618,8 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const 
 	TaskData.Token = Token;
 	TaskData.CacheFolder = CacheFolder;
 	TaskData.ModelUID = ModelUID;
+	TaskData.OrgUID = UsesOrgProfile ? Orgs[OrgIndex].uid : "";
+	TaskData.OrgModel = UsesOrgProfile;
 	uint64* size = ModelSizesMap.Find(ModelUID);
 	TaskData.ModelSize = *size;
 	TaskData.StateLock = new FCriticalSection();
@@ -690,24 +733,34 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 	FString url = "https://api.sketchfab.com/v3";
 
 	// Adapt the base url according to the search domain
-	switch (SearchDomainIndex)
-	{
-		case SEARCHDOMAIN_Default:
-		{
-			url += "/search?type=models&downloadable=true";
-			break;
-		}
-		case SEARCHDOMAIN_Own:
-		{
-			url += "/me/search?type=models&downloadable=true";
-			break;
-		}
-		case SEARCHDOMAIN_Store:
-		{
-			url += "/me/models/purchases?";
-			break;
+	if (UsesOrgProfile) {
+		url += "/orgs/" + Orgs[OrgIndex].uid + "/models?isArchivesReady=true";
+		if (SearchDomainIndex != 0) { // Specific project
+			url += "&projects=" + Orgs[OrgIndex].Projects[SearchDomainIndex - 1].uid;
 		}
 	}
+	else {
+		switch (SearchDomainIndex)
+		{
+			case SEARCHDOMAIN_Default:
+			{
+				url += "/search?type=models&downloadable=true";
+				break;
+			}
+			case SEARCHDOMAIN_Own:
+			{
+				url += "/me/search?type=models&downloadable=true";
+				break;
+			}
+			case SEARCHDOMAIN_Store:
+			{
+				url += "/me/models/purchases?";
+				break;
+			}
+		}
+	}
+
+
 
 	if (!QuerySearchText.IsEmpty())
 	{
@@ -727,80 +780,83 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 		}
 	}
 
-	if (bSearchAnimated)
-	{
-		url += "&animated=true";
-	}
+	if (!UsesOrgProfile) {
+		if (bSearchAnimated)
+		{
+			url += "&animated=true";
+		}
 
-	if (bSearchStaffPicked)
-	{
-		url += "&staffpicked=true";
-	}
+		if (bSearchStaffPicked)
+		{
+			url += "&staffpicked=true";
+		}
 
-	//Sort By
-	switch (SortByIndex)
-	{
-	case SORTBY_Relevance:
-	{
-		url += "&sort_by=-pertinence";
-	}
-	break;
-	case SORTBY_MostLiked:
-	{
-		url += "&sort_by=-likeCount";
-	}
-	break;
-	case SORTBY_MostViewed:
-	{
-		url += "&sort_by=-viewCount";
-	}
-	break;
-	case SORTBY_MostRecent:
-	{
-		url += "&sort_by=-publishedAt";
-	}
-	break;
-	}
+		//Sort By
+		switch (SortByIndex)
+		{
+		case SORTBY_Relevance:
+		{
+			url += "&sort_by=-pertinence";
+		}
+		break;
+		case SORTBY_MostLiked:
+		{
+			url += "&sort_by=-likeCount";
+		}
+		break;
+		case SORTBY_MostViewed:
+		{
+			url += "&sort_by=-viewCount";
+		}
+		break;
+		case SORTBY_MostRecent:
+		{
+			url += "&sort_by=-publishedAt";
+		}
+		break;
+		}
 
-	//Sort By
-	switch (FaceCountIndex)
-	{
-	case FACECOUNT_ALL:
-	{
-		//Add Nothing
-	}
-	break;
-	case FACECOUNT_0_10:
-	{
-		url += "&min_face_count=0&max_face_count=10000";
-	}
-	break;
-	case FACECOUNT_10_50:
-	{
-		url += "&min_face_count=10000&max_face_count=50000";
-	}
-	break;
-	case FACECOUNT_50_100:
-	{
-		url += "&min_face_count=50000&max_face_count=100000";
-	}
-	break;
-	case FACECOUNT_100_250:
-	{
-		url += "&min_face_count=100000&max_face_count=250000";
-	}
-	break;
-	case FACECOUNT_250:
-	{
-		url += "&min_face_count=250000";
-	}
-	break;
-	}
+		//Sort By
+		switch (FaceCountIndex)
+		{
+		case FACECOUNT_ALL:
+		{
+			//Add Nothing
+		}
+		break;
+		case FACECOUNT_0_10:
+		{
+			url += "&min_face_count=0&max_face_count=10000";
+		}
+		break;
+		case FACECOUNT_10_50:
+		{
+			url += "&min_face_count=10000&max_face_count=50000";
+		}
+		break;
+		case FACECOUNT_50_100:
+		{
+			url += "&min_face_count=50000&max_face_count=100000";
+		}
+		break;
+		case FACECOUNT_100_250:
+		{
+			url += "&min_face_count=100000&max_face_count=250000";
+		}
+		break;
+		case FACECOUNT_250:
+		{
+			url += "&min_face_count=250000";
+		}
+		break;
+		}
 
-	if (CategoryIndex > 0 && CategoryIndex < Categories.Num())
-	{
-		url += "&categories=";
-		url += Categories[CategoryIndex].slug.ToLower();
+		if (CategoryIndex > 0 && CategoryIndex < Categories.Num())
+		{
+			url += "&categories=";
+			url += Categories[CategoryIndex].slug.ToLower();
+		}
+
 	}
 
 	Search(url);
@@ -876,12 +932,12 @@ bool SSketchfabAssetBrowserWindow::IsSearchMyModelsAvailable() const
 
 EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayFilters() const
 {
-	return (SearchDomainIndex == SEARCHDOMAIN_Store) ? EVisibility::Collapsed : EVisibility::Visible;
+	return (SearchDomainIndex == SEARCHDOMAIN_Store && !UsesOrgProfile) ? EVisibility::Collapsed : EVisibility::Visible;
 }
 
 EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayVisitStore() const
 {
-	return (SearchDomainIndex == SEARCHDOMAIN_Store && NResults == 0) ? EVisibility::Visible : EVisibility::Collapsed;
+	return (SearchDomainIndex == SEARCHDOMAIN_Store && NResults == 0 && !UsesOrgProfile) ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
 EVisibility SSketchfabAssetBrowserWindow::ShouldDisplayEmptyResults() const
@@ -1095,6 +1151,9 @@ void SSketchfabAssetBrowserWindow::GetModelInfo(const FString &ModelUID)
 	FSketchfabTaskData TaskData;
 	TaskData.CacheFolder = GetSketchfabCacheDir();
 	TaskData.ModelUID = ModelUID;
+	TaskData.Token = Token;
+	TaskData.OrgUID = UsesOrgProfile ? Orgs[OrgIndex].uid : "";
+	TaskData.OrgModel = UsesOrgProfile;
 	TaskData.StateLock = new FCriticalSection();
 
 	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
@@ -1306,7 +1365,7 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 			"Accept",
 			"Cancel"
 		);
-		if (popup->Confirmed())
+		if (popup->Confirmed() && PayLoad.PackagePaths.Num() > 0)
 		{
 			TArray<FString> Assets;
 			Assets.Add(DragDropOp->DraggedAssetPaths[0]);

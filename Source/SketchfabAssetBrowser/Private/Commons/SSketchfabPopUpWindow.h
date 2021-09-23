@@ -75,6 +75,7 @@ public:
 	
 	// User data
 	void GetUserData();
+	void GetUserOrgs();
 
 	FReply OnCancel();
 	
@@ -94,6 +95,7 @@ public:
 
 	void OnUrlChanged(const FText &url);
 	void OnUserData(const FSketchfabTask& InTask);
+	void OnUserOrgs(const FSketchfabTask& InTask);
 	void OnTaskFailed(const FSketchfabTask& InTask);
 	void OnOAuthWindowClosed(const TSharedRef<SWindow>& InWindow);
 

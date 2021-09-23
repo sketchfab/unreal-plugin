@@ -5,10 +5,12 @@
 #include "Editor/EditorPerProjectUserSettings.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
+#include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 #include <Misc/EngineVersion.h>
 
 #include "Misc/FileHelper.h"
+#include <Runtime/Core/Public/Misc/Paths.h>
 
 #define HOSTNAME "http://127.0.0.1"
 #define PORT ":55002"
@@ -24,6 +26,7 @@ bool IsCompleteState(SketchfabRESTState state)
 	case SRS_GETMODELLINK_DONE:
 	case SRS_DOWNLOADMODEL_DONE:
 	case SRS_GETUSERDATA_DONE:
+	case SRS_GETUSERORGS_DONE:
 	case SRS_GETUSERTHUMB_DONE:
 	case SRS_UPLOADMODEL_DONE:
 	case SRS_GETCATEGORIES_DONE:
@@ -64,6 +67,8 @@ FSketchfabTask::~FSketchfabTask()
 	OnModelDownloaded().Unbind();
 	OnModelDownloadProgress().Unbind();
 	OnUserData().Unbind();
+	OnUserOrgs().Unbind();
+	OnOrgsProjects().Unbind();
 	OnModelUploaded().Unbind();
 	OnUserThumbnailDelegate.Unbind();
 	OnCategories().Unbind();
@@ -139,25 +144,30 @@ void FSketchfabTask::AddAuthorization(ReqRef Request)
 }
 
 // Helpers for http requests
-bool FSketchfabTask::MakeRequest(FString url, SketchfabRESTState successState, void (FSketchfabTask::* completeCallback)(FHttpRequestPtr, FHttpResponsePtr, bool), FString contentType, void (FSketchfabTask::* progressCallback)(FHttpRequestPtr, int32, int32), bool upload, bool authorization) {
+bool FSketchfabTask::MakeRequest(
+	FString url, 
+	SketchfabRESTState successState, 
+	void (FSketchfabTask::* completeCallback)(FHttpRequestPtr, FHttpResponsePtr, bool), 
+	FString contentType, 
+	void (FSketchfabTask::* progressCallback)(FHttpRequestPtr, int32, int32), 
+	bool upload, 
+	bool authorization) {
 	
 	// Form the request
 	ReqRef request = FHttpModule::Get().CreateRequest();
-	if (authorization) {
+
+	if (authorization)
 		AddAuthorization(request);
-	}
-	request->SetURL(url);
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	if (upload) {
-		request->SetVerb(TEXT("POST"));
+	if(upload)
 		SetUploadRequestContent(request);
-	}
-	else {
-		request->SetVerb(TEXT("GET"));
-	}
-	if (!contentType.IsEmpty()) {
+
+	request->SetURL(url);
+	request->SetVerb((upload ? TEXT("POST") : TEXT("GET")));
+	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
+	if (!contentType.IsEmpty())
 		request->SetHeader("Content-Type", contentType);
-	}
+	
+	UE_LOG(LogSketchfabTask, Error, TEXT("%s"), *contentType);
 	
 	// Callbacks
 	request->OnProcessRequestComplete().BindRaw(this, completeCallback);
@@ -188,10 +198,12 @@ bool FSketchfabTask::IsValid(FHttpRequestPtr Request, FHttpResponsePtr Response,
 	FString OutUrl = PendingRequests.FindRef(Request);
 	if (!OutUrl.IsEmpty())
 	{
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("OutUrl not empty: %s"), *OutUrl);
 		PendingRequests.Remove(Request);
 	}
 	if (!Response.IsValid())
 	{
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Invalid response"));
 		return false;
 	}
 
@@ -481,11 +493,23 @@ void FSketchfabTask::GetThumbnail_Response(FHttpRequestPtr Request, FHttpRespons
 
 void FSketchfabTask::GetModelLink()
 {
+
+	FString url = "https://api.sketchfab.com/v3/";
+	if (TaskData.OrgModel) {
+
+		url += "orgs/" + TaskData.OrgUID + "/models/" + TaskData.ModelUID + "/download";
+	}
+	else {
+		url += "models/" + TaskData.ModelUID + "/download";
+	}
+
+	UE_LOG(LogSketchfabTask, Display, TEXT("Requesting model link %s"), *url);
+
 	MakeRequest(
-		"https://api.sketchfab.com/v3/models/" + TaskData.ModelUID + "/download",
+		url,
 		SRS_GETMODELLINK_PROCESSING,
 		&FSketchfabTask::GetModelLink_Response,
-		"image/jpeg",
+		"application/json",
 		nullptr
 	);
 }
@@ -529,7 +553,9 @@ void FSketchfabTask::DownloadModel()
 		SRS_DOWNLOADMODEL_PROCESSING,
 		&FSketchfabTask::DownloadModel_Response,
 		"",
-		&FSketchfabTask::DownloadModelProgress
+		&FSketchfabTask::DownloadModelProgress,
+		false,
+		false
 	);
 }
 
@@ -591,6 +617,126 @@ void FSketchfabTask::DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 By
 	}
 }
 
+
+void FSketchfabTask::GetUserOrgs()
+{
+	MakeRequest(
+		"https://sketchfab.com/v3/me/orgs",
+		SRS_GETUSERORGS_PROCESSING,
+		&FSketchfabTask::GetUserOrgs_Response,
+		""
+	);
+}
+
+void FSketchfabTask::GetUserOrgs_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	if (IsValid(Request, Response)) {
+
+		//Create a pointer to hold the json serialized data
+		TSharedPtr<FJsonObject> JsonObject;
+
+		//Create a reader pointer to read the json data
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("ORG API response !!!"));
+
+		//Deserialize the json data given Reader and the actual object to deserialize
+		if (FJsonSerializer::Deserialize(Reader, JsonObject))
+		{
+			TArray<TSharedPtr<FJsonValue>> results = JsonObject->GetArrayField("results");
+			TaskData.NextURL = JsonObject->GetStringField("next");
+
+			if(results.Num()==0)
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("NOT A MEMBER OF ANY ORG"));
+
+			for (int r = 0; r < results.Num(); r++)
+			{
+				TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
+
+				FSketchfabOrg org;
+				org.name = resultObj->GetStringField("displayName");
+				org.uid = resultObj->GetStringField("uid");
+				org.url = resultObj->GetStringField("publicProfileUrl");
+
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("We've got an org: %s %s %s"), *(org.name), *(org.uid), *(org.url));
+
+				TaskData.Orgs.Add(org);
+			}
+		}
+
+		if (!this->IsCompleted && OnUserOrgs().IsBound())
+		{
+			OnUserOrgs().Execute(*this);
+		}
+
+		SetState(SRS_GETUSERORGS_DONE);
+	}
+}
+
+void FSketchfabTask::GetOrgsProjects()
+{
+	//UE_LOG(LogSketchfabRESTClient, Display, TEXT("LOOKING for projects amongst %d orgs" ), TaskData.Orgs.Num());
+	//UE_LOG(LogSketchfabRESTClient, Display, TEXT("Alternatively, we could try %s"), *(TaskData.org.uid));
+	UE_LOG(LogSketchfabRESTClient, Display, TEXT("in the org %s"), *(TaskData.org->uid));
+
+	MakeRequest(
+		"https://sketchfab.com/v3/orgs/" + TaskData.org->uid + "/projects",
+		SRS_GETORGSPROJECTS_PROCESSING,
+		&FSketchfabTask::GetOrgsProjects_Response,
+		""
+	);
+}
+
+void FSketchfabTask::GetOrgsProjects_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+	UE_LOG(LogSketchfabRESTClient, Display, TEXT("DO WE GO IN GETORGSPROJECTS_RESPONSE"));
+	if (IsValid(Request, Response)) {
+
+		//Create a pointer to hold the json serialized data
+		TSharedPtr<FJsonObject> JsonObject;
+
+		//Create a reader pointer to read the json data
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("PROJECTS"));
+
+		
+		//Deserialize the json data given Reader and the actual object to deserialize
+		if (FJsonSerializer::Deserialize(Reader, JsonObject))
+		{
+			TArray<TSharedPtr<FJsonValue>> results = JsonObject->GetArrayField("results");
+			TaskData.NextURL = JsonObject->GetStringField("next");
+
+			if (results.Num() == 0)
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("NO PROJECTS PRESENT IN THE ORG"));
+
+			for (int r = 0; r < results.Num(); r++)
+			{
+				TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
+
+				FSketchfabProject project;
+				project.name        = resultObj->GetStringField("name");
+				project.uid         = resultObj->GetStringField("uid");
+				project.slug        = resultObj->GetStringField("slug");
+				project.modelCount  = resultObj->GetNumberField("modelCount");
+				project.memberCount = resultObj->GetNumberField("memberCount");
+
+				//UE_LOG(LogSketchfabRESTClient, Display, TEXT("We've got an org: %s %s %s"), *(org.name), *(org.uid), *(org.url));
+
+				TaskData.Projects.Add(project);
+			}
+		}
+
+
+		if (!this->IsCompleted && OnOrgsProjects().IsBound())
+		{
+			OnOrgsProjects().Execute(*this);
+		}
+
+		
+		SetState(SRS_GETORGSPROJECTS_DONE);
+	}
+}
 
 void FSketchfabTask::GetUserData()
 {
@@ -788,8 +934,20 @@ void FSketchfabTask::GetCategories_Response(FHttpRequestPtr Request, FHttpRespon
 
 void FSketchfabTask::GetModelInfo()
 {
+
+	FString url = "https://api.sketchfab.com/v3/";
+	if (TaskData.OrgModel) {
+
+		url += "orgs/" + TaskData.OrgUID + "/models/" + TaskData.ModelUID;
+	}
+	else {
+		url += "models/" + TaskData.ModelUID;
+	}
+
+	UE_LOG(LogSketchfabTask, Display, TEXT("Getting model info for model %s"), *(TaskData.ModelUID));
+
 	MakeRequest(
-		"https://api.sketchfab.com/v3/models/" + TaskData.ModelUID,
+		url,
 		SRS_GETMODELINFO_PROCESSING,
 		&FSketchfabTask::GetModelInfo_Response,
 		"image/jpeg"
@@ -904,20 +1062,17 @@ void AddFile(const FString& Name, const FString& FileName, const FString& FilePa
 	RequestData += FString(TEXT("\r\n"))
 		+ BoundaryBegin
 		+ FString(TEXT("Content-Disposition: form-data; name=\""))
-		+ Name
+		+ "modelFile"
 		+ FString(TEXT("\"; filename=\""))
 		+ FileName
 		+ FString(TEXT("\"\r\n\r\n"));
 
 	RequestBytes = FStringToUint8(RequestData);
 	RequestBytes.Append(UpFileRawData);
+
 }
 
 void FSketchfabTask::SetUploadRequestContent(ReqRef Request) {
-	// Set the multipart boundary properties
-	BoundaryLabel = FString(TEXT("e543322540af456f9a3773049ca02529-")) + FString::FromInt(FMath::Rand());
-	BoundaryBegin = FString(TEXT("--")) + BoundaryLabel + FString(TEXT("\r\n"));
-	BoundaryEnd = FString(TEXT("\r\n--")) + BoundaryLabel + FString(TEXT("--\r\n"));
 	// Name/Value fields
 	AddField(TEXT("name"), TaskData.ModelName);
 	AddField(TEXT("description"), TaskData.ModelDescription);
@@ -925,9 +1080,19 @@ void FSketchfabTask::SetUploadRequestContent(ReqRef Request) {
 	AddField(TEXT("password"), TaskData.ModelPassword);
 	AddField(TEXT("isPublished"), TaskData.Draft ? TEXT("false") : TEXT("true"));
 	AddField(TEXT("isPrivate"), TaskData.Private ? TEXT("true") : TEXT("false"));
-	AddField(TEXT("source"), TEXT("unreal-exporter"));
+	AddField(TEXT("source"), TEXT("unreal"));
+
+	if (!TaskData.ProjectUID.IsEmpty()) {
+		UE_LOG(LogSketchfabTask, Error, TEXT("ProjectUID not empty: %s"), *(TaskData.ProjectUID ));
+		AddField(TEXT("orgProject"), TaskData.ProjectUID);
+	}
+	else {
+		UE_LOG(LogSketchfabTask, Error, TEXT("ProjectUID empty"));
+	}
+
 	// File
 	AddFile(TEXT("modelFile"), FPaths::GetCleanFilename(TaskData.FileToUpload), TaskData.FileToUpload);
+
 	// Boundary end
 	RequestBytes.Append(FStringToUint8(BoundaryEnd));
 
@@ -939,8 +1104,26 @@ void FSketchfabTask::SetUploadRequestContent(ReqRef Request) {
 
 void FSketchfabTask::UploadModel()
 {
+
+	// Set the multipart boundary properties
+	BoundaryLabel = FString(TEXT("e543322540af456f9a3773049ca02529-")) + FString::FromInt(FMath::Rand());
+	BoundaryBegin = FString(TEXT("--")) + BoundaryLabel + FString(TEXT("\r\n"));
+	BoundaryEnd = FString(TEXT("\r\n--")) + BoundaryLabel + FString(TEXT("--\r\n"));
+
+	FString uploadUrl = "https://api.sketchfab.com/v3/";
+	if ( TaskData.UsesOrgProfile ) {
+		uploadUrl += "orgs/" + TaskData.OrgUID + "/models";
+	}
+	else {
+		uploadUrl += "models";
+	}
+
+	//uploadUrl += "models";
+
+	UE_LOG(LogSketchfabTask, Error, TEXT("Uploading to: %s"), *uploadUrl);
+
 	MakeRequest(
-		"https://api.sketchfab.com/v3/models",
+		uploadUrl,
 		SRS_UPLOADMODEL_PROCESSING,
 		&FSketchfabTask::UploadModel_Response,
 		"multipart/form-data; boundary=" + BoundaryLabel,

@@ -17,6 +17,7 @@
 #include "UObject/GCObjectScopeGuard.h"
 #include "GenericPlatform/GenericPlatformFile.h"
 #include "Widgets/Input/STextComboBox.h"
+#include "Widgets/Input/SComboBox.h"
 
 #include "SKGLTFZipUtility.h"
 
@@ -58,6 +59,8 @@ void SSketchfabExporterWindow::Construct(const FArguments& InArgs)
 			FooterNode
 		]
 	];
+
+	GenerateProjectComboItems();
 }
 TSharedRef<SVerticalBox> SSketchfabExporterWindow::CreateUploadArea() {
 
@@ -118,6 +121,19 @@ TSharedRef<SVerticalBox> SSketchfabExporterWindow::CreateUploadArea() {
 		.IsEnabled(this, &SSketchfabExporterWindow::IsPasswordEnabled)
 		.HintText(FText::FromString("Enter a password for your model (optional)"));
 
+	// Project selector for org uploads
+	TSharedRef<STextComboBox> ProjectComboBox = SNew(STextComboBox)
+		.OptionsSource(&ProjectComboList)
+		.IsEnabled(this, &SSketchfabWindow::UsesOrgProfileChecked)
+		.OnSelectionChanged(this, &SSketchfabExporterWindow::HandleProjectComboChanged);
+		//.OnGenerateWidget(this, &SSketchfabWindow::GenerateProjectComboItem)
+		//.Visibility(this, );
+		/*[
+			SNew(STextBlock)
+			.Text(this, &SSketchfabWindow::GetProjectComboText)
+		];*/
+		//.IsEnabled(this, &SSketchfabExporterWindow::IsBakeCheckedBool)
+
 	// Upload button
 	TSharedRef<SButton> UploadButton = SNew(SButton)
 		.OnClicked(this, &SSketchfabExporterWindow::OnUploadButtonPressed)
@@ -152,6 +168,8 @@ TSharedRef<SVerticalBox> SSketchfabExporterWindow::CreateUploadArea() {
 	CreateHorizontalField(UploadNode, "", DraftCheckBox);
 	CreateHorizontalField(UploadNode, "", PrivateCheckBox);
 	CreateHorizontalField(UploadNode, "", PasswordEditableBox, 25.0f);
+
+	CreateHorizontalField(UploadNode, "Upload to Project", ProjectComboBox);
 	CreateHorizontalField(UploadNode, "", UploadButton);
 
 	// Keep track of texts and button (to alter parameters)
@@ -160,6 +178,7 @@ TSharedRef<SVerticalBox> SSketchfabExporterWindow::CreateUploadArea() {
 	pTagsEditableBox        = ModelTagsEditableBox;
 	pPasswordEditableBox    = PasswordEditableBox;
 	pUploadButton           = UploadButton;
+	pProjectComboBox        = ProjectComboBox;
 
 	// Add some padding on the bottom
 	UploadNode->AddSlot();
@@ -193,6 +212,25 @@ void SSketchfabExporterWindow::CreateHorizontalField(TSharedRef<SVerticalBox> VB
 		else            VBox->AddSlot().FillHeight(5.0f).Padding(0, 0, 0, BPadding)[HBox];
 }
 
+void SSketchfabExporterWindow::GenerateProjectComboItems() {
+
+	if(ProjectComboList.Num() > 0)
+		ProjectComboList.Empty();
+	
+	if (Orgs.Num() > 0) {
+		for (auto& project : Orgs[OrgIndex].Projects)
+		{
+			ProjectComboList.Add(MakeShared<FString>(project.name));
+		}
+		if (Orgs[OrgIndex].Projects.Num() > 0)
+		{
+			ProjectIndex = 0;
+			CurrentProjectString = Orgs[OrgIndex].Projects[0].name;
+		}
+		pProjectComboBox->RefreshOptions();
+	}
+}
+
 void SSketchfabExporterWindow::InitComboBoxes(){
 	BakingResolutionIndex = (int32)RES_1024;
 	for (int32 i = 0; i < (int32)RES_UNDEFINED; i++)
@@ -218,7 +256,15 @@ void SSketchfabExporterWindow::HandleBakingResolutionComboChanged(TSharedPtr<FSt
 		}
 	}
 }
-
+void SSketchfabExporterWindow::HandleProjectComboChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo) {
+	for (int32 i = 0; i < ProjectComboList.Num(); i++)
+	{
+		if (Item == ProjectComboList[i])
+		{
+			ProjectIndex = i;
+		}
+	}
+}
 
 // UI callbacks
 ECheckBoxState SSketchfabExporterWindow::IsSelectedChecked() const
@@ -468,6 +514,9 @@ void SSketchfabExporterWindow::Upload(){
 	TaskData.ModelDescription = modelDescription;
 	TaskData.ModelTags        = modelTags;
 	TaskData.ModelPassword    = modelPassword;
+	TaskData.UsesOrgProfile   = UsesOrgProfile;
+	TaskData.OrgUID           = UsesOrgProfile ? Orgs[OrgIndex].uid : "";
+	TaskData.ProjectUID       = UsesOrgProfile ? Orgs[OrgIndex].Projects[ProjectIndex].uid : "";
 	TaskData.Draft         = bDraft;
 	TaskData.Private       = bPrivate;
 	TaskData.BakeMaterials = bBakeMaterials;
