@@ -138,57 +138,132 @@ void FSketchfabTask::AddAuthorization(ReqRef Request)
 	}
 }
 
+// Helpers for http requests
+bool FSketchfabTask::MakeRequest(FString url, SketchfabRESTState successState, void (FSketchfabTask::* completeCallback)(FHttpRequestPtr, FHttpResponsePtr, bool), FString contentType, void (FSketchfabTask::* progressCallback)(FHttpRequestPtr, int32, int32), bool upload, bool authorization) {
+	
+	// Form the request
+	ReqRef request = FHttpModule::Get().CreateRequest();
+	if (authorization) {
+		AddAuthorization(request);
+	}
+	request->SetURL(url);
+	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
+	if (upload) {
+		request->SetVerb(TEXT("POST"));
+		SetUploadRequestContent(request);
+	}
+	else {
+		request->SetVerb(TEXT("GET"));
+	}
+	if (!contentType.IsEmpty()) {
+		request->SetHeader("Content-Type", contentType);
+	}
+	
+	// Callbacks
+	request->OnProcessRequestComplete().BindRaw(this, completeCallback);
+	if(progressCallback)
+		request->OnRequestProgress().BindRaw(this, progressCallback);
+
+	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
+
+	// Success / Failure
+	if (!request->ProcessRequest())
+	{
+		SetState(SRS_FAILED);
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
+		return false;
+	}
+	else
+	{
+		DebugHttpRequestCounter.Increment();
+		PendingRequests.Add(request, request->GetURL());
+		SetState(successState);
+		return true;
+	}
+}
+
+bool FSketchfabTask::IsValid(FHttpRequestPtr Request, FHttpResponsePtr Response, FString expectedType, bool checkData, bool checkCache) {
+
+	DebugHttpRequestCounter.Decrement();
+	FString OutUrl = PendingRequests.FindRef(Request);
+	if (!OutUrl.IsEmpty())
+	{
+		PendingRequests.Remove(Request);
+	}
+	if (!Response.IsValid())
+	{
+		return false;
+	}
+
+	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+	{
+		// Was object destroyed ?
+		if (this == nullptr)
+		{
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destroyed"));
+			SetState(SRS_FAILED);
+			return false;
+		}
+		// Check expected type
+		if (!expectedType.IsEmpty()) {
+			if (Response->GetContentType() != expectedType)
+			{
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("Content type is not as expected"));
+				SetState(SRS_FAILED);
+				return false;
+			}
+		}
+		// Check data
+		if (checkData) {
+			FString data = Response->GetContentAsString();
+			if (data.IsEmpty())
+			{
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetModels_Response content was empty"));
+				SetState(SRS_FAILED);
+				return false;
+			}
+		}
+		// Check cache
+		if (checkCache && TaskData.CacheFolder.IsEmpty())
+		{
+			ensure(false);
+			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Cache Folder not set internally"));
+			SetState(SRS_FAILED);
+			return false;
+		}
+		return true;
+	}
+	else
+	{
+		SetState(SRS_FAILED);
+		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
+		return false;
+	}
+}
+
+
+
 /*Http call*/
 void FSketchfabTask::CheckLatestPluginVersion()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-	request->SetURL("https://api.github.com/repos/sketchfab/Sketchfab-Unreal/releases");
-	request->SetVerb(TEXT("GET"));
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::Check_Latest_Version_Response);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_CHECK_LATEST_VERSION_PROCESSING);
-	}
-
+	MakeRequest(
+		"https://api.github.com/repos/sketchfab/Sketchfab-Unreal/releases",
+		SRS_CHECK_LATEST_VERSION_PROCESSING,
+		&FSketchfabTask::Check_Latest_Version_Response,
+		"",
+		nullptr,
+		false,
+		false
+	);
 }
 void FSketchfabTask::Search()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	FString url = TaskData.ModelSearchURL;
-
-	AddAuthorization(request);
-
-	request->SetURL(url);
-	request->SetVerb(TEXT("GET"));
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->SetHeader("Content-Type", "application/json");
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::Search_Response);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_SEARCH_PROCESSING);
-	}
+	MakeRequest(
+		TaskData.ModelSearchURL,
+		SRS_SEARCH_PROCESSING,
+		&FSketchfabTask::Search_Response,
+		"application/json"
+	);
 }
 
 
@@ -303,172 +378,78 @@ void FSketchfabTask::Check_Latest_Version_Response(FHttpRequestPtr Request, FHtt
 /*Assigned function on successfull http call*/
 void FSketchfabTask::Search_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
+	if(IsValid(Request, Response, "application/json", true)){
 
-	FString OutUrl = PendingRequests.FindRef(Request);
+		//Create a pointer to hold the json serialized data
+		TSharedPtr<FJsonObject> JsonObject;
 
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
+		//Create a reader pointer to read the json data
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 
-	if (!Response.IsValid())
-	{
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
+		//Deserialize the json data given Reader and the actual object to deserialize
+		if (FJsonSerializer::Deserialize(Reader, JsonObject))
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
+			TArray<TSharedPtr<FJsonValue>> results = JsonObject->GetArrayField("results");
+			TaskData.NextURL = JsonObject->GetStringField("next");
 
-		if (Response->GetContentType() != "application/json")
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetModels_Response content type is not json"));
-			SetState(SRS_FAILED);
-			return;
-		}
-
-		FString data = Response->GetContentAsString();
-		if (data.IsEmpty())
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetModels_Response content was empty"));
-			SetState(SRS_FAILED);
-		}
-		else
-		{
-			//Create a pointer to hold the json serialized data
-			TSharedPtr<FJsonObject> JsonObject;
-
-			//Create a reader pointer to read the json data
-			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-
-			//Deserialize the json data given Reader and the actual object to deserialize
-			if (FJsonSerializer::Deserialize(Reader, JsonObject))
+			for (int r = 0; r < results.Num(); r++)
 			{
-				TArray<TSharedPtr<FJsonValue>> results = JsonObject->GetArrayField("results");
-				TaskData.NextURL = JsonObject->GetStringField("next");
+				TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
 
-				for (int r = 0; r < results.Num(); r++)
+				FString modelUID = resultObj->GetStringField("uid");
+				FString modelName = resultObj->GetStringField("name");
+
+				FString authorName;
+				TSharedPtr<FJsonObject> userObj = resultObj->GetObjectField("user");
+				if (userObj.IsValid())
 				{
-					TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
-
-					FString modelUID = resultObj->GetStringField("uid");
-					FString modelName = resultObj->GetStringField("name");
-
-					FString authorName;
-					TSharedPtr<FJsonObject> userObj = resultObj->GetObjectField("user");
-					if (userObj.IsValid())
-					{
-						authorName = userObj->GetStringField("username");
-					}
-
-					TSharedPtr<FSketchfabTaskData> OutItem = MakeShareable(new FSketchfabTaskData());
-
-					GetThumnailData(resultObj, 512, OutItem->ThumbnailUID, OutItem->ThumbnailURL, OutItem->ThumbnailWidth, OutItem->ThumbnailHeight);
-					GetThumnailData(resultObj, 1024, OutItem->ThumbnailUID_1024, OutItem->ThumbnailURL_1024, OutItem->ThumbnailWidth_1024, OutItem->ThumbnailHeight_1024);
-
-					OutItem->ModelPublishedAt = GetPublishedAt(resultObj);
-					OutItem->ModelName = modelName;
-					OutItem->ModelUID = modelUID;
-					OutItem->CacheFolder = TaskData.CacheFolder;
-					OutItem->Token = TaskData.Token;
-					OutItem->ModelAuthor = authorName;
-
-					TSharedPtr<FJsonObject> archives = resultObj->GetObjectField("archives");
-					if (archives.IsValid())
-					{
-						TSharedPtr<FJsonObject> gltf = archives->GetObjectField("gltf");
-						if (gltf.IsValid())
-						{
-							OutItem->ModelSize = gltf->GetIntegerField("size");
-						}
-					}
-
-					SearchData.Add(OutItem);
+					authorName = userObj->GetStringField("username");
 				}
+
+				TSharedPtr<FSketchfabTaskData> OutItem = MakeShareable(new FSketchfabTaskData());
+
+				GetThumnailData(resultObj, 512, OutItem->ThumbnailUID, OutItem->ThumbnailURL, OutItem->ThumbnailWidth, OutItem->ThumbnailHeight);
+				GetThumnailData(resultObj, 1024, OutItem->ThumbnailUID_1024, OutItem->ThumbnailURL_1024, OutItem->ThumbnailWidth_1024, OutItem->ThumbnailHeight_1024);
+
+				OutItem->ModelPublishedAt = GetPublishedAt(resultObj);
+				OutItem->ModelName = modelName;
+				OutItem->ModelUID = modelUID;
+				OutItem->CacheFolder = TaskData.CacheFolder;
+				OutItem->Token = TaskData.Token;
+				OutItem->ModelAuthor = authorName;
+
+				TSharedPtr<FJsonObject> archives = resultObj->GetObjectField("archives");
+				if (archives.IsValid())
+				{
+					TSharedPtr<FJsonObject> gltf = archives->GetObjectField("gltf");
+					if (gltf.IsValid())
+					{
+						OutItem->ModelSize = gltf->GetIntegerField("size");
+					}
+				}
+
+				SearchData.Add(OutItem);
 			}
-			OnSearch().Execute(*this);
-			SetState(SRS_SEARCH_DONE);
-			return;
 		}
-	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
+		OnSearch().Execute(*this);
+		SetState(SRS_SEARCH_DONE);
+		return;
 	}
 }
 
 void FSketchfabTask::GetThumbnail()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	AddAuthorization(request);
-
-	request->SetURL(TaskData.ThumbnailURL);
-	request->SetVerb(TEXT("GET"));
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->SetHeader("Content-Type", "image/jpeg");
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetThumbnail_Response);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_GETTHUMBNAIL_PROCESSING);
-	}
+	MakeRequest(
+		TaskData.ThumbnailURL,
+		SRS_GETTHUMBNAIL_PROCESSING,
+		&FSketchfabTask::GetThumbnail_Response,
+		"image/jpeg"
+	);
 }
 
 void FSketchfabTask::GetThumbnail_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
-
-	FString OutUrl = PendingRequests.FindRef(Request);
-
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
-
-	if (!Response.IsValid())
-	{
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
-
-		if (Response->GetContentType() != "image/jpeg")
-		{
-			SetState(SRS_FAILED);
-			return;
-		}
-
-		if (TaskData.CacheFolder.IsEmpty())
-		{
-			ensure(false);
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Cache Folder not set internally"));
-			SetState(SRS_FAILED);
-			return;
-		}
+	if (IsValid(Request, Response, "image/jpeg", false, true)) {
 
 		const TArray<uint8> &data = Response->GetContent();
 		if (data.Num() > 0)
@@ -496,74 +477,22 @@ void FSketchfabTask::GetThumbnail_Response(FHttpRequestPtr Request, FHttpRespons
 
 		SetState(SRS_GETTHUMBNAIL_DONE);
 	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
-	}
 }
 
 void FSketchfabTask::GetModelLink()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	AddAuthorization(request);
-
-	FString url = "https://api.sketchfab.com/v3/models/";
-	url += TaskData.ModelUID;
-	url += "/download";
-
-	request->SetURL(url);
-	request->SetVerb(TEXT("GET"));
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->SetHeader("Content-Type", "image/jpeg");
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetModelLink_Response);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_GETMODELLINK_PROCESSING);
-	}
+	MakeRequest(
+		"https://api.sketchfab.com/v3/models/" + TaskData.ModelUID + "/download",
+		SRS_GETMODELLINK_PROCESSING,
+		&FSketchfabTask::GetModelLink_Response,
+		"image/jpeg",
+		nullptr
+	);
 }
 
 void FSketchfabTask::GetModelLink_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
-
-	FString OutUrl = PendingRequests.FindRef(Request);
-
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
-
-	if (!Response.IsValid())
-	{
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
-
-		if (Response->GetContentType() != "application/json")
-		{
-			SetState(SRS_FAILED);
-			return;
-		}
+	if (IsValid(Request, Response, "application/json")) {
 
 		//Create a pointer to hold the json serialized data
 		TSharedPtr<FJsonObject> JsonObject;
@@ -590,70 +519,23 @@ void FSketchfabTask::GetModelLink_Response(FHttpRequestPtr Request, FHttpRespons
 		}
 		SetState(SRS_FAILED);
 	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
-	}
 }
 
 
 void FSketchfabTask::DownloadModel()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	request->SetURL(TaskData.ModelURL);
-	request->SetVerb(TEXT("GET"));
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::DownloadModel_Response);
-	request->OnRequestProgress().BindRaw(this, &FSketchfabTask::DownloadModelProgress);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_DOWNLOADMODEL_PROCESSING);
-	}
+	MakeRequest(
+		TaskData.ModelURL,
+		SRS_DOWNLOADMODEL_PROCESSING,
+		&FSketchfabTask::DownloadModel_Response,
+		"",
+		&FSketchfabTask::DownloadModelProgress
+	);
 }
 
 void FSketchfabTask::DownloadModel_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
-
-	FString OutUrl = PendingRequests.FindRef(Request);
-
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
-
-	if (!Response.IsValid())
-	{
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
-
-		if (TaskData.CacheFolder.IsEmpty())
-		{
-			ensure(false);
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Cache Folder not set internally"));
-			SetState(SRS_FAILED);
-			return;
-		}
+	if (IsValid(Request, Response, "", false, true)) {
 
 		FString contentType = Response->GetContentType();
 		if (contentType == "application/xml")
@@ -698,11 +580,6 @@ void FSketchfabTask::DownloadModel_Response(FHttpRequestPtr Request, FHttpRespon
 		}
 		SetState(SRS_FAILED);
 	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
-	}
 }
 
 void FSketchfabTask::DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 BytesSent, int32 BytesReceived)
@@ -717,56 +594,17 @@ void FSketchfabTask::DownloadModelProgress(FHttpRequestPtr HttpRequest, int32 By
 
 void FSketchfabTask::GetUserData()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	AddAuthorization(request);
-
-	FString url = "https://sketchfab.com/v3/me";
-
-	request->SetURL(url);
-	request->SetVerb("GET");
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetUserData_Response);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_GETUSERDATA_PROCESSING);
-	}
+	MakeRequest(
+		"https://sketchfab.com/v3/me",
+		SRS_GETUSERDATA_PROCESSING,
+		&FSketchfabTask::GetUserData_Response,
+		""
+	);
 }
 
 void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
-
-	FString OutUrl = PendingRequests.FindRef(Request);
-
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
-
-	if (!Response.IsValid())
-	{
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
+	if (IsValid(Request, Response)) {
 
 		//Create a pointer to hold the json serialized data
 		TSharedPtr<FJsonObject> JsonObject;
@@ -850,70 +688,21 @@ void FSketchfabTask::GetUserData_Response(FHttpRequestPtr Request, FHttpResponse
 
 		SetState(SRS_GETUSERDATA_DONE);
 	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
-	}
 }
 
 void FSketchfabTask::GetUserThumbnail()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	AddAuthorization(request);
-
-	request->SetURL(TaskData.UserSession.UserThumbnaillURL);
-	request->SetVerb(TEXT("GET"));
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->SetHeader("Content-Type", "image/jpeg");
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetUserThumbnail_Response);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_GETUSERTHUMB_PROCESSING);
-	}
+	MakeRequest(
+		TaskData.UserSession.UserThumbnaillURL,
+		SRS_GETUSERTHUMB_PROCESSING,
+		&FSketchfabTask::GetUserThumbnail_Response,
+		"image/jpeg"
+	);
 }
 
 void FSketchfabTask::GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
-
-	FString OutUrl = PendingRequests.FindRef(Request);
-
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
-
-	if (!Response.IsValid())
-	{
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
-
-		if (Response->GetContentType() != "image/jpeg")
-		{
-			SetState(SRS_FAILED);
-			return;
-		}
+	if (IsValid(Request, Response, "image/jpeg")) {
 
 		const TArray<uint8> &data = Response->GetContent();
 		if (data.Num() > 0)
@@ -948,241 +737,112 @@ void FSketchfabTask::GetUserThumbnail_Response(FHttpRequestPtr Request, FHttpRes
 
 		SetState(SRS_GETUSERTHUMB_DONE);
 	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
-	}
 }
 
 
 void FSketchfabTask::GetCategories()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	AddAuthorization(request);
-
-
-	FString url = "https://api.sketchfab.com/v3/categories";
-	request->SetURL(url);
-	request->SetVerb(TEXT("GET"));
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetCategories_Response);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_GETCATEGORIES_PROCESSING);
-	}
+	MakeRequest(
+		"https://api.sketchfab.com/v3/categories",
+		SRS_GETCATEGORIES_PROCESSING,
+		&FSketchfabTask::GetCategories_Response,
+		""
+	);
 }
 
 void FSketchfabTask::GetCategories_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
+	if (IsValid(Request, Response, "application/json", true)) {
+		//Create a pointer to hold the json serialized data
+		TSharedPtr<FJsonObject> JsonObject;
 
-	FString OutUrl = PendingRequests.FindRef(Request);
+		//Create a reader pointer to read the json data
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
-
-	if (!Response.IsValid())
-	{
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
+		//Deserialize the json data given Reader and the actual object to deserialize
+		if (FJsonSerializer::Deserialize(Reader, JsonObject))
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
+			TArray<TSharedPtr<FJsonValue>> results = JsonObject->GetArrayField("results");
+			TaskData.NextURL = JsonObject->GetStringField("next");
 
-		if (Response->GetContentType() != "application/json")
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetCategories_Response content type is not json"));
-			SetState(SRS_FAILED);
-			return;
-		}
-
-		FString data = Response->GetContentAsString();
-		if (data.IsEmpty())
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetCategories_Response content was empty"));
-			SetState(SRS_FAILED);
-		}
-		else
-		{
-			//Create a pointer to hold the json serialized data
-			TSharedPtr<FJsonObject> JsonObject;
-
-			//Create a reader pointer to read the json data
-			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-
-			//Deserialize the json data given Reader and the actual object to deserialize
-			if (FJsonSerializer::Deserialize(Reader, JsonObject))
+			for (int r = 0; r < results.Num(); r++)
 			{
-				TArray<TSharedPtr<FJsonValue>> results = JsonObject->GetArrayField("results");
-				TaskData.NextURL = JsonObject->GetStringField("next");
+				TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
 
-				for (int r = 0; r < results.Num(); r++)
-				{
-					TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
+				FSketchfabCategory cat;
 
-					FSketchfabCategory cat;
+				cat.uid = resultObj->GetStringField("uid");
+				cat.uri = resultObj->GetStringField("uri");
+				cat.name = resultObj->GetStringField("name");
+				cat.slug = resultObj->GetStringField("slug");
 
-					cat.uid = resultObj->GetStringField("uid");
-					cat.uri = resultObj->GetStringField("uri");
-					cat.name = resultObj->GetStringField("name");
-					cat.slug = resultObj->GetStringField("slug");
-
-					TaskData.Categories.Add(cat);
-				}
+				TaskData.Categories.Add(cat);
 			}
-			OnCategories().Execute(*this);
-			SetState(SRS_GETCATEGORIES_DONE);
-			return;
 		}
-		SetState(SRS_FAILED);
-	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
+		OnCategories().Execute(*this);
+		SetState(SRS_GETCATEGORIES_DONE);
+		return;
 	}
 }
 
 
 void FSketchfabTask::GetModelInfo()
 {
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	FString url = "https://api.sketchfab.com/v3/models/";
-	url += TaskData.ModelUID;
-
-	request->SetURL(url);
-	request->SetVerb(TEXT("GET"));
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->SetHeader("Content-Type", "image/jpeg");
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::GetModelInfo_Response);
-
-	UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("%s"), *request->GetURL());
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_GETMODELINFO_PROCESSING);
-	}
+	MakeRequest(
+		"https://api.sketchfab.com/v3/models/" + TaskData.ModelUID,
+		SRS_GETMODELINFO_PROCESSING,
+		&FSketchfabTask::GetModelInfo_Response,
+		"image/jpeg"
+	);
 }
 
 void FSketchfabTask::GetModelInfo_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
+	if (IsValid(Request, Response, "application/json", true)) {
 
-	FString OutUrl = PendingRequests.FindRef(Request);
+		//Create a pointer to hold the json serialized data
+		TSharedPtr<FJsonObject> JsonObject;
 
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
+		//Create a reader pointer to read the json data
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 
-	if (!Response.IsValid())
-	{
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
+		//Deserialize the json data given Reader and the actual object to deserialize
+		if (FJsonSerializer::Deserialize(Reader, JsonObject))
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
+			TaskData.ModelVertexCount = JsonObject->GetIntegerField("vertexCount");
+			TaskData.ModelFaceCount = JsonObject->GetIntegerField("faceCount");
+			TaskData.AnimationCount = JsonObject->GetIntegerField("animationCount");
+			//TaskData.ModelSize = JsonObject->GetObjectField("archives")->GetObjectField("gltf")->GetIntegerField("size");
+			TaskData.ModelPublishedAt = GetPublishedAt(JsonObject);
 
-		if (Response->GetContentType() != "application/json")
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetModelInfo_Response content type is not json"));
-			SetState(SRS_FAILED);
-			return;
-		}
-
-		FString data = Response->GetContentAsString();
-		if (data.IsEmpty())
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("GetModelInfo_Response content was empty"));
-			SetState(SRS_FAILED);
-		}
-		else
-		{
-			//Create a pointer to hold the json serialized data
-			TSharedPtr<FJsonObject> JsonObject;
-
-			//Create a reader pointer to read the json data
-			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-
-			//Deserialize the json data given Reader and the actual object to deserialize
-			if (FJsonSerializer::Deserialize(Reader, JsonObject))
+			TSharedPtr<FJsonObject> archives = JsonObject->GetObjectField("archives");
+			if (archives.IsValid())
 			{
-				TaskData.ModelVertexCount = JsonObject->GetIntegerField("vertexCount");
-				TaskData.ModelFaceCount = JsonObject->GetIntegerField("faceCount");
-				TaskData.AnimationCount = JsonObject->GetIntegerField("animationCount");
-				//TaskData.ModelSize = JsonObject->GetObjectField("archives")->GetObjectField("gltf")->GetIntegerField("size");
-				TaskData.ModelPublishedAt = GetPublishedAt(JsonObject);
-
-				TSharedPtr<FJsonObject> archives = JsonObject->GetObjectField("archives");
-				if (archives.IsValid())
+				TSharedPtr<FJsonObject> gltf = archives->GetObjectField("gltf");
+				if (gltf.IsValid())
 				{
-					TSharedPtr<FJsonObject> gltf = archives->GetObjectField("gltf");
-					if (gltf.IsValid())
-					{
-						TaskData.ModelSize = gltf->GetIntegerField("size");
-					}
+					TaskData.ModelSize = gltf->GetIntegerField("size");
 				}
-
-				TSharedPtr<FJsonObject> license = JsonObject->GetObjectField("license");
-				if (license.IsValid())
-				{
-					TaskData.LicenceType = license->GetStringField("fullName");
-					TaskData.LicenceInfo = license->GetStringField("requirements");
-				}
-
-				if (TaskData.LicenceType.IsEmpty()) // Personal models have no license data
-				{
-					TaskData.LicenceType = "Personal";
-					TaskData.LicenceInfo = "You own this model";
-				}
-
-				GetThumnailData(JsonObject, 1024, TaskData.ThumbnailUID_1024, TaskData.ThumbnailURL_1024, TaskData.ThumbnailWidth_1024, TaskData.ThumbnailHeight_1024);
 			}
 
-			OnModelInfo().Execute(*this);
-			SetState(SRS_GETMODELINFO_DONE);
-			return;
+			TSharedPtr<FJsonObject> license = JsonObject->GetObjectField("license");
+			if (license.IsValid())
+			{
+				TaskData.LicenceType = license->GetStringField("fullName");
+				TaskData.LicenceInfo = license->GetStringField("requirements");
+			}
+
+			if (TaskData.LicenceType.IsEmpty()) // Personal models have no license data
+			{
+				TaskData.LicenceType = "Personal";
+				TaskData.LicenceInfo = "You own this model";
+			}
+
+			GetThumnailData(JsonObject, 1024, TaskData.ThumbnailUID_1024, TaskData.ThumbnailURL_1024, TaskData.ThumbnailWidth_1024, TaskData.ThumbnailHeight_1024);
 		}
-		SetState(SRS_FAILED);
-	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
+
+		OnModelInfo().Execute(*this);
+		SetState(SRS_GETMODELINFO_DONE);
 	}
 }
 
@@ -1279,59 +939,19 @@ void FSketchfabTask::SetUploadRequestContent(ReqRef Request) {
 
 void FSketchfabTask::UploadModel()
 {
-
-	ReqRef request = FHttpModule::Get().CreateRequest();
-
-	AddAuthorization(request);
-	SetUploadRequestContent(request);
-
-	request->SetURL("https://api.sketchfab.com/v3/models");
-	request->SetVerb("POST");
-	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
-	request->SetHeader("Content-Type", "multipart/form-data; boundary=" + BoundaryLabel);
-	request->OnProcessRequestComplete().BindRaw(this, &FSketchfabTask::UploadModel_Response);
-
-	
-
-	if (!request->ProcessRequest())
-	{
-		SetState(SRS_FAILED);
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Failed to process Request %s"), *request->GetURL());
-	}
-	else
-	{
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Request processed %s"), *request->GetURL());
-		DebugHttpRequestCounter.Increment();
-		PendingRequests.Add(request, request->GetURL());
-		SetState(SRS_UPLOADMODEL_PROCESSING);
-	}
+	MakeRequest(
+		"https://api.sketchfab.com/v3/models",
+		SRS_UPLOADMODEL_PROCESSING,
+		&FSketchfabTask::UploadModel_Response,
+		"multipart/form-data; boundary=" + BoundaryLabel,
+		nullptr,
+		true
+	);
 }
 
 void FSketchfabTask::UploadModel_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
-
-	FString OutUrl = PendingRequests.FindRef(Request);
-
-	if (!OutUrl.IsEmpty())
-	{
-		PendingRequests.Remove(Request);
-	}
-
-	if (!Response.IsValid())
-	{
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Invalid response"));
-		return;
-	}
-
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		if (this == nullptr)
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destroyed"));
-			SetState(SRS_FAILED);
-			return;
-		}
+	if (IsValid(Request, Response)) {
 
 		// Serialize the request response (uri and model uid)
 		TSharedPtr<FJsonObject> JsonObject;
@@ -1348,12 +968,5 @@ void FSketchfabTask::UploadModel_Response(FHttpRequestPtr Request, FHttpResponse
 		}
 
 		SetState(SRS_UPLOADMODEL_DONE);
-	}
-	else
-	{
-		SetState(SRS_FAILED);
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Code: %d"), Response->GetResponseCode());
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Content: %s"), *(Response->GetContentAsString()));
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
 	}
 }

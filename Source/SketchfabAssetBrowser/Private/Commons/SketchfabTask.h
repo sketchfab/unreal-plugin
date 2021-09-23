@@ -229,6 +229,19 @@ public:
 	FSketchfabTask(const FSketchfabTaskData& InTaskData);
 	~FSketchfabTask();
 
+	bool MakeRequest(
+		FString url,
+		SketchfabRESTState successState,
+		void (FSketchfabTask::* completeCallback)(FHttpRequestPtr, FHttpResponsePtr, bool),
+		FString contentType = "",
+		void (FSketchfabTask::* progressCallback)(FHttpRequestPtr, int32, int32) = nullptr,
+		bool upload = false,
+		bool authorization = true
+	);
+
+	bool IsValid(FHttpRequestPtr Request, FHttpResponsePtr Response, FString expectedType = "", bool checkData = false, bool checkCache = false );
+
+
 	/* Method to get/set Task Sate */
 	SketchfabRESTState GetState() const;
 	void SetState(SketchfabRESTState InState);
