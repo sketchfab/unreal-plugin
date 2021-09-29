@@ -367,6 +367,7 @@ tinygltf::Model* USKGLTFImporter::ReadGLTFFile(FGLTFImportContext& ImportContext
 	tinygltf::Model* Model = new tinygltf::Model();
 
 	std::string err;
+	std::string warn;
 	std::string filename = TCHAR_TO_ANSI(*FilePath);
 	tinygltf::TinyGLTF gltf;
 
@@ -375,11 +376,11 @@ tinygltf::Model* USKGLTFImporter::ReadGLTFFile(FGLTFImportContext& ImportContext
 	bool success = false;
 	if (Extension == TEXT("gltf"))
 	{
-		success = gltf.LoadASCIIFromFile(Model, &err, filename);
+		success = gltf.LoadASCIIFromFile(Model, &err, &warn, filename);
 	}
 	else if (Extension == TEXT("glb"))
 	{
-		success = gltf.LoadBinaryFromFile(Model, &err, filename);
+		success = gltf.LoadBinaryFromFile(Model, &err, &warn, filename);
 	}
 
 	UE_LOG(LogGLTFImport, Error, TEXT("Issue with file %s"), *Filename);
@@ -835,7 +836,7 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 		map = &mat->additionalValues;
 		break;
 	case TextureType_SPEC:
-		map = &mat->extPBRValues;
+		map = &mat->additionalValues;
 		break;
 	}
 
