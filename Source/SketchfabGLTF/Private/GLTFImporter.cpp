@@ -520,6 +520,8 @@ UTexture* USKGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tiny
 		{
 			if (samplerType == SAMPLERTYPE_LinearColor)
 			{
+				TextureFact->CompressionSettings = TC_VectorDisplacementmap;
+				UnrealTexture->CompressionSettings = TC_VectorDisplacementmap;
 				UnrealTexture->SRGB = false;
 			}
 
@@ -530,7 +532,8 @@ UTexture* USKGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tiny
 			FAssetRegistryModule::AssetCreated(UnrealTexture);
 
 			// Set the dirty flag so this package will get saved later
-			TexturePackage->SetDirtyFlag(true);
+			UnrealTexture->UpdateResource();
+
 		}
 		TextureFact->RemoveFromRoot();
 	}
