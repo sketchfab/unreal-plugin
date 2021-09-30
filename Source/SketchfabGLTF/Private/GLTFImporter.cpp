@@ -36,6 +36,7 @@
 #include "Materials/MaterialExpressionScalarParameter.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "Materials/MaterialExpressionMultiply.h"
+#include "Materials/MaterialExpressionAdd.h"
 #include "Materials/MaterialExpressionOneMinus.h"
 
 #include "Factories/MaterialInstanceConstantFactoryNew.h"
@@ -541,6 +542,60 @@ UTexture* USKGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tiny
 	return UnrealTexture;
 }
 
+void CreateAddExpression(UMaterial* UnrealMaterial, FExpressionInput& MaterialInput, UMaterialExpression* Expression1, UMaterialExpression* Expression2, ColorChannel colorChannel)
+{
+	if (!UnrealMaterial || !Expression1 || !Expression2)
+		return;
+
+	UMaterialExpressionAdd* AddExpression = NewObject<UMaterialExpressionAdd>(UnrealMaterial);
+
+	if (!AddExpression)
+		return;
+
+	UnrealMaterial->Expressions.Add(AddExpression);
+	AddExpression->A.Expression = Expression1;
+	AddExpression->B.Expression = Expression2;
+	MaterialInput.Expression = AddExpression;
+
+	if (colorChannel != ColorChannel_All)
+	{
+		TArray<FExpressionOutput> Outputs = AddExpression->B.Expression->GetOutputs();
+		FExpressionOutput* Output = nullptr;
+		if ((Outputs.Num() == 5) || (Outputs.Num() == 6))
+		{
+			switch (colorChannel)
+			{
+			case ColorChannel_Red:
+				Output = &Outputs[1];
+				break;
+			case ColorChannel_Green:
+				Output = &Outputs[2];
+				break;
+			case ColorChannel_Blue:
+				Output = &Outputs[3];
+				break;
+			case ColorChannel_Alpha:
+				Output = &Outputs[4];
+				break;
+			case ColorChannel_All:
+			default:
+				Output = &Outputs[0];
+				break;
+			}
+		}
+		else
+		{
+			Output = Outputs.GetData();
+		}
+
+		AddExpression->B.Mask = Output->Mask;
+		AddExpression->B.MaskR = Output->MaskR;
+		AddExpression->B.MaskG = Output->MaskG;
+		AddExpression->B.MaskB = Output->MaskB;
+		AddExpression->B.MaskA = Output->MaskA;
+	}
+}
+
 void USKGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, tinygltf::Material *Mat, TArray<UMaterialInterface*>& OutMaterials)
 {
 	// Make sure we have a parent
@@ -572,56 +627,34 @@ void USKGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, ti
 		// Notify the asset registry
 		FAssetRegistryModule::AssetCreated(UnrealMaterial);
 
-		UnrealMaterial->TwoSided = false;
-		const auto &doubleSidedProp = Mat->additionalValues.find("doubleSided");
-		if (doubleSidedProp != Mat->additionalValues.end())
+		UnrealMaterial->TwoSided = Mat->doubleSided;
+
+		if (Mat->alphaMode == "BLEND")
 		{
-			tinygltf::Parameter &param = doubleSidedProp->second;
-			UnrealMaterial->TwoSided = param.bool_value;
+			UnrealMaterial->BlendMode = BLEND_Translucent;
+			UnrealMaterial->TranslucencyLightingMode = TLM_Surface;
 		}
-
-		const auto &alphaModeProp = Mat->additionalValues.find("alphaMode");
-		if (alphaModeProp != Mat->additionalValues.end())
+		else if (Mat->alphaMode == "MASK")
 		{
-			tinygltf::Parameter &param = alphaModeProp->second;
-			if (param.string_value == "BLEND")
-			{
-				UnrealMaterial->BlendMode = BLEND_Translucent;
-				UnrealMaterial->TranslucencyLightingMode = TLM_Surface;
-			}
-			else if (param.string_value == "MASK")
-			{
-				UnrealMaterial->BlendMode = BLEND_Masked;
-
-				const auto &alphaCutoffProp = Mat->additionalValues.find("alphaCutoff");
-				if (alphaCutoffProp != Mat->additionalValues.end())
-				{
-					param = alphaCutoffProp->second;
-					if (param.number_array.size() > 0)
-					{
-						UnrealMaterial->OpacityMaskClipValue = param.number_array[0];
-					}
-				}
-			}
+			UnrealMaterial->BlendMode = BLEND_Masked;
+			UnrealMaterial->OpacityMaskClipValue = Mat->alphaCutoff;
 		}
 
 		// Set the dirty flag so this package will get saved later
 		Package->SetDirtyFlag(true);
-
-		FScopedSlowTask MaterialProgress(8.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
+		
+		FScopedSlowTask MaterialProgress(10.0, LOCTEXT("ImportingGLTFMaterial", "Creating glTF Material Nodes"));
 
 		FVector2D location(-300, -260);
 
 		SharedTextureMap texMap;
 
 		bool usingPBR = true;
-		if (!CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR, UnrealMaterial->BaseColor, SAMPLERTYPE_Color, location))
-		{
-			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, SAMPLERTYPE_Color, location);
-			usingPBR = false;
-		}
 
-		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, SAMPLERTYPE_Color, location);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "baseColorTexture", TextureType_PBR,  UnrealMaterial->BaseColor, SAMPLERTYPE_Color, location);
+		if (CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "diffuseTexture", TextureType_SPEC, UnrealMaterial->BaseColor, SAMPLERTYPE_Color, location))
+			usingPBR = false;
+
 
 		if (usingPBR)
 		{
@@ -630,9 +663,16 @@ void USKGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, ti
 		}
 		else
 		{
+			// KHR_materials_pbrSpecularGlossiness
+			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Specular, SAMPLERTYPE_LinearColor, location, ColorChannel_All);
 			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "specularGlossinessTexture", TextureType_SPEC, UnrealMaterial->Roughness, SAMPLERTYPE_LinearColor, location, ColorChannel_Alpha);
 		}
 
+		// KHR_materials_clearcoat
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "clearcoatTexture", TextureType_PBR, UnrealMaterial->ClearCoat, SAMPLERTYPE_LinearColor, location, ColorChannel_All);
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "clearcoatRoughnessTexture", TextureType_PBR, UnrealMaterial->ClearCoatRoughness, SAMPLERTYPE_LinearColor, location, ColorChannel_All);
+
+		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "emissiveTexture", TextureType_DEFAULT, UnrealMaterial->EmissiveColor, SAMPLERTYPE_Color, location);
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "normalTexture", TextureType_DEFAULT, UnrealMaterial->Normal, SAMPLERTYPE_Normal, location);
 		CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, "occlusionTexture", TextureType_DEFAULT, UnrealMaterial->AmbientOcclusion, SAMPLERTYPE_LinearColor, location, ColorChannel_Red);
 
@@ -652,6 +692,27 @@ void USKGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, ti
 		else if (UnrealMaterial->BlendMode == BLEND_Masked)
 		{
 			CreateAndLinkExpressionForMaterialProperty(MaterialProgress, ImportContext, Mat, UnrealMaterial, texMap, opactityMaterial, opactityType, UnrealMaterial->OpacityMask, SAMPLERTYPE_Color, location, ColorChannel_Alpha);
+		}
+
+		// For the Unlit extension, add the emissive and basecolor together
+		if (Mat->extensions.find("KHR_materials_unlit") != Mat->extensions.end())
+		{
+			UnrealMaterial->SetShadingModel(EMaterialShadingModel::MSM_Unlit);
+			UMaterialExpression* BaseColorExpression = UnrealMaterial->BaseColor.Expression;
+			UMaterialExpression* EmissiveColorExpression = UnrealMaterial->EmissiveColor.Expression;
+			if (BaseColorExpression)
+			{
+				if (EmissiveColorExpression)
+				{
+					// Add the base color and the emissive color together
+					CreateAddExpression(UnrealMaterial, UnrealMaterial->EmissiveColor, BaseColorExpression, EmissiveColorExpression, ColorChannel_All);
+				}
+				else
+				{
+					// Link the base color to the material's emissive color input
+					UnrealMaterial->EmissiveColor.Expression = BaseColorExpression;
+				}
+			}
 		}
 
 		if (UnrealMaterial)
@@ -811,6 +872,17 @@ void USKGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChanne
 	}
 }
 
+tinygltf::Value* parseExtension(tinygltf::Material* mat, std::string name) {
+	std::map<std::string, tinygltf::Value> map;
+	if (mat->extensions.find(name) != mat->extensions.end()) {
+		tinygltf::Value* ext = &((mat->extensions.find(name))->second);
+		if (ext->IsObject()) {
+			return ext;
+		}
+	}
+	return nullptr;
+}
+
 bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	FScopedSlowTask &MaterialProgress,
 	FGLTFImportContext& ImportContext,
@@ -825,23 +897,14 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	ColorChannel colorChannel)
 {
 	MaterialProgress.EnterProgressFrame(1.0f, FText::Format(LOCTEXT("ImportingGLTFMaterial", "Creating Material Node {0}"), FText::FromString(GLTFToUnreal::ConvertString(MaterialProperty))));
-
 	bool bCreated = false;
 
-	// Based on what we are creating get the data from the different location in the tinygltf::Material datastructure.
-	tinygltf::ParameterMap *map = nullptr;
-	switch (texType)
-	{
-	case TextureType_PBR:
-		map = &mat->values;
-		break;
-	case TextureType_DEFAULT:
-		map = &mat->additionalValues;
-		break;
-	case TextureType_SPEC:
-		map = &mat->additionalValues;
-		break;
-	}
+	tinygltf::Value* specGlossExtension = parseExtension(mat, "KHR_materials_pbrSpecularGlossiness");
+	tinygltf::Value* clearcoatExtension = parseExtension(mat, "KHR_materials_clearcoat");
+	tinygltf::Value* transmissionExtension = parseExtension(mat, "KHR_materials_transmission");
+
+	if (clearcoatExtension)
+		UnrealMaterial->SetShadingModel(EMaterialShadingModel::MSM_ClearCoat);
 
 	enum PBRTYPE
 	{
@@ -854,6 +917,8 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 		PBRTYPE_Glossiness,
 		PBRTYPE_Diffuse,
 		PBRTYPE_Opacity,
+		PBRTYPE_Clearcoat,
+		PBRTYPE_ClearcoatRoughness
 	};
 
 	PBRTYPE pbrType = PBRTYPE_Undefined;
@@ -865,89 +930,25 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	UMaterialExpressionVectorParameter *emissiveFactor = nullptr;
 	UMaterialExpressionVectorParameter *specularFactor = nullptr;
 	UMaterialExpressionVectorParameter *diffuseFactor = nullptr;
+	UMaterialExpressionScalarParameter* clearcoatFactor = nullptr;
+	UMaterialExpressionScalarParameter* clearcoatRoughnessFactor = nullptr;
 	UMaterialExpressionScalarParameter *glossinessFactor = nullptr;
 
 	UMaterialExpressionTextureSample* UnrealTextureExpression = nullptr;
 
-	if (strcmp(MaterialProperty, "baseColorTexture") == 0 && colorChannel == ColorChannel_All)
-	{
-		pbrType = PBRTYPE_Color;
+	tinygltf::Value texture;
+	tinygltf::TextureInfo textureInfo;
+	tinygltf::NormalTextureInfo normalTextureInfo;
+	tinygltf::OcclusionTextureInfo occlusionTextureInfo;
 
-		const auto &baseColorProp = map->find("baseColorFactor");
-		if (baseColorProp != map->end())
-		{
-			tinygltf::Parameter &param = baseColorProp->second;
-			if (param.number_array.size() == 4)
-			{
-				baseColorFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
-				if (baseColorFactor)
-				{
-					if (baseColorFactor->CanRenameNode())
-					{
-						baseColorFactor->SetEditableName(GLTFToUnreal::ConvertString("baseColorFactor"));
-					}
-
-					UnrealMaterial->Expressions.Add(baseColorFactor);
-					baseColorFactor->DefaultValue.R = param.number_array[0];
-					baseColorFactor->DefaultValue.G = param.number_array[1];
-					baseColorFactor->DefaultValue.B = param.number_array[2];
-					baseColorFactor->DefaultValue.A = param.number_array[3];
-
-					//If there is no baseColorTexture then we just use this color by itself and hook it up directly to the material
-					const auto &baseColorTextureProp = map->find("baseColorTexture");
-					if (baseColorTextureProp == map->end())
-					{
-						MaterialInput.Expression = baseColorFactor;
-						AttachOutputs(MaterialInput, ColorChannel_All);
-						return true;
-					}
-				}
-			}
-		}
-	}
-	else if (strcmp(MaterialProperty, "baseColorTexture") == 0 && colorChannel == ColorChannel_Alpha)
-	{
-		pbrType = PBRTYPE_Opacity;
-
-		const auto &baseColorProp = map->find("baseColorFactor");
-		if (baseColorProp != map->end())
-		{
-			tinygltf::Parameter &param = baseColorProp->second;
-			if (param.number_array.size() == 4)
-			{
-				baseColorOpacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-				if (baseColorOpacityFactor)
-				{
-					if (baseColorOpacityFactor->CanRenameNode())
-					{
-						baseColorOpacityFactor->SetEditableName(GLTFToUnreal::ConvertString("baseColorOpacityFactor"));
-					}
-
-					UnrealMaterial->Expressions.Add(baseColorOpacityFactor);
-					baseColorOpacityFactor->DefaultValue = param.number_array[3];
-
-					//If there is no baseColorTexture then we just use this value by itself and hook it up directly to the material
-					const auto& baseColorTextureProp = map->find("baseColorTexture");
-					if (baseColorTextureProp == map->end())
-					{
-						MaterialInput.Expression = baseColorOpacityFactor;
-						AttachOutputs(MaterialInput, ColorChannel_Alpha);
-						return true;
-					}
-				}
-			}
-		}
-	}
-	else if (strcmp(MaterialProperty, "diffuseTexture") == 0 && colorChannel == ColorChannel_All)
+	if (strcmp(MaterialProperty, "diffuseTexture") == 0 && colorChannel == ColorChannel_All)
 	{
 		pbrType = PBRTYPE_Diffuse;
+		if (specGlossExtension) {
+			texture = specGlossExtension->Get("diffuseTexture");
+			tinygltf::Value _diffuseFactor = specGlossExtension->Get("diffuseFactor");
 
-		const auto &diffuseProp = map->find("diffuseFactor");
-		if (diffuseProp != map->end())
-		{
-			tinygltf::Parameter &param = diffuseProp->second;
-			if (param.number_array.size() == 4)
-			{
+			if (_diffuseFactor.Type() && _diffuseFactor.ArrayLen() == 4) {
 				diffuseFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
 				if (diffuseFactor)
 				{
@@ -955,16 +956,12 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					{
 						diffuseFactor->SetEditableName(GLTFToUnreal::ConvertString("diffuseFactor"));
 					}
-
 					UnrealMaterial->Expressions.Add(diffuseFactor);
-					diffuseFactor->DefaultValue.R = param.number_array[0];
-					diffuseFactor->DefaultValue.G = param.number_array[1];
-					diffuseFactor->DefaultValue.B = param.number_array[2];
-					diffuseFactor->DefaultValue.A = param.number_array[3];
-
-					//If there is no diffuseTexture then we just use this color by itself and hook it up directly to the material
-					const auto &diffuseTextureProp = map->find("diffuseTexture");
-					if (diffuseTextureProp == map->end())
+					diffuseFactor->DefaultValue.R = _diffuseFactor.Get(0).GetNumberAsDouble();
+					diffuseFactor->DefaultValue.G = _diffuseFactor.Get(1).GetNumberAsDouble();
+					diffuseFactor->DefaultValue.B = _diffuseFactor.Get(2).GetNumberAsDouble();
+					diffuseFactor->DefaultValue.A = _diffuseFactor.Get(3).GetNumberAsDouble();
+					if (!texture.Type())
 					{
 						MaterialInput.Expression = diffuseFactor;
 						AttachOutputs(MaterialInput, ColorChannel_All);
@@ -977,27 +974,21 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	else if (strcmp(MaterialProperty, "diffuseTexture") == 0 && colorChannel == ColorChannel_Alpha) //Using alpha from diffuse texture, or diffuseFactor, for Opacity.
 	{
 		pbrType = PBRTYPE_Opacity;
+		if (specGlossExtension) {
+			texture = specGlossExtension->Get("diffuseTexture");
+			tinygltf::Value _diffuseFactor = specGlossExtension->Get("diffuseFactor");
 
-		const auto &diffuseProp = map->find("diffuseFactor");
-		if (diffuseProp != map->end())
-		{
-			tinygltf::Parameter &param = diffuseProp->second;
-			if (param.number_array.size() == 4)
-			{
+			if (_diffuseFactor.Type() && _diffuseFactor.ArrayLen() == 4) {
 				baseColorOpacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
 				if (baseColorOpacityFactor)
 				{
 					if (baseColorOpacityFactor->CanRenameNode())
 					{
-						baseColorOpacityFactor->SetEditableName(GLTFToUnreal::ConvertString("baseColorOpacityFactor"));
+						baseColorOpacityFactor->SetEditableName(GLTFToUnreal::ConvertString("diffuseOpacityFactor"));
 					}
-
 					UnrealMaterial->Expressions.Add(baseColorOpacityFactor);
-					baseColorOpacityFactor->DefaultValue = param.number_array[3];
-
-					//If there is no diffuseTexture then we just use this value by itself and hook it up directly to the material
-					const auto& baseColorTextureProp = map->find("diffuseTexture");
-					if (baseColorTextureProp == map->end())
+					baseColorOpacityFactor->DefaultValue = _diffuseFactor.Get(3).GetNumberAsDouble();
+					if (!texture.Type())
 					{
 						MaterialInput.Expression = baseColorOpacityFactor;
 						AttachOutputs(MaterialInput, ColorChannel_Alpha);
@@ -1010,12 +1001,11 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	else if (strcmp(MaterialProperty, "specularGlossinessTexture") == 0 && colorChannel == ColorChannel_All) //RGB is used for specular channel
 	{
 		pbrType = PBRTYPE_Specular;
+		if (specGlossExtension) {
+			texture = specGlossExtension->Get("specularGlossinessTexture");
+			tinygltf::Value _specularFactor = specGlossExtension->Get("specularFactor");
 
-		const auto &specularProp = map->find("specularFactor");
-		if (specularProp != map->end())
-		{
-			tinygltf::Parameter &param = specularProp->second;
-			if (param.number_array.size() == 3)
+			if (_specularFactor.Type() && _specularFactor.ArrayLen() == 3)
 			{
 				specularFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
 				if (specularFactor)
@@ -1026,19 +1016,17 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					}
 
 					UnrealMaterial->Expressions.Add(specularFactor);
-					specularFactor->DefaultValue.R = param.number_array[0];
-					specularFactor->DefaultValue.G = param.number_array[1];
-					specularFactor->DefaultValue.B = param.number_array[2];
+					specularFactor->DefaultValue.R = _specularFactor.Get(0).GetNumberAsDouble();
+					specularFactor->DefaultValue.G = _specularFactor.Get(1).GetNumberAsDouble();
+					specularFactor->DefaultValue.B = _specularFactor.Get(2).GetNumberAsDouble();
 					specularFactor->DefaultValue.A = 1.0;
-
-					//If there is no specularTexture then we just use this color by itself and hook it up directly to the material
-					const auto &specularTextureProp = map->find("specularGlossinessTexture");
-					if (specularTextureProp == map->end())
+					if (!texture.Type())
 					{
 						MaterialInput.Expression = specularFactor;
 						AttachOutputs(MaterialInput, ColorChannel_All);
 						return true;
 					}
+					int a = 3;
 				}
 			}
 		}
@@ -1047,11 +1035,11 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	{
 		pbrType = PBRTYPE_Glossiness;
 
-		const auto &glossinessProp = map->find("glossinessFactor");
-		if (glossinessProp != map->end())
-		{
-			tinygltf::Parameter &param = glossinessProp->second;
-			if (param.number_array.size() == 1)
+		if (specGlossExtension) {
+			texture = specGlossExtension->Get("specularGlossinessTexture");
+			tinygltf::Value _glossinessFactor = specGlossExtension->Get("glossinessFactor");
+
+			if (_glossinessFactor.Type())
 			{
 				glossinessFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
 				if (glossinessFactor)
@@ -1062,16 +1050,74 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 					}
 
 					UnrealMaterial->Expressions.Add(glossinessFactor);
-					glossinessFactor->DefaultValue = param.number_array[0];
+					glossinessFactor->DefaultValue = _glossinessFactor.GetNumberAsDouble();
 
 					//If there is no specularTexture then we just use this color by itself and hook it up directly to the material
-					const auto &specularGlossinessTextureProp = map->find("specularGlossinessTexture");
-					if (specularGlossinessTextureProp == map->end())
+					if (!texture.Type())
 					{
 						MaterialInput.Expression = glossinessFactor;
-						AttachOutputs(MaterialInput, ColorChannel_All);
+						AttachOutputs(MaterialInput, ColorChannel_Alpha);
 						return true;
 					}
+				}
+			}
+		}
+	}
+	else if (strcmp(MaterialProperty, "baseColorTexture") == 0 && colorChannel == ColorChannel_All)
+	{
+		pbrType = PBRTYPE_Color;
+
+		textureInfo = mat->pbrMetallicRoughness.baseColorTexture;
+		std::vector<double> _baseColorFactor = mat->pbrMetallicRoughness.baseColorFactor;
+
+		if (_baseColorFactor.size() == 4)
+		{
+			baseColorFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
+			if (baseColorFactor)
+			{
+				if (baseColorFactor->CanRenameNode())
+				{
+					baseColorFactor->SetEditableName(GLTFToUnreal::ConvertString("baseColorFactor"));
+				}
+
+				UnrealMaterial->Expressions.Add(baseColorFactor);
+				baseColorFactor->DefaultValue.R = _baseColorFactor[0];
+				baseColorFactor->DefaultValue.G = _baseColorFactor[1];
+				baseColorFactor->DefaultValue.B = _baseColorFactor[2];
+				baseColorFactor->DefaultValue.A = _baseColorFactor[3];
+				if (textureInfo.index == -1)
+				{
+					MaterialInput.Expression = baseColorFactor;
+					AttachOutputs(MaterialInput, ColorChannel_All);
+					return true;
+				}
+			}
+		}
+	}
+	else if (strcmp(MaterialProperty, "baseColorTexture") == 0 && colorChannel == ColorChannel_Alpha)
+	{
+		pbrType = PBRTYPE_Opacity;
+
+		textureInfo = mat->pbrMetallicRoughness.baseColorTexture;
+		std::vector<double> _baseColorFactor = mat->pbrMetallicRoughness.baseColorFactor;
+
+		if (_baseColorFactor.size() == 4)
+		{
+			baseColorOpacityFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+			if (baseColorOpacityFactor)
+			{
+				if (baseColorOpacityFactor->CanRenameNode())
+				{
+					baseColorOpacityFactor->SetEditableName(GLTFToUnreal::ConvertString("baseColorOpacityFactor"));
+				}
+
+				UnrealMaterial->Expressions.Add(baseColorOpacityFactor);
+				baseColorOpacityFactor->DefaultValue = _baseColorFactor[3];
+				if (textureInfo.index == -1)
+				{
+					MaterialInput.Expression = baseColorOpacityFactor;
+					AttachOutputs(MaterialInput, ColorChannel_Alpha);
+					return true;
 				}
 			}
 		}
@@ -1080,98 +1126,138 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	{
 		pbrType = PBRTYPE_Metallic;
 
-		const auto &metallicProp = map->find("metallicFactor");
-		if (metallicProp != map->end())
+		textureInfo = mat->pbrMetallicRoughness.metallicRoughnessTexture;
+		double _metallicFactor = mat->pbrMetallicRoughness.metallicFactor;
+
+		metallicFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+		if (metallicFactor)
 		{
-			tinygltf::Parameter &param = metallicProp->second;
-			if (param.number_array.size() == 1)
+			if (metallicFactor->CanRenameNode())
 			{
-				metallicFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-				if (metallicFactor)
-				{
-					if (metallicFactor->CanRenameNode())
-					{
-						metallicFactor->SetEditableName(GLTFToUnreal::ConvertString("metallicFactor"));
-					}
+				metallicFactor->SetEditableName(GLTFToUnreal::ConvertString("metallicFactor"));
+			}
 
-					UnrealMaterial->Expressions.Add(metallicFactor);
-					metallicFactor->DefaultValue = param.number_array[0];
-
-					//If there is no metallicRoughnessTexture then we just use this color by itself and hook it up directly to the material
-					const auto &metallicRoghnessTextureProp = map->find("metallicRoughnessTexture");
-					if (metallicRoghnessTextureProp == map->end())
-					{
-						MaterialInput.Expression = metallicFactor;
-						AttachOutputs(MaterialInput, ColorChannel_All);
-						return true;
-					}
-				}
+			UnrealMaterial->Expressions.Add(metallicFactor);
+			metallicFactor->DefaultValue = _metallicFactor;
+			if (textureInfo.index == -1)
+			{
+				MaterialInput.Expression = metallicFactor;
+				AttachOutputs(MaterialInput, ColorChannel_All);
+				return true;
 			}
 		}
 	}
-	else if (strcmp(MaterialProperty, "metallicRoughnessTexture") == 0 && colorChannel == ColorChannel_Green) 	//roughness comes from the green channel of metallicRoughnessTexture
+	else if (strcmp(MaterialProperty, "metallicRoughnessTexture") == 0 && colorChannel == ColorChannel_Green) //Roughness comes from the green channel of metallicRoughnessTexture
 	{
 		pbrType = PBRTYPE_Roughness;
 
-		const auto &roughnessProp = map->find("roughnessFactor");
-		if (roughnessProp != map->end())
+		textureInfo = mat->pbrMetallicRoughness.metallicRoughnessTexture;
+		double _roughnessFactor = mat->pbrMetallicRoughness.roughnessFactor;
+
+		roughnessFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+		if (roughnessFactor)
 		{
-			tinygltf::Parameter &param = roughnessProp->second;
-			if (param.number_array.size() == 1)
+			if (roughnessFactor->CanRenameNode())
 			{
-				roughnessFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-				if (roughnessFactor)
-				{
-					if (roughnessFactor->CanRenameNode())
-					{
-						roughnessFactor->SetEditableName(GLTFToUnreal::ConvertString("roughnessFactor"));
-					}
+				roughnessFactor->SetEditableName(GLTFToUnreal::ConvertString("roughnessFactor"));
+			}
 
-					UnrealMaterial->Expressions.Add(roughnessFactor);
-					roughnessFactor->DefaultValue = param.number_array[0];
-
-					//If there is no metallicRoughnessTexture then we just use this color by itself and hook it up directly to the material
-					const auto &metallicRoghnessTextureProp = map->find("metallicRoughnessTexture");
-					if (metallicRoghnessTextureProp == map->end())
-					{
-						MaterialInput.Expression = roughnessFactor;
-						AttachOutputs(MaterialInput, ColorChannel_All);
-						return true;
-					}
-
-				}
+			UnrealMaterial->Expressions.Add(roughnessFactor);
+			roughnessFactor->DefaultValue = _roughnessFactor;
+			if (textureInfo.index == -1)
+			{
+				MaterialInput.Expression = roughnessFactor;
+				AttachOutputs(MaterialInput, ColorChannel_Green);
+				return true;
 			}
 		}
 	}
-	else  if (strcmp(MaterialProperty, "emissiveTexture") == 0)
+	else if (strcmp(MaterialProperty, "emissiveTexture") == 0)
 	{
 		pbrType = PBRTYPE_Emissive;
 
-		const auto &roughnessProp = map->find("emissiveFactor");
-		if (roughnessProp != map->end())
+		textureInfo = mat->emissiveTexture;
+		std::vector<double> _emissiveFactor = mat->emissiveFactor;
+
+		if (_emissiveFactor.size() == 3)
 		{
-			tinygltf::Parameter &param = roughnessProp->second;
-			if (param.number_array.size() == 3)
+			emissiveFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
+			if (emissiveFactor)
 			{
-				emissiveFactor = NewObject<UMaterialExpressionVectorParameter>(UnrealMaterial);
-				if (emissiveFactor)
+				if (emissiveFactor->CanRenameNode())
 				{
-					if (emissiveFactor->CanRenameNode())
+					emissiveFactor->SetEditableName(GLTFToUnreal::ConvertString("emissiveFactor"));
+				}
+
+				UnrealMaterial->Expressions.Add(emissiveFactor);
+				emissiveFactor->DefaultValue.R = _emissiveFactor[0];
+				emissiveFactor->DefaultValue.G = _emissiveFactor[1];
+				emissiveFactor->DefaultValue.B = _emissiveFactor[2];
+				emissiveFactor->DefaultValue.A = 1.0;
+				if (textureInfo.index == -1)
+				{
+					MaterialInput.Expression = emissiveFactor;
+					AttachOutputs(MaterialInput, ColorChannel_All);
+					return true;
+				}
+			}
+		}
+	}
+	else if (strcmp(MaterialProperty, "normalTexture") == 0) 
+	{
+		normalTextureInfo = mat->normalTexture;
+	}
+	else if (strcmp(MaterialProperty, "occlusionTexture") == 0) 
+	{
+		occlusionTextureInfo = mat->occlusionTexture;
+	}
+	else if (strcmp(MaterialProperty, "clearcoatTexture") == 0 && colorChannel == ColorChannel_All)
+	{
+		pbrType = PBRTYPE_Clearcoat;
+		if (clearcoatExtension) {
+			texture = clearcoatExtension->Get("clearcoatTexture");
+			tinygltf::Value _clearcoatFactor = clearcoatExtension->Get("clearcoatFactor");
+
+			if (_clearcoatFactor.Type() && _clearcoatFactor.GetNumberAsDouble()!=0) {
+				clearcoatFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (clearcoatFactor)
+				{
+					if (clearcoatFactor->CanRenameNode())
 					{
-						emissiveFactor->SetEditableName(GLTFToUnreal::ConvertString("emissiveFactor"));
+						clearcoatFactor->SetEditableName(GLTFToUnreal::ConvertString("clearcoatFactor"));
 					}
-
-					UnrealMaterial->Expressions.Add(emissiveFactor);
-					emissiveFactor->DefaultValue.R = param.number_array[0];
-					emissiveFactor->DefaultValue.G = param.number_array[1];
-					emissiveFactor->DefaultValue.B = param.number_array[2];
-					emissiveFactor->DefaultValue.A = 1.0;
-
-					//If there is no emissiveTexture then we just use this color by itself and hook it up directly to the material
-					const auto &emissiveTetxureProp = map->find("emissiveTexture");
-					if (emissiveTetxureProp == map->end())
+					UnrealMaterial->Expressions.Add(clearcoatFactor);
+					clearcoatFactor->DefaultValue = _clearcoatFactor.GetNumberAsDouble();
+					if (!texture.Type())
 					{
-						MaterialInput.Expression = emissiveFactor;
+						MaterialInput.Expression = clearcoatFactor;
+						AttachOutputs(MaterialInput, ColorChannel_All);
+						return true;
+					}
+				}
+			}
+		}
+	}
+	else if (strcmp(MaterialProperty, "clearcoatRoughnessTexture") == 0 && colorChannel == ColorChannel_All)
+	{
+		pbrType = PBRTYPE_ClearcoatRoughness;
+		if (clearcoatExtension) {
+			texture = clearcoatExtension->Get("clearcoatRoughnessTexture");
+			tinygltf::Value _clearcoatRoughnessFactor = clearcoatExtension->Get("clearcoatRoughnessFactor");
+
+			if (_clearcoatRoughnessFactor.Type() && _clearcoatRoughnessFactor.IsNumber()) {
+				clearcoatRoughnessFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (clearcoatRoughnessFactor)
+				{
+					if (clearcoatRoughnessFactor->CanRenameNode())
+					{
+						clearcoatRoughnessFactor->SetEditableName(GLTFToUnreal::ConvertString("clearcoatRoughnessFactor"));
+					}
+					UnrealMaterial->Expressions.Add(clearcoatRoughnessFactor);
+					clearcoatRoughnessFactor->DefaultValue = _clearcoatRoughnessFactor.GetNumberAsDouble();
+					if (!texture.Type())
+					{
+						MaterialInput.Expression = clearcoatRoughnessFactor;
 						AttachOutputs(MaterialInput, ColorChannel_All);
 						return true;
 					}
@@ -1180,158 +1266,159 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 		}
 	}
 
+
 	// Find the image and add it to the material
-	const auto &property = map->find(MaterialProperty);
-	if (property != map->end())
+	if (texture.Type() || textureInfo.index!=-1 || normalTextureInfo.index!=-1 || occlusionTextureInfo.index != -1)
 	{
-		tinygltf::Parameter &param = property->second;
-		if (param.json_double_value.size() > 0)
+		float scaleValue, strengthValue;
+		int32 texCoordValue, textureIndex;
+		if (textureInfo.index != -1) {
+			scaleValue = 1.0;
+			strengthValue = 1.0;
+			texCoordValue = textureInfo.texCoord;
+			textureIndex =  textureInfo.index;
+		}
+		else if (normalTextureInfo.index != -1)
 		{
-			float scaleValue = 1.0;
-			const auto &scaleEntry = param.json_double_value.find("scale");
-			if (scaleEntry != param.json_double_value.end())
-			{
-				scaleValue = scaleEntry->second;
-			}
+			scaleValue = normalTextureInfo.scale;
+			texCoordValue = normalTextureInfo.texCoord;
+			textureIndex = normalTextureInfo.index;
+		}
+		else if (occlusionTextureInfo.index != -1)
+		{
+			strengthValue = occlusionTextureInfo.strength;
+			texCoordValue = occlusionTextureInfo.texCoord;
+			textureIndex = occlusionTextureInfo.index;
+		}
+		else {
+			scaleValue    = texture.Get("scale").Type()    ? texture.Get("scale").GetNumberAsDouble()    : 1.0;
+			strengthValue = texture.Get("strength").Type() ? texture.Get("strength").GetNumberAsDouble() : 1.0;
+			texCoordValue = texture.Get("texCoord").Type() ? texture.Get("texCoord").GetNumberAsInt()    : 0;
+			textureIndex  = texture.Get("index").Type()    ? texture.Get("index").GetNumberAsInt()       : 0;
+		}
 
-			int32 texCoordValue = 0;
-			const auto &texCoordEntry = param.json_double_value.find("texCoord");
-			if (texCoordEntry != param.json_double_value.end())
+		if (textureIndex != -1)
+		{
+			if (textureIndex >= 0 && textureIndex < ImportContext.Model->textures.size())
 			{
-				texCoordValue = (int32)texCoordEntry->second;
-			}
+				int32 source = ImportContext.Model->textures[textureIndex].source;
 
-			const auto &textureIndexEntry = param.json_double_value.find("index");
-			if (textureIndexEntry != param.json_double_value.end())
-			{
-				int32 textureIndex = textureIndexEntry->second;
-				if (textureIndex >= 0 && textureIndex < ImportContext.Model->textures.size())
+				if (source >= 0 && source < ImportContext.Model->images.size())
 				{
-					tinygltf::Texture &texture = ImportContext.Model->textures[textureIndex];
-					int32 source = texture.source;
+					tinygltf::Image& img = ImportContext.Model->images[source];
 
-					if (source >= 0 && source < ImportContext.Model->images.size())
+					//See if we have already loaded in this image
+					SharedTexture* sharedMap = texMap.Find(source);
+					if (sharedMap)
 					{
-						tinygltf::Image &img = ImportContext.Model->images[source];
-
-						//See if we have already loaded in this image
-						SharedTexture *sharedMap = texMap.Find(source);
-						if (sharedMap)
+						if (sharedMap->texCoords == texCoordValue)
 						{
-							if (sharedMap->texCoords == texCoordValue)
+							UnrealTextureExpression = sharedMap->expression;
+							MaterialInput.Expression = UnrealTextureExpression;
+							bCreated = true;
+						}
+					}
+
+					if (!bCreated)
+					{
+						UTexture* UnrealTexture = ImportTexture(ImportContext, &img, samplerType, MaterialProperty);
+						if (UnrealTexture)
+						{
+							float ScaleU = 1.0;
+							float ScaleV = 1.0;
+
+							// and link it to the material
+							UnrealTextureExpression = NewObject<UMaterialExpressionTextureSample>(UnrealMaterial);
+							if (UnrealTextureExpression)
 							{
-								UnrealTextureExpression = sharedMap->expression;
+								UnrealTextureExpression->Desc = FPaths::GetBaseFilename(GLTFToUnreal::ConvertString(img.uri));
+								UnrealTextureExpression->bCommentBubbleVisible = true;
+								UnrealMaterial->Expressions.Add(UnrealTextureExpression);
 								MaterialInput.Expression = UnrealTextureExpression;
+								UnrealTextureExpression->Texture = UnrealTexture;
+								UnrealTextureExpression->SamplerType = samplerType;
+								UnrealTextureExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X);
+								UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
+
+								if ((texCoordValue != 0 && texCoordValue != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
+								{
+									// Create a texture coord node for the texture sample
+									UMaterialExpressionTextureCoordinate* MyCoordExpression = NewObject<UMaterialExpressionTextureCoordinate>(UnrealMaterial);
+									if (MyCoordExpression)
+									{
+										UnrealMaterial->Expressions.Add(MyCoordExpression);
+										MyCoordExpression->CoordinateIndex = (texCoordValue >= 0) ? texCoordValue : 0;
+										MyCoordExpression->UTiling = ScaleU;
+										MyCoordExpression->VTiling = ScaleV;
+										UnrealTextureExpression->Coordinates.Expression = MyCoordExpression;
+										MyCoordExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X - 175);
+										MyCoordExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
+									}
+								}
+
+								Location.Y += 240;
+
+								SharedTexture sharedTex;
+								sharedTex.texCoords = texCoordValue;
+								sharedTex.expression = UnrealTextureExpression;
+								texMap.Add(source, sharedTex);
+
 								bCreated = true;
 							}
 						}
-
-						if (!bCreated)
-						{
-							UTexture* UnrealTexture = ImportTexture(ImportContext, &img, samplerType, MaterialProperty);
-							if (UnrealTexture)
-							{
-								float ScaleU = 1.0;
-								float ScaleV = 1.0;
-
-								// and link it to the material
-								UnrealTextureExpression = NewObject<UMaterialExpressionTextureSample>(UnrealMaterial);
-								if (UnrealTextureExpression)
-								{
-									UnrealTextureExpression->Desc = FPaths::GetBaseFilename(GLTFToUnreal::ConvertString(img.uri));
-									UnrealTextureExpression->bCommentBubbleVisible = true;
-									UnrealMaterial->Expressions.Add(UnrealTextureExpression);
-									MaterialInput.Expression = UnrealTextureExpression;
-									UnrealTextureExpression->Texture = UnrealTexture;
-									UnrealTextureExpression->SamplerType = samplerType;
-									UnrealTextureExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X);
-									UnrealTextureExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
-
-									if ((texCoordValue != 0 && texCoordValue != INDEX_NONE) || ScaleU != 1.0f || ScaleV != 1.0f)
-									{
-										// Create a texture coord node for the texture sample
-										UMaterialExpressionTextureCoordinate* MyCoordExpression = NewObject<UMaterialExpressionTextureCoordinate>(UnrealMaterial);
-										if (MyCoordExpression)
-										{
-											UnrealMaterial->Expressions.Add(MyCoordExpression);
-											MyCoordExpression->CoordinateIndex = (texCoordValue >= 0) ? texCoordValue : 0;
-											MyCoordExpression->UTiling = ScaleU;
-											MyCoordExpression->VTiling = ScaleV;
-											UnrealTextureExpression->Coordinates.Expression = MyCoordExpression;
-											MyCoordExpression->MaterialExpressionEditorX = FMath::TruncToInt(Location.X - 175);
-											MyCoordExpression->MaterialExpressionEditorY = FMath::TruncToInt(Location.Y);
-										}
-									}
-
-									Location.Y += 240;
-
-									SharedTexture sharedTex;
-									sharedTex.texCoords = texCoordValue;
-									sharedTex.expression = UnrealTextureExpression;
-									texMap.Add(source, sharedTex);
-
-									bCreated = true;
-								}
-							}
-						}
 					}
 				}
+			}
 
-				// Special case for normals (since there is no normalFactor like other channels)
-				// normals have a scale.
-				if (strcmp(MaterialProperty, "normalTexture") == 0)
+			// Special case for normals (since there is no normalFactor like other channels)
+			// normals have a scale.
+			if (strcmp(MaterialProperty, "normalTexture") == 0)
+			{
+				UMaterialExpressionScalarParameter* scaleFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (scaleFactor)
 				{
-					const auto &textureScaleEntry = param.json_double_value.find("scale");
-					if (textureScaleEntry != param.json_double_value.end())
+					if (scaleFactor->CanRenameNode())
 					{
-						UMaterialExpressionScalarParameter *scaleFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-						if (scaleFactor)
-						{
-							if (scaleFactor->CanRenameNode())
-							{
-								scaleFactor->SetEditableName(GLTFToUnreal::ConvertString("normalTextureScale"));
-							}
-
-							UnrealMaterial->Expressions.Add(scaleFactor);
-							scaleFactor->DefaultValue = textureScaleEntry->second;
-							CreateMultiplyExpression(UnrealMaterial, MaterialInput, scaleFactor, UnrealTextureExpression, ColorChannel_All);
-						}
+						scaleFactor->SetEditableName(GLTFToUnreal::ConvertString("normalTextureScale"));
 					}
-				}
 
-				// Special case for occlusion (since there is no occlusionFactor like other channels)
-				// occlusion has a strength.
-				else if (strcmp(MaterialProperty, "occlusionTexture") == 0)
+					UnrealMaterial->Expressions.Add(scaleFactor);
+					scaleFactor->DefaultValue = scaleValue;
+					CreateMultiplyExpression(UnrealMaterial, MaterialInput, scaleFactor, UnrealTextureExpression, ColorChannel_All);
+				}
+			}
+
+			// Special case for occlusion (since there is no occlusionFactor like other channels)
+			// occlusion has a strength.
+			else if (strcmp(MaterialProperty, "occlusionTexture") == 0)
+			{
+				UMaterialExpressionScalarParameter* strengthFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+				if (strengthFactor)
 				{
-					const auto &textureStrengthEntry = param.json_double_value.find("strength");
-					if (textureStrengthEntry != param.json_double_value.end())
+					if (strengthFactor->CanRenameNode())
 					{
-						UMaterialExpressionScalarParameter *strengthFactor = NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-						if (strengthFactor)
-						{
-							if (strengthFactor->CanRenameNode())
-							{
-								strengthFactor->SetEditableName(GLTFToUnreal::ConvertString("occlusionTextureStrength"));
-							}
-
-							UnrealMaterial->Expressions.Add(strengthFactor);
-							strengthFactor->DefaultValue = textureStrengthEntry->second;
-
-							CreateMultiplyExpression(UnrealMaterial, MaterialInput, strengthFactor, UnrealTextureExpression, ColorChannel_Red);
-
-							colorChannel = ColorChannel_All;
-						}
+						strengthFactor->SetEditableName(GLTFToUnreal::ConvertString("occlusionTextureStrength"));
 					}
-				}
 
-				switch (pbrType)
-				{
+					UnrealMaterial->Expressions.Add(strengthFactor);
+					strengthFactor->DefaultValue = strengthValue;
+
+					CreateMultiplyExpression(UnrealMaterial, MaterialInput, strengthFactor, UnrealTextureExpression, ColorChannel_Red);
+
+					colorChannel = ColorChannel_All;
+				}
+			}
+
+			switch (pbrType)
+			{
 				case PBRTYPE_Color:		CreateMultiplyExpression(UnrealMaterial, MaterialInput, baseColorFactor, UnrealTextureExpression, colorChannel); break;
 				case PBRTYPE_Roughness:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, roughnessFactor, UnrealTextureExpression, colorChannel); break;
 				case PBRTYPE_Metallic:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, metallicFactor, UnrealTextureExpression, colorChannel); break;
 				case PBRTYPE_Emissive:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, emissiveFactor, UnrealTextureExpression, colorChannel); break;
 				case PBRTYPE_Diffuse:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, diffuseFactor, UnrealTextureExpression, colorChannel); break;
 				case PBRTYPE_Specular:	CreateMultiplyExpression(UnrealMaterial, MaterialInput, specularFactor, UnrealTextureExpression, colorChannel); break;
+				case PBRTYPE_Clearcoat: CreateMultiplyExpression(UnrealMaterial, MaterialInput, clearcoatFactor, UnrealTextureExpression, colorChannel); break;
+				case PBRTYPE_ClearcoatRoughness: CreateMultiplyExpression(UnrealMaterial, MaterialInput, clearcoatRoughnessFactor, UnrealTextureExpression, colorChannel); break;
 				case PBRTYPE_Glossiness:
 				{
 					//Add the OneMinus node to invert the glossiness channel for non prb materials
@@ -1348,9 +1435,30 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 				}
 				case PBRTYPE_Opacity: CreateMultiplyExpression(UnrealMaterial, MaterialInput, baseColorOpacityFactor, UnrealTextureExpression, ColorChannel_Alpha); break;
 				default: break;
-				}
+			}
 
-				AttachOutputs(MaterialInput, colorChannel);
+			// Parse KHR_texture_transform
+			tinygltf::ExtensionMap* textureExtensions = nullptr;
+			if (textureInfo.index != -1)
+				textureExtensions = &textureInfo.extensions;
+			else if(normalTextureInfo.index != -1)
+				textureExtensions = &normalTextureInfo.extensions;
+			else if (occlusionTextureInfo.index != -1)
+				textureExtensions = &occlusionTextureInfo.extensions;
+			if (textureExtensions && textureExtensions->find("KHR_texture_transform") != textureExtensions->end()) {
+				tinygltf::Value ext = (textureExtensions->find("KHR_texture_transform"))->second;
+				if (ext.Has("scale")) {
+					tinygltf::Value scale = ext.Get("scale");
+					if (scale.IsArray() && scale.ArrayLen() == 2) {
+						float scaleU = scale.Get(0).GetNumberAsDouble();
+						float scaleV = scale.Get(1).GetNumberAsDouble();
+						UMaterialExpressionTextureCoordinate* UVScaleExpression = NewObject<UMaterialExpressionTextureCoordinate>(UnrealMaterial);
+						UnrealMaterial->Expressions.Add(UVScaleExpression);
+						UVScaleExpression->UTiling = scaleU;
+						UVScaleExpression->VTiling = scaleV;
+						UVScaleExpression->ConnectExpression(UnrealTextureExpression->GetInput(0), 0);
+					}
+				}				
 			}
 		}
 	}
