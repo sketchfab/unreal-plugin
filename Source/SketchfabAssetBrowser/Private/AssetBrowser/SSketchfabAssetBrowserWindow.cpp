@@ -1371,16 +1371,23 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 			Assets.Add(DragDropOp->DraggedAssetPaths[0]);
 
 			FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
-			TArray<UObject*> AddedFiles = AssetToolsModule.Get().ImportAssets(Assets, PayLoad.PackagePaths[0].ToString());
+			TArray<UObject*> AddedFiles = AssetToolsModule.Get().ImportAssets(Assets, PayLoad.PackagePaths[0].ToString(), nullptr, true);
 
 			//Now Rename the files
 			if (AddedFiles.Num() == 1)
 			{
 				FString Name = DragDropOp->DraggedAssets[0].ModelName.ToString();
-				AddedFiles[0]->Rename(*Name);
+				AddedFiles[0]->Rename(*Name, nullptr, REN_DontCreateRedirectors);
 			}
 		}
 
+		/*
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		TArray<FAssetData> AssetData;
+		const UClass* Class = UObjectRedirector::StaticClass();
+		AssetRegistryModule.Get().GetAssetsByClass(Class->GetFName(), AssetData);
+		AssetToolsModule.Get().FixupReferencers(ArrayOfRedirectors, false);
+		*/
 		return true;
 	}
 
