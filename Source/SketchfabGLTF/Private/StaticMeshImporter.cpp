@@ -379,31 +379,29 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 	}
 
 
-	if (!ImportedMesh->GetSourceModels().IsValidIndex(LODIndex))
+	// Add one LOD
+#if ENGINE_MAJOR_VERSION < 5
+	if (!ImportedMesh->GetSourceModels().IsValidIndex(0))
 	{
-		// Add one LOD
 		ImportedMesh->GetSourceModels().AddDefaulted();
 	}
-
-	FStaticMeshSourceModel& SrcModel = ImportedMesh->GetSourceModel(LODIndex);
-
+	FStaticMeshSourceModel& SrcModel = ImportedMesh->GetSourceModel(0);
 	RawTriangles.CompactMaterialIndices();
-
 	SrcModel.RawMeshBulkData->SaveRawMesh(RawTriangles);
-
-	// Recompute normals if we did not import any
-	SrcModel.BuildSettings.bRecomputeNormals = RawTriangles.WedgeTangentZ.Num() == 0;
-
-	// Use mikktSpace if we have normals
-	SrcModel.BuildSettings.bUseMikkTSpace = RawTriangles.WedgeTangentZ.Num() != 0;
-
-	// Recompute tangents if we did not import any
-	SrcModel.BuildSettings.bRecomputeTangents = RawTriangles.WedgeTangentX.Num() == 0;
-
-	SrcModel.BuildSettings.bGenerateLightmapUVs = true;
 	SrcModel.BuildSettings.bBuildAdjacencyBuffer = false;
-	SrcModel.BuildSettings.bBuildReversedIndexBuffer = false;
+#else
+	//ImportedMesh->GetHiResSourceModel();
+	RawTriangles.CompactMaterialIndices();
+	FStaticMeshSourceModel& SrcModel = ImportedMesh->GetSourceModels().IsValidIndex(0) ? ImportedMesh->GetSourceModel(0) : ImportedMesh->AddSourceModel();
+	SrcModel.SaveRawMesh(RawTriangles, true);
+#endif
 
+	// Set BuildSettings
+	SrcModel.BuildSettings.bRecomputeNormals = RawTriangles.WedgeTangentZ.Num() == 0;
+	SrcModel.BuildSettings.bUseMikkTSpace = RawTriangles.WedgeTangentZ.Num() != 0;
+	SrcModel.BuildSettings.bRecomputeTangents = RawTriangles.WedgeTangentX.Num() == 0;
+	SrcModel.BuildSettings.bGenerateLightmapUVs = true;
+	SrcModel.BuildSettings.bBuildReversedIndexBuffer = false;
 	SrcModel.BuildSettings.bUseFullPrecisionUVs = false;
 	SrcModel.BuildSettings.bUseHighPrecisionTangentBasis = false;
 
