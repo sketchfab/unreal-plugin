@@ -12,6 +12,145 @@
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
 
+unsigned char* FGLTFStaticMeshImporter::GetAccessorData(const tinygltf::Model* model, const tinygltf::Primitive& prim, tinygltf::Accessor*& accessor, const std::string attributeName) {
+	accessor = nullptr;
+	int accessorIndex;
+	if (!attributeName.empty()) {
+		const auto& attribute = prim.attributes.find(attributeName);
+		if (attribute != prim.attributes.end())
+		{
+			accessorIndex = attribute->second;
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	else {
+		accessorIndex = prim.indices;
+	}
+	if (accessorIndex >= 0 && accessorIndex < model->accessors.size())
+	{
+		accessor = const_cast<tinygltf::Accessor*>(&model->accessors[accessorIndex]);
+		const tinygltf::BufferView& bufferView = model->bufferViews[accessor->bufferView];
+		const tinygltf::Buffer& buffer = model->buffers[bufferView.buffer];
+		size_t offset = accessor->byteOffset + bufferView.byteOffset;
+		if (accessor->count > 0)
+		{
+			return const_cast<unsigned char*>(&buffer.data[offset]);
+		}
+	}
+	return nullptr;
+}
+
+template<typename T>
+void parseIndicesData(unsigned char* rawData, int dataSize, FRawMesh& RawTriangles, int32 VertexOffset, int32 WedgeOffset)
+{
+	T* data = (T*)rawData;
+	for (int i = 0; i < dataSize; i++)
+	{
+		RawTriangles.WedgeIndices[WedgeOffset + i] = VertexOffset + data[i];
+	}
+}
+
+template<typename T>
+void parsePositionData(unsigned char* rawData, int dataSize, FRawMesh& RawTriangles, int32 VertexOffset, FTransform FinalTransform)
+{
+	T* data = (T*)rawData;
+	for (int i = 0; i < dataSize; i++)
+	{
+		int index = i * 3;
+		FVector Pos = FVector(data[index], data[index + 1], data[index + 2]);
+		Pos = FinalTransform.TransformPosition(Pos);
+		RawTriangles.VertexPositions[VertexOffset + i] = Pos;
+	}
+}
+
+template<typename T>
+void parseNormalData(unsigned char* rawData, int32 NumFaces, FRawMesh& RawTriangles, int32 VertexOffset, int32 WedgeOffset, int32 TangentZOffset, FMatrix FinalTransformIT)
+{
+	T* data = (T*)rawData;
+	for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+	{
+		for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+		{
+			const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+			const int32 NormalIdx = TangentZOffset + FaceIdx * 3 + CornerIdx;
+			int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 3;
+			FVector Normal = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
+			FVector TransformedNormal = FinalTransformIT.TransformVector(Normal);
+			RawTriangles.WedgeTangentZ[NormalIdx] = TransformedNormal.GetSafeNormal();
+		}
+	}
+}
+
+template<typename T>
+void parseTangentData(unsigned char* rawData, int32 NumFaces, FRawMesh& RawTriangles, int32 VertexOffset, int32 WedgeOffset, int32 TangentXOffset, bool fromVec3, FMatrix FinalTransformIT)
+{
+	float* data = (float*)rawData;
+	for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+	{
+		for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+		{
+			const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+			const int32 TangentXIdx = TangentXOffset + FaceIdx * 3 + CornerIdx;
+			int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * 3;
+			FVector Tangent = FVector(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]);
+			FVector TransformedTangent = FinalTransformIT.TransformVector(Tangent);
+
+			if (fromVec3)
+				RawTriangles.WedgeTangentX[WedgeIdx] = TransformedTangent.GetSafeNormal();
+			else
+				RawTriangles.WedgeTangentX[TangentXIdx] = TransformedTangent.GetSafeNormal();
+		}
+	}
+}
+
+template<typename T>
+void parseUVs(FRawMesh& RawTriangles, const unsigned char* rawData, const tinygltf::Accessor* accessor, int32 NumFaces, int32 WedgeOffset, int32 VertexOffset, int32 uvIndex)
+{
+	TArray<FVector2D>& TexCoords = RawTriangles.WedgeTexCoords[uvIndex];
+	TexCoords.AddZeroed(NumFaces * 3);
+	int32 WedgesCount = RawTriangles.WedgeIndices.Num();
+	int32 TexCoordsCount = TexCoords.Num();
+
+	T* data = (T*)rawData;
+	for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+	{
+		const int32 I0 = WedgeOffset + FaceIdx * 3 + 0;
+		const int32 I1 = WedgeOffset + FaceIdx * 3 + 1;
+		const int32 I2 = WedgeOffset + FaceIdx * 3 + 2;
+
+		if (I0 >= WedgesCount || I1 >= WedgesCount || I2 >= WedgesCount)
+		{
+			ensure(false);
+			break;
+		}
+
+		if (I0 >= TexCoordsCount || I1 >= TexCoordsCount || I2 >= TexCoordsCount)
+		{
+			ensure(false);
+			break;
+		}
+
+		int32 index0 = RawTriangles.WedgeIndices[I0] - VertexOffset;
+		int32 index1 = RawTriangles.WedgeIndices[I1] - VertexOffset;
+		int32 index2 = RawTriangles.WedgeIndices[I2] - VertexOffset;
+
+		if (index0 >= accessor->count || index1 >= accessor->count || index2 >= accessor->count)
+			break;
+
+		index0 *= 2;
+		index1 *= 2;
+		index2 *= 2;
+
+		TexCoords[I0] = FVector2D(data[index0], data[index0 + 1]);
+		TexCoords[I1] = FVector2D(data[index1], data[index1 + 1]);
+		TexCoords[I2] = FVector2D(data[index2], data[index2 + 1]);
+	}
+}
+
+
 UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& ImportContext, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
 {
 	const FTransform& ConversionTransform = ImportContext.ConversionTransform;
