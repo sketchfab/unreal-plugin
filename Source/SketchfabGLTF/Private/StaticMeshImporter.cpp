@@ -12,7 +12,7 @@
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
 
-unsigned char* FGLTFStaticMeshImporter::GetAccessorData(const tinygltf::Model* model, const tinygltf::Primitive& prim, tinygltf::Accessor*& accessor, const std::string attributeName) {
+unsigned char* GetAccessorData(const tinygltf::Model* model, const tinygltf::Primitive& prim, tinygltf::Accessor*& accessor, const std::string attributeName) {
 	accessor = nullptr;
 	int accessorIndex;
 	if (!attributeName.empty()) {
@@ -150,6 +150,27 @@ void parseUVs(FRawMesh& RawTriangles, const unsigned char* rawData, const tinygl
 	}
 }
 
+bool AddUVs(const tinygltf::Model* model, const tinygltf::Primitive& prim, FRawMesh& RawTriangles, int32 NumFaces, int32 WedgeOffset, int32 VertexOffset, int32 uvIndex)
+{
+	bool uvsAdded = false;
+
+	tinygltf::Accessor* accessor = nullptr;
+	unsigned char* rawData;
+
+	rawData = GetAccessorData(model, prim, accessor, "TEXCOORD_" + std::to_string(uvIndex));
+	if (rawData && accessor)
+	{
+		ensure(accessor->type == TINYGLTF_TYPE_VEC2);
+		switch (accessor->componentType)
+		{
+		case TINYGLTF_COMPONENT_TYPE_FLOAT:  parseUVs<float>(RawTriangles, rawData, accessor, NumFaces, WedgeOffset, VertexOffset, uvIndex); uvsAdded = true;  break;
+		case TINYGLTF_COMPONENT_TYPE_DOUBLE: parseUVs<double>(RawTriangles, rawData, accessor, NumFaces, WedgeOffset, VertexOffset, uvIndex); uvsAdded = true; break;
+		default: ensure(false); break;
+		}
+	}
+
+	return uvsAdded;
+}
 
 UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& ImportContext, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
 {
@@ -378,25 +399,26 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 
 	}
 
+	return ImportedMesh;
+}
 
-	// Add one LOD
+void FGLTFStaticMeshImporter::commitRawMesh(UStaticMesh* ImportedMesh, FRawMesh& RawTriangles) {
+
+	RawTriangles.CompactMaterialIndices();
+
 #if ENGINE_MAJOR_VERSION < 5
 	if (!ImportedMesh->GetSourceModels().IsValidIndex(0))
 	{
 		ImportedMesh->GetSourceModels().AddDefaulted();
 	}
 	FStaticMeshSourceModel& SrcModel = ImportedMesh->GetSourceModel(0);
-	RawTriangles.CompactMaterialIndices();
 	SrcModel.RawMeshBulkData->SaveRawMesh(RawTriangles);
 	SrcModel.BuildSettings.bBuildAdjacencyBuffer = false;
 #else
-	//ImportedMesh->GetHiResSourceModel();
-	RawTriangles.CompactMaterialIndices();
 	FStaticMeshSourceModel& SrcModel = ImportedMesh->GetSourceModels().IsValidIndex(0) ? ImportedMesh->GetSourceModel(0) : ImportedMesh->AddSourceModel();
 	SrcModel.SaveRawMesh(RawTriangles, true);
 #endif
 
-	// Set BuildSettings
 	SrcModel.BuildSettings.bRecomputeNormals = RawTriangles.WedgeTangentZ.Num() == 0;
 	SrcModel.BuildSettings.bUseMikkTSpace = RawTriangles.WedgeTangentZ.Num() != 0;
 	SrcModel.BuildSettings.bRecomputeTangents = RawTriangles.WedgeTangentX.Num() == 0;
@@ -404,30 +426,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 	SrcModel.BuildSettings.bBuildReversedIndexBuffer = false;
 	SrcModel.BuildSettings.bUseFullPrecisionUVs = false;
 	SrcModel.BuildSettings.bUseHighPrecisionTangentBasis = false;
-
-	return ImportedMesh;
-}
-
-bool FGLTFStaticMeshImporter::AddUVs(const tinygltf::Model *model, const tinygltf::Primitive &prim, FRawMesh &RawTriangles, int32 NumFaces, int32 WedgeOffset, int32 VertexOffset, int32 uvIndex)
-{
-	bool uvsAdded = false;
-
-	tinygltf::Accessor* accessor = nullptr;
-	unsigned char* rawData;
-
-	rawData = GetAccessorData(model, prim, accessor, "TEXCOORD_" + std::to_string(uvIndex));
-	if (rawData && accessor)
-	{
-		ensure(accessor->type == TINYGLTF_TYPE_VEC2);
-		switch (accessor->componentType)
-		{
-		case TINYGLTF_COMPONENT_TYPE_FLOAT:  parseUVs<float>(RawTriangles, rawData, accessor, NumFaces, WedgeOffset, VertexOffset, uvIndex); uvsAdded = true;  break;
-		case TINYGLTF_COMPONENT_TYPE_DOUBLE: parseUVs<double>(RawTriangles, rawData, accessor, NumFaces, WedgeOffset, VertexOffset, uvIndex); uvsAdded = true; break;
-		default: ensure(false); break;
-		}
-	}
-
-	return uvsAdded;
 }
 
 #undef LOCTEXT_NAMESPACE

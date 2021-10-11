@@ -277,15 +277,18 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 				RawTriangles.Empty();
 			}
 
-			UStaticMesh* NewMesh = ImportSingleMesh(ImportContext, MeshImportType, PrimToImport, RawTriangles, singleStaticMesh);
-			if (NewMesh)
+			UStaticMesh* NewMesh = nullptr;
+			if (MeshImportType == ESKGLTFMeshImportType::StaticMesh)
 			{
+				NewMesh = FGLTFStaticMeshImporter::ImportStaticMesh(ImportContext, PrimToImport, RawTriangles, singleStaticMesh);
 				if (singleMesh)
 				{
 					singleStaticMesh = NewMesh;
 				}
 				else
 				{
+					FGLTFStaticMeshImporter::commitRawMesh(NewMesh, RawTriangles);
+
 					NewMesh->ImportVersion = EImportStaticMeshVersion::BeforeImportStaticMeshVersionWasAdded;
 					NewMesh->CreateBodySetup();
 					NewMesh->SetLightingGuid();
@@ -302,6 +305,8 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 
 	if (singleStaticMesh && singleMesh)
 	{
+		FGLTFStaticMeshImporter::commitRawMesh(singleStaticMesh, RawTriangles);
+
 		FString FinalPackagePathName = ContentDirectoryLocation;
 		FString MeshName = ObjectTools::SanitizeObjectName(ImportContext.ObjectName);
 		FString NewPackageName = PackageTools::SanitizePackageName(FinalPackagePathName / MeshName);
@@ -318,18 +323,6 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 
 	// Return the first one on success.
 	return ImportContext.PathToImportAssetMap.Num() ? ImportContext.PathToImportAssetMap.CreateIterator().Value() : nullptr;
-}
-
-UStaticMesh* USKGLTFImporter::ImportSingleMesh(FGLTFImportContext& ImportContext, ESKGLTFMeshImportType ImportType, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
-{
-	UStaticMesh* NewMesh = nullptr;
-
-	if (ImportType == ESKGLTFMeshImportType::StaticMesh)
-	{
-		NewMesh = FGLTFStaticMeshImporter::ImportStaticMesh(ImportContext, PrimToImport, RawTriangles, singleMesh);
-	}
-
-	return NewMesh;
 }
 
 bool USKGLTFImporter::ShowImportOptions(UObject& ImportOptions)

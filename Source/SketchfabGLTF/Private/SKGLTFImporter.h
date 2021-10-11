@@ -111,7 +111,6 @@ public:
 	tinygltf::Model* ReadGLTFFile(FGLTFImportContext& ImportContext, const FString& Filename);
 
 	UObject* ImportMeshes(FGLTFImportContext& ImportContext, const TArray<FGLTFPrimToImport>& PrimsToImport);
-	UStaticMesh* ImportSingleMesh(FGLTFImportContext& ImportContext, ESKGLTFMeshImportType ImportType, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh = nullptr);
 
 	UTexture* ImportTexture(FGLTFImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty = nullptr);
 
