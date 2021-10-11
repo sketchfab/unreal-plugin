@@ -821,12 +821,13 @@ FReply SSketchfabAssetBrowserWindow::OnSearchPressed()
 		{
 		case FACECOUNT_ALL:
 		{
-			//Add Nothing
+			//Don't display point clouds
+			url += "&min_face_count=1";
 		}
 		break;
 		case FACECOUNT_0_10:
 		{
-			url += "&min_face_count=0&max_face_count=10000";
+			url += "&min_face_count=1&max_face_count=10000";
 		}
 		break;
 		case FACECOUNT_10_50:
