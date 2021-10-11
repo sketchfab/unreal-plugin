@@ -105,6 +105,9 @@ UObject* USKGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* 
 			ImportContext.PrimResolver->FindPrimsToImport(ImportContext, PrimsToImport);
 			ImportedObject = GLTFImporter->ImportMeshes(ImportContext, PrimsToImport);
 
+			ImportedObject->PreEditChange(NULL);
+			ImportedObject->PostEditChange();
+
 
 			// Just return the first one imported
 			ImportedObject = ImportContext.PathToImportAssetMap.Num() > 0 ? ImportContext.PathToImportAssetMap.CreateConstIterator().Value() : nullptr;

@@ -1376,8 +1376,11 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 			//Now Rename the files
 			if (AddedFiles.Num() == 1)
 			{
-				FString Name = DragDropOp->DraggedAssets[0].ModelName.ToString();
-				AddedFiles[0]->Rename(*Name, nullptr, REN_DontCreateRedirectors);
+				FName Name = MakeUniqueObjectName(nullptr, UStaticMesh::StaticClass(), FName(ObjectTools::SanitizeObjectName(DragDropOp->DraggedAssets[0].ModelName.ToString())));
+				FString NameString = Name.ToString();
+
+				// Rename the object if it was imported as a single asset
+				AddedFiles[0]->Rename(*NameString, nullptr, REN_DontCreateRedirectors);
 			}
 		}
 
