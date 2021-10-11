@@ -38,6 +38,7 @@
 #include "Materials/MaterialExpressionMultiply.h"
 #include "Materials/MaterialExpressionAdd.h"
 #include "Materials/MaterialExpressionOneMinus.h"
+#include "Materials/MaterialExpressionVertexColor.h"
 
 #include "Factories/MaterialInstanceConstantFactoryNew.h"
 #include "IAssetTools.h"
@@ -719,7 +720,7 @@ void USKGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, ti
 	}
 }
 
-void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& MaterialInput, UMaterialExpression *ExpressionFactor, UMaterialExpression *UnrealTextureExpression, ColorChannel colorChannel)
+void USKGLTFImporter::CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& MaterialInput, UMaterialExpression *ExpressionFactor, UMaterialExpression *UnrealTextureExpression, ColorChannel colorChannel)
 {
 	if (!UnrealMaterial || !ExpressionFactor || !UnrealTextureExpression)
 		return;
@@ -820,6 +821,21 @@ UMaterialExpressionOneMinus* CreateOneMinusExpression(UMaterial* UnrealMaterial,
 	OneMinusExpression->Input.MaskA = Output->MaskA;
 
 	return OneMinusExpression;
+}
+
+void USKGLTFImporter::UseVertexColors(UMaterial* UnrealMaterial)
+{
+	UMaterialExpressionVertexColor* VertexColorExpression = NewObject<UMaterialExpressionVertexColor>(UnrealMaterial);
+	UMaterialExpression* BaseColorExpression = UnrealMaterial->BaseColor.Expression;
+	if (BaseColorExpression)
+	{
+		// Add the base color and the emissive color together
+		CreateMultiplyExpression(UnrealMaterial, UnrealMaterial->BaseColor, BaseColorExpression, VertexColorExpression, ColorChannel_All);
+	}
+	else
+	{
+		UnrealMaterial->BaseColor.Expression = VertexColorExpression;
+	}
 }
 
 void USKGLTFImporter::AttachOutputs(FExpressionInput& MaterialInput, ColorChannel colorChannel)
@@ -1512,6 +1528,10 @@ void FGLTFImportContext::Init(UObject* InParent, const FString& InName, const FS
 
 	Model = InModel;
 	bApplyWorldTransformToGeometry = true;
+
+	// In some cases, we need to stop parsing tangents and normals
+	disableTangents = false;
+	disableNormals = false;
 }
 
 void FGLTFImportContext::AddErrorMessage(EMessageSeverity::Type MessageSeverity, FText ErrorMessage)

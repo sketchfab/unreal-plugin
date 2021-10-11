@@ -107,11 +107,41 @@ void parseTangentData(unsigned char* rawData, int32 NumFaces, FRawMesh& RawTrian
 }
 
 template<typename T>
+void parseColorData(unsigned char* rawData, int32 NumFaces, FRawMesh& RawTriangles, int32 VertexOffset, int32 WedgeOffset, int32 ColorOffset, int NumComponents)
+{
+	int32 WedgesCount = RawTriangles.WedgeIndices.Num();
+	// There might be cases in which no map was previously parsed, but now it is.
+	// In that case we add zeros UVs for the previous unparsed UVs
+	if (RawTriangles.WedgeColors.Num() != WedgesCount)
+	{
+		RawTriangles.WedgeColors.AddDefaulted(WedgesCount - RawTriangles.WedgeColors.Num());
+	}
+
+	T* data = (T*)rawData;
+	for (int FaceIdx = 0; FaceIdx < NumFaces; FaceIdx++)
+	{
+		for (int32 CornerIdx = 0; CornerIdx < 3; CornerIdx++)
+		{
+			const int32 WedgeIdx = WedgeOffset + FaceIdx * 3 + CornerIdx;
+			const int32 ColorIdx = ColorOffset + FaceIdx * 3 + CornerIdx;
+			int32 DataIdx = (RawTriangles.WedgeIndices[WedgeIdx] - VertexOffset) * NumComponents;
+			RawTriangles.WedgeColors[ColorIdx] = FLinearColor(data[DataIdx], data[DataIdx + 1], data[DataIdx + 2]).ToFColor(false);
+		}
+	}
+}
+
+template<typename T>
 void parseUVs(FRawMesh& RawTriangles, const unsigned char* rawData, const tinygltf::Accessor* accessor, int32 NumFaces, int32 WedgeOffset, int32 VertexOffset, int32 uvIndex)
 {
 	TArray<FVector2D>& TexCoords = RawTriangles.WedgeTexCoords[uvIndex];
-	TexCoords.AddZeroed(NumFaces * 3);
 	int32 WedgesCount = RawTriangles.WedgeIndices.Num();
+
+	// There might be cases in which no map was previously parsed, but now it is.
+	// In that case we add zeros UVs for the previous unparsed UVs
+	if (TexCoords.Num() != WedgesCount)
+	{
+		TexCoords.AddZeroed(WedgesCount - TexCoords.Num());
+	}
 	int32 TexCoordsCount = TexCoords.Num();
 
 	T* data = (T*)rawData;
@@ -215,6 +245,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 		int32 VertexOffset = RawTriangles.VertexPositions.Num();
 		int32 WedgeOffset = RawTriangles.WedgeIndices.Num();
 		int32 FaceOffset = RawTriangles.FaceMaterialIndices.Num();
+		int32 ColorOffset = RawTriangles.WedgeColors.Num();
 		int32 TangentXOffset = RawTriangles.WedgeTangentX.Num();
 		int32 TangentYOffset = RawTriangles.WedgeTangentY.Num();
 		int32 TangentZOffset = RawTriangles.WedgeTangentZ.Num();
@@ -258,9 +289,26 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 			}
 		}
 
+		rawData = GetAccessorData(model, prim, accessor, "COLOR_0");
+		if (rawData && accessor)
+		{
+			RawTriangles.WedgeColors.AddUninitialized(NumFaces * 3);
+			ensure(accessor->type == TINYGLTF_TYPE_VEC4 || accessor->type == TINYGLTF_TYPE_VEC3);
+			if (accessor->type == TINYGLTF_TYPE_VEC4 || accessor->type == TINYGLTF_TYPE_VEC3)
+			{
+				int NumComponents = (accessor->type == TINYGLTF_TYPE_VEC4) ? 4 : 3;
+				switch (accessor->componentType)
+				{
+					case TINYGLTF_COMPONENT_TYPE_FLOAT:  parseColorData<float>(rawData, NumFaces, RawTriangles, VertexOffset, WedgeOffset, ColorOffset, NumComponents); break;
+					case TINYGLTF_COMPONENT_TYPE_DOUBLE: parseColorData<double>(rawData, NumFaces, RawTriangles, VertexOffset, WedgeOffset, ColorOffset, NumComponents); break;
+					case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: parseColorData<uint8>(rawData, NumFaces, RawTriangles, VertexOffset, WedgeOffset, ColorOffset, NumComponents); break;
+					default: ensure(false); break;
+				}
+			}
+		}
 
 		rawData = GetAccessorData(model, prim, accessor, "NORMAL");
-		if (rawData && accessor)
+		if (rawData && accessor && !ImportContext.disableNormals)
 		{
 			RawTriangles.WedgeTangentZ.AddUninitialized(NumFaces * 3);
 			ensure(accessor->type == TINYGLTF_TYPE_VEC3);
@@ -276,7 +324,7 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 		}
 
 		rawData = GetAccessorData(model, prim, accessor, "TANGENT");
-		if (rawData && accessor)
+		if (rawData && accessor && !ImportContext.disableTangents)
 		{
 			RawTriangles.WedgeTangentX.AddUninitialized(NumFaces * 3);
 			switch (accessor->type)
@@ -306,9 +354,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 		}
 
 		bool uvsAdded = false;
+		int32 maxUVcount = 0;
 		for (int32 uv = 0; uv < MAX_MESH_TEXTURE_COORDS; uv++)
 		{
 			uvsAdded |= AddUVs(ImportContext.Model, prim, RawTriangles, NumFaces, WedgeOffset, VertexOffset, uv);
+			maxUVcount = maxUVcount > RawTriangles.WedgeTexCoords[uv].Num() ? maxUVcount : RawTriangles.WedgeTexCoords[uv].Num();
 		}
 
 		if (!uvsAdded)
@@ -320,6 +370,41 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 					FText::AsNumber(0)));
 
 			RawTriangles.WedgeTexCoords[0].AddZeroed(NumFaces * 3);
+			maxUVcount = RawTriangles.WedgeTexCoords[0].Num();
+		}
+
+		// If there are multiple UV maps present, pad them with zeros to ensure they have the same size
+		for (int32 uv = 0; uv < MAX_MESH_TEXTURE_COORDS; uv++)
+		{
+			int32 nUVs = RawTriangles.WedgeTexCoords[uv].Num();
+			if ((nUVs != 0) && (nUVs != maxUVcount))
+			{
+				RawTriangles.WedgeTexCoords[uv].AddZeroed(maxUVcount - nUVs);
+			}
+		}
+		// Do the same for vertex colors
+		int32 nColors = RawTriangles.WedgeColors.Num();
+		if ((nColors != 0) && (nColors != RawTriangles.WedgeIndices.Num()))
+		{
+			for (int i = 0; i < RawTriangles.WedgeIndices.Num() - nColors; i++)
+			{
+				RawTriangles.WedgeColors.Add(FColor::White);
+			}
+		}
+		// Disable normals if not all primitives have them
+		// This should never happen as Sketchfab model should always have normals
+		if (!ImportContext.disableNormals && RawTriangles.WedgeTangentZ.Num() != RawTriangles.WedgeIndices.Num())
+		{
+			ImportContext.disableNormals = true;
+			RawTriangles.WedgeTangentZ.Empty();
+			UE_LOG(LogGLTFImport, Warning, TEXT("Not all primitives have normals, disabling normals"));
+		}
+		// Disable tangents if not all primitives have them
+		if (!ImportContext.disableTangents && RawTriangles.WedgeTangentX.Num() != RawTriangles.WedgeIndices.Num())
+		{
+			ImportContext.disableTangents = true;
+			RawTriangles.WedgeTangentX.Empty();
+			UE_LOG(LogGLTFImport, Warning, TEXT("Not all primitives have tangents, disabling parsing"));
 		}
 
 		if (bFlip)
@@ -341,31 +426,21 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 					}
 				}
 
-				I0 = TangentXOffset + fidx + 0;
-				I2 = TangentXOffset + fidx + 2;
-				if (RawTriangles.WedgeTangentX.Num())
+				if(!ImportContext.disableTangents && RawTriangles.WedgeTangentX.Num())
 				{
+					I0 = TangentXOffset + fidx + 0;
+					I2 = TangentXOffset + fidx + 2;
 					Swap(RawTriangles.WedgeTangentX[I0], RawTriangles.WedgeTangentX[I2]);
 				}
 
-				I0 = TangentYOffset + fidx + 0;
-				I2 = TangentYOffset + fidx + 2;
-				if (RawTriangles.WedgeTangentY.Num())
+				if(!ImportContext.disableNormals && RawTriangles.WedgeTangentZ.Num())
 				{
-					Swap(RawTriangles.WedgeTangentY[I0], RawTriangles.WedgeTangentY[I2]);
-				}
-
-				I0 = TangentZOffset + fidx + 0;
-				I2 = TangentZOffset + fidx + 2;
-				if (RawTriangles.WedgeTangentZ.Num())
-				{
+					I0 = TangentZOffset + fidx + 0;
+					I2 = TangentZOffset + fidx + 2;
 					Swap(RawTriangles.WedgeTangentZ[I0], RawTriangles.WedgeTangentZ[I2]);
 				}
 			}
 		}
-
-		FColor WhiteVertex = FColor(255, 255, 255, 255);
-		FVector EmptyVector = FVector(0, 0, 0);
 
 		//Check to see if we have added this material already to the object.
 		int* staticMaterialIndex = ImportContext.MaterialMap.Find(prim.material);
@@ -383,6 +458,14 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 			ImportedMesh->GetOriginalSectionInfoMap().Set(LODIndex, FinalIndex, ImportedMesh->GetSectionInfoMap().Get(LODIndex, FinalIndex));
 
 			ImportContext.MaterialMap.Add(prim.material, FinalIndex);
+
+			// If the mesh has vertex colors, add them to the material
+			if (nColors > 0)
+			{
+				USKGLTFImporter::UseVertexColors(ExistingMaterial->GetMaterial());
+				ExistingMaterial->GetMaterial()->PreEditChange(NULL);
+				ExistingMaterial->GetMaterial()->PostEditChange();
+			}
 		}
 
 		// Faces and UV/Normals
@@ -396,7 +479,6 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 			// Phong Smoothing
 			RawTriangles.FaceSmoothingMasks.Add(0xFFFFFFFF);
 		}
-
 	}
 
 	return ImportedMesh;

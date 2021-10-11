@@ -63,6 +63,9 @@ struct FGLTFImportContext
 	/** Whether to automatically create Unreal materials for materials found in the glTF scene */
 	bool bImportMaterials;
 
+	bool disableTangents;
+	bool disableNormals;
+
 	virtual ~FGLTFImportContext() { }
 
 	virtual void Init(UObject* InParent, const FString& InName, const FString &InBasePath, tinygltf::Model* InModel);
@@ -115,7 +118,8 @@ public:
 	UTexture* ImportTexture(FGLTFImportContext& ImportContext, tinygltf::Image *img, EMaterialSamplerType samplerType, const char *MaterialProperty = nullptr);
 
 	void CreateUnrealMaterial(FGLTFImportContext& ImportContext, tinygltf::Material *mat, TArray<UMaterialInterface*>& OutMaterials);
-
+	static void UseVertexColors(UMaterial* UnrealMaterial);
+	static void CreateMultiplyExpression(UMaterial* UnrealMaterial, FExpressionInput& MaterialInput, UMaterialExpression* ExpressionFactor, UMaterialExpression* UnrealTextureExpression, ColorChannel colorChannel);
 	bool CreateAndLinkExpressionForMaterialProperty(FScopedSlowTask &materialProgress, FGLTFImportContext& ImportContext, tinygltf::Material *mat, UMaterial* UnrealMaterial, SharedTextureMap &texMap, const char* MaterialProperty, TextureType texType,
 		FExpressionInput& MaterialInput, EMaterialSamplerType samplerType, FVector2D& Location, ColorChannel colorChannel = ColorChannel_All);
 
