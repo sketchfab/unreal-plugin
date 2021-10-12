@@ -10,28 +10,6 @@
 
 
 UENUM()
-enum class EExistingActorPolicy : uint8
-{
-	/** Replaces existing actors with new ones */
-	Replace,
-	/** Update transforms on existing actors but do not replace actor the actor class or any other data */
-	UpdateTransform,
-	/** Ignore any existing actor with the same name */
-	Ignore,
-
-};
-
-UENUM()
-enum class EExistingAssetPolicy : uint8
-{
-	/** Reimports existing assets */
-	Reimport,
-
-	/** Ignores existing assets and doesnt reimport them */
-	Ignore,
-};
-
-UENUM()
 enum class ESKGLTFMeshImportType : uint8
 {
 	StaticMesh,
@@ -84,10 +62,6 @@ public:
 	UPROPERTY(config, EditAnywhere, Category=General)
 	bool bFlattenHierarchy;
 
-	/** Defines what should happen with existing actors */
-	UPROPERTY(config, EditAnywhere, Category=General)
-	EExistingActorPolicy ExistingActorPolicy;
-
 	/** Whether or not to import custom properties and set their unreal equivalent on spawned actors */
 	UPROPERTY(config, EditAnywhere, Category = General)
 	bool bImportProperties;
@@ -99,9 +73,5 @@ public:
 	/** The path where new assets are imported */
 	UPROPERTY(config, EditAnywhere, Category=Mesh, meta=(ContentDir, EditCondition = bImportMeshes))
 	FDirectoryPath PathForAssets;
-
-	/** What should happen with existing assets */
-	UPROPERTY(config, EditAnywhere, Category=Mesh, meta = (EditCondition=bImportMeshes))
-	EExistingAssetPolicy ExistingAssetPolicy;
 };
 

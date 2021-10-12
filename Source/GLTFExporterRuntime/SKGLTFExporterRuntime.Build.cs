@@ -9,10 +9,21 @@ namespace UnrealBuildTool.Rules
 			PCHUsage = PCHUsageMode.NoPCHs;
 			bPrecompile = true;
 
+			PublicIncludePaths.Add(
+				EngineDirectory + "/Shaders/Shared/"
+				);
+
 			PublicIncludePaths.AddRange(
 				new string[] {
+					"Editor/",
+					"Runtime/",
+					EngineDirectory + "/Shaders/Shared/"
 				}
-				);
+
+			);
+
+			PublicIncludePaths.Add(EngineDirectory + "/Shaders/Shared/");
+			PrivateIncludePaths.Add(EngineDirectory + "/Shaders/Shared/");
 
 			PrivateIncludePaths.AddRange(
 				new string[] {

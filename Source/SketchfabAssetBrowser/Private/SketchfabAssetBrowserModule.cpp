@@ -29,7 +29,11 @@ public:
 		// make an extension to add the Orion function menu
 		Extender = MakeShareable(new FExtender());
 		Extender->AddMenuExtension(
+#if ENGINE_MAJOR_VERSION == 5
+			"Log",
+#else
 			"General",
+#endif
 			EExtensionHook::After,
 			nullptr,
 			FMenuExtensionDelegate::CreateRaw(this, &FSketchfabAssetBrowserModule::AddMenuEntry));

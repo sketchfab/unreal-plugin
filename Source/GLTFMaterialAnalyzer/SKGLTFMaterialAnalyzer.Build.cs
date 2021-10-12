@@ -16,7 +16,20 @@ public class SKGLTFMaterialAnalyzer : ModuleRules
 			}
 		);
 
+		PublicIncludePaths.AddRange(
+				new string[] {
+					"Editor/",
+					"Runtime/",
+					EngineDirectory + "/Shaders/Shared/"
+				}
+
+			);
+
 		// NOTE: ugly hack to access HLSLMaterialTranslator to analyze materials
 		PrivateIncludePaths.Add(EngineDirectory + "/Source/Runtime/Engine/Private");
+		PrivateIncludePaths.Add(EngineDirectory + "/Source/Runtime/Engine/Private/Materials");
+
+		PublicIncludePaths.Add(EngineDirectory + "/Shaders/Shared/");
+		PrivateIncludePaths.Add(EngineDirectory + "/Shaders/Shared/");
 	}
 }

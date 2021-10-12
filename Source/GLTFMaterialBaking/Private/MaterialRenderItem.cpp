@@ -25,7 +25,11 @@ FMeshMaterialRenderItem::FMeshMaterialRenderItem(
 	LCI = new FMeshRenderInfo(InMeshSettings->LightMap, nullptr, nullptr, InMeshSettings->LightmapResourceCluster);
 }
 
+#if ENGINE_MAJOR_VERSION == 5
+bool FMeshMaterialRenderItem::Render_RenderThread(FCanvasRenderContext& RenderContext, FMeshPassProcessorRenderState& DrawRenderState, const FCanvas* Canvas)
+#else
 bool FMeshMaterialRenderItem::Render_RenderThread(FRHICommandListImmediate& RHICmdList, FMeshPassProcessorRenderState& DrawRenderState, const FCanvas* Canvas)
+#endif
 {
 	checkSlow(ViewFamily && MaterialSettings && MeshSettings && MaterialRenderProxy);
 	// current render target set for the canvas
@@ -57,20 +61,36 @@ bool FMeshMaterialRenderItem::Render_RenderThread(FRHICommandListImmediate& RHIC
 		LocalDrawRenderState.SetBlendState(TStaticBlendState<CW_RGBA>::GetRHI());
 		LocalDrawRenderState.SetDepthStencilState(TStaticDepthStencilState<false, CF_Always>::GetRHI());
 
+#if ENGINE_MAJOR_VERSION == 5
+		QueueMaterial(RenderContext, LocalDrawRenderState, &View);
+#else
 		QueueMaterial(RHICmdList, LocalDrawRenderState, &View);
+#endif
 	}
 
 	return true;
 }
 
+#if ENGINE_MAJOR_VERSION == 5
+bool FMeshMaterialRenderItem::Render_GameThread(const FCanvas* Canvas, FCanvasRenderThreadScope& RenderScope)
+#else
 bool FMeshMaterialRenderItem::Render_GameThread(const FCanvas* Canvas, FRenderThreadScope& RenderScope)
+#endif
 {
 	RenderScope.EnqueueRenderCommand(
+#if ENGINE_MAJOR_VERSION == 5
+		[this, Canvas](FCanvasRenderContext& RenderContext)
+#else
 		[this, Canvas](FRHICommandListImmediate& RHICmdList)
+#endif
 		{
 			// Render_RenderThread uses its own render state
 			FMeshPassProcessorRenderState DummyRenderState;
+#if ENGINE_MAJOR_VERSION == 5
+			Render_RenderThread(RenderContext, DummyRenderState, Canvas);
+#else
 			Render_RenderThread(RHICmdList, DummyRenderState, Canvas);
+#endif
 		}
 	);
 
@@ -106,7 +126,11 @@ FMeshMaterialRenderItem::~FMeshMaterialRenderItem()
 	);
 }
 
-void FMeshMaterialRenderItem::QueueMaterial(FRHICommandListImmediate& RHICmdList, FMeshPassProcessorRenderState& DrawRenderState, const FSceneView* View)
+#if ENGINE_MAJOR_VERSION == 5
+void FMeshMaterialRenderItem::QueueMaterial(FCanvasRenderContext& RenderContext, FMeshPassProcessorRenderState& DrawRenderState, const FSceneView* View)
+#else
+void FMeshMaterialRenderItem::QueueMaterial(FRHICommandListImmediate & RHICmdList, FMeshPassProcessorRenderState & DrawRenderState, const FSceneView * View)
+#endif
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FMeshMaterialRenderItem::QueueMaterial)
 
@@ -143,7 +167,11 @@ void FMeshMaterialRenderItem::QueueMaterial(FRHICommandListImmediate& RHICmdList
 	}
 
 	// Bake the material out to a tile
+#if ENGINE_MAJOR_VERSION == 5
+	GetRendererModule().DrawTileMesh(RenderContext, DrawRenderState, *View, MeshElement, false /*bIsHitTesting*/, FHitProxyId());
+#else
 	GetRendererModule().DrawTileMesh(RHICmdList, DrawRenderState, *View, MeshElement, false /*bIsHitTesting*/, FHitProxyId());
+#endif
 }
 
 void FMeshMaterialRenderItem::PopulateWithQuadData()
@@ -202,14 +230,22 @@ void FMeshMaterialRenderItem::PopulateWithMeshData()
 	// count number of texture coordinates for this mesh
 	const int32 NumTexcoords = [&]()
 	{
+#if ENGINE_MAJOR_VERSION == 5
+		return FMath::Min(VertexInstanceUVs.GetNumChannels(), VertexPositionStoredUVChannel);
+#else
 		return FMath::Min(VertexInstanceUVs.GetNumIndices(), VertexPositionStoredUVChannel);
+#endif
 	}();		
 
 	// check if we should use NewUVs or original UV set
 	const bool bUseNewUVs = MeshSettings->CustomTextureCoordinates.Num() > 0;
 	if (bUseNewUVs)
 	{
+#if ENGINE_MAJOR_VERSION == 5
+		check(MeshSettings->CustomTextureCoordinates.Num() == VertexInstanceUVs.GetNumElements() && VertexInstanceUVs.GetNumChannels() > MeshSettings->TextureCoordinateIndex);
+#else
 		check(MeshSettings->CustomTextureCoordinates.Num() == VertexInstanceUVs.GetNumElements() && VertexInstanceUVs.GetNumIndices() > MeshSettings->TextureCoordinateIndex);
+#endif
 	}
 
 	// add vertices
@@ -218,7 +254,11 @@ void FMeshMaterialRenderItem::PopulateWithMeshData()
 	for(const FPolygonID PolygonID : RawMesh->Polygons().GetElementIDs())
 	{
 		const FPolygonGroupID PolygonGroupID = RawMesh->GetPolygonPolygonGroup(PolygonID);
+#if ENGINE_MAJOR_VERSION == 5
+		TArrayView<const FTriangleID> TriangleIDs = RawMesh->GetPolygonTriangles(PolygonID);
+#else
 		const TArray<FTriangleID>& TriangleIDs = RawMesh->GetPolygonTriangleIDs(PolygonID);
+#endif
 		for (const FTriangleID& TriangleID : TriangleIDs)
 		{
 			if (MeshSettings->MaterialIndices.Contains(PolygonGroupID.GetValue()))

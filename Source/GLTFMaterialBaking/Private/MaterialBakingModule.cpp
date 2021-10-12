@@ -20,6 +20,14 @@
 #include "Misc/FileHelper.h"
 #endif
 
+#if ENGINE_MAJOR_VERSION == 5
+#define INDEX_BUFFER FBufferRHIRef
+#define VERTEX_BUFFER FBufferRHIRef
+#else
+#define INDEX_BUFFER FIndexBufferRHIRef
+#define VERTEX_BUFFER FVertexBufferRHIRef
+#endif
+
 IMPLEMENT_MODULE(FSKMaterialBakingModule, SKGLTFMaterialBaking);
 
 #define LOCTEXT_NAMESPACE "SKMaterialBakingModule"
@@ -53,8 +61,8 @@ namespace FSKMaterialBakingModuleImpl
 		// memory is first initialized.
 		const uint32 SmallestPooledBufferSize = 256*1024;
 
-		TArray<FIndexBufferRHIRef>  IndexBuffers;
-		TArray<FVertexBufferRHIRef> VertexBuffers;
+		TArray<INDEX_BUFFER>  IndexBuffers;
+		TArray<VERTEX_BUFFER> VertexBuffers;
 
 		template <typename RefType>
 		RefType GetSmallestFit(uint32 SizeInBytes, TArray<RefType>& Array)
@@ -82,12 +90,12 @@ namespace FSKMaterialBakingModuleImpl
 			return Ref;
 		}
 
-		virtual FIndexBufferRHIRef AllocIndexBuffer(uint32 NumElements) override
+		virtual INDEX_BUFFER AllocIndexBuffer(uint32 NumElements) override
 		{
 			uint32 BufferSize = GetIndexBufferSize(NumElements);
 			if (BufferSize > SmallestPooledBufferSize)
 			{
-				FIndexBufferRHIRef Ref = GetSmallestFit(GetIndexBufferSize(NumElements), IndexBuffers);
+				INDEX_BUFFER Ref = GetSmallestFit(GetIndexBufferSize(NumElements), IndexBuffers);
 				if (Ref.IsValid())
 				{
 					return Ref;
@@ -97,7 +105,7 @@ namespace FSKMaterialBakingModuleImpl
 			return FDynamicMeshBufferAllocator::AllocIndexBuffer(NumElements);
 		}
 
-		virtual void ReleaseIndexBuffer(FIndexBufferRHIRef& IndexBufferRHI) override
+		virtual void ReleaseIndexBuffer(INDEX_BUFFER& IndexBufferRHI) override
 		{
 			if (IndexBufferRHI->GetSize() > SmallestPooledBufferSize)
 			{
@@ -107,12 +115,12 @@ namespace FSKMaterialBakingModuleImpl
 			IndexBufferRHI = nullptr;
 		}
 
-		virtual FVertexBufferRHIRef AllocVertexBuffer(uint32 Stride, uint32 NumElements) override
+		virtual VERTEX_BUFFER AllocVertexBuffer(uint32 Stride, uint32 NumElements) override
 		{
 			uint32 BufferSize = GetVertexBufferSize(Stride, NumElements);
 			if (BufferSize > SmallestPooledBufferSize)
 			{
-				FVertexBufferRHIRef Ref = GetSmallestFit(BufferSize, VertexBuffers);
+				VERTEX_BUFFER Ref = GetSmallestFit(BufferSize, VertexBuffers);
 				if (Ref.IsValid())
 				{
 					return Ref;
@@ -122,7 +130,7 @@ namespace FSKMaterialBakingModuleImpl
 			return FDynamicMeshBufferAllocator::AllocVertexBuffer(Stride, NumElements);
 		}
 
-		virtual void ReleaseVertexBuffer(FVertexBufferRHIRef& VertexBufferRHI) override
+		virtual void ReleaseVertexBuffer(VERTEX_BUFFER& VertexBufferRHI) override
 		{
 			if (VertexBufferRHI->GetSize() > SmallestPooledBufferSize)
 			{
@@ -172,7 +180,12 @@ namespace FSKMaterialBakingModuleImpl
 			}
 
 			TRACE_CPUPROFILER_EVENT_SCOPE(RHICreateTexture2D)
+#if ENGINE_MAJOR_VERSION == 5
+			const TCHAR* DebugName = TEXT("TOTODEBUG");
+			FRHIResourceCreateInfo CreateInfo(DebugName);
+#else
 			FRHIResourceCreateInfo CreateInfo;
+#endif
 			return RHICreateTexture2D(Width, Height, Format, 1, 1, TexCreate_CPUReadback, CreateInfo);
 		}
 
@@ -377,7 +390,12 @@ void FSKMaterialBakingModule::BakeMaterials(const TArray<FMaterialDataEx*>& Mate
 			FRenderItemKey RenderItemKey(CurrentMeshSettings, PropertySizeIterator.Value());
 			if (RenderItems->Find(RenderItemKey) == nullptr)
 			{
+#if ENGINE_MAJOR_VERSION == 5
+				FMeshMaterialRenderItem* T = new FMeshMaterialRenderItem(PropertySizeIterator.Value(), CurrentMeshSettings, &MaterialBakingDynamicMeshBufferAllocator);
+				RenderItems->Add(RenderItemKey, T);
+#else
 				RenderItems->Add(RenderItemKey, new FMeshMaterialRenderItem(PropertySizeIterator.Value(), CurrentMeshSettings, &MaterialBakingDynamicMeshBufferAllocator));
+#endif
 			}
 		}
 

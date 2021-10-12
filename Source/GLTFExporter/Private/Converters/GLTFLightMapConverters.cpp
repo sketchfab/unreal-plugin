@@ -20,7 +20,11 @@ FGLTFJsonLightMapIndex FGLTFLightMapConverter::Convert(const UStaticMeshComponen
 		return FGLTFJsonLightMapIndex(INDEX_NONE);
 	}
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 	const int32 CoordinateIndex = StaticMesh->LightMapCoordinateIndex;
+#else
+	const int32 CoordinateIndex = StaticMesh->GetLightMapCoordinateIndex();
+#endif
 	const FStaticMeshLODResources& LODResources = StaticMesh->GetLODForExport(LODIndex);
 
 	if (CoordinateIndex < 0 || CoordinateIndex >= LODResources.GetNumTexCoords())

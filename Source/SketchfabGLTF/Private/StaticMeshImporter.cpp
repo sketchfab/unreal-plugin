@@ -221,7 +221,12 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 	else
 	{
 		ImportedMesh = GLTFUtils::FindOrCreateObject<UStaticMesh>(ImportContext.Parent, ImportContext.ObjectName, ImportContext.ImportObjectFlags);
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 		ImportedMesh->StaticMaterials.Empty();
+#else
+		ImportedMesh->GetStaticMaterials().Empty(); 
+#endif
+		
 		ImportContext.MaterialMap.Empty();
 	}
 
@@ -453,7 +458,11 @@ UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& Impor
 				ExistingMaterial = ImportContext.Materials[prim.material];
 			}
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 			int32 FinalIndex = ImportedMesh->StaticMaterials.AddUnique(ExistingMaterial ? ExistingMaterial : UMaterial::GetDefaultMaterial(MD_Surface));
+#else
+			int32 FinalIndex = ImportedMesh->GetStaticMaterials().AddUnique(ExistingMaterial ? ExistingMaterial : UMaterial::GetDefaultMaterial(MD_Surface));
+#endif
 			ImportedMesh->GetSectionInfoMap().Set(LODIndex, FinalIndex, FMeshSectionInfo(FinalIndex));
 			ImportedMesh->GetOriginalSectionInfoMap().Set(LODIndex, FinalIndex, ImportedMesh->GetSectionInfoMap().Get(LODIndex, FinalIndex));
 

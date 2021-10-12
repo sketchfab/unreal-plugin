@@ -6,7 +6,11 @@
 
 FGLTFIndexArray FGLTFMeshUtility::GetSectionIndices(const FStaticMeshLODResources& MeshLOD, int32 MaterialIndex)
 {
+#if ENGINE_MAJOR_VERSION == 5
+	const FStaticMeshSectionArray& Sections = MeshLOD.Sections;
+#else
 	const FStaticMeshLODResources::FStaticMeshSectionArray& Sections = MeshLOD.Sections;
+#endif
 
 	FGLTFIndexArray SectionIndices;
 	SectionIndices.Reserve(Sections.Num());
@@ -82,7 +86,11 @@ int32 FGLTFMeshUtility::GetMinimumLOD(const UStaticMesh* StaticMesh, const UStat
 
 	if (StaticMesh != nullptr)
 	{
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 		return GetValueForRunningPlatform<int32>(StaticMesh->MinLOD);
+#else
+		return GetValueForRunningPlatform<int32>(StaticMesh->GetMinLOD());
+#endif
 	}
 
 	return -1;
@@ -97,7 +105,11 @@ int32 FGLTFMeshUtility::GetMinimumLOD(const USkeletalMesh* SkeletalMesh, const U
 
 	if (SkeletalMesh != nullptr)
 	{
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 		return GetValueForRunningPlatform<int32>(SkeletalMesh->MinLod);
+#else
+		return GetValueForRunningPlatform<int32>(SkeletalMesh->GetMinLod());
+#endif
 	}
 
 	return -1;
@@ -106,6 +118,11 @@ int32 FGLTFMeshUtility::GetMinimumLOD(const USkeletalMesh* SkeletalMesh, const U
 template <typename ValueType, typename StructType>
 ValueType FGLTFMeshUtility::GetValueForRunningPlatform(const StructType& Properties)
 {
+#if ENGINE_MAJOR_VERSION == 5
+	const FDataDrivenPlatformInfo& PlatformInfo = GetTargetPlatformManagerRef().GetRunningTargetPlatform()->GetPlatformInfo();
+	return Properties.GetValueForPlatform(PlatformInfo.PlatformGroupName);
+#else
 	const PlatformInfo::FPlatformInfo& PlatformInfo = GetTargetPlatformManagerRef().GetRunningTargetPlatform()->GetPlatformInfo();
 	return Properties.GetValueForPlatformIdentifiers(PlatformInfo.PlatformGroupName, PlatformInfo.VanillaPlatformName);
+#endif
 }

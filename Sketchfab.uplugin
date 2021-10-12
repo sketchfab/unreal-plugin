@@ -17,12 +17,53 @@
 	"Modules" :
 	[
 		{
+			"Name" : "SKGLTFMaterialBaking",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name" : "SKGLTFMaterialAnalyzer",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name" : "SKGLTFExporterRuntime",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name" : "SKGLTFExporter",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
 			"Name" : "SketchfabGLTF",
 			"Type" : "Editor",
 			"LoadingPhase" : "Default",
 			"WhitelistPlatforms": [
 				"Win64",
-				"Win32"
+				"Linux",
+				"Mac"
 			]
 		},
 		{
@@ -31,7 +72,8 @@
 			"LoadingPhase": "Default",
 			"WhitelistPlatforms": [
 				"Win64",
-				"Win32"
+				"Linux",
+				"Mac"
 			]
 		},
 	],

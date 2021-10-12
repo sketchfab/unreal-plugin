@@ -7,7 +7,11 @@
 
 FGLTFJsonAnimationIndex FGLTFAnimationConverter::Convert(FGLTFJsonNodeIndex RootNode, const USkeletalMesh* SkeletalMesh, const UAnimSequence* AnimSequence)
 {
+#if ENGINE_MAJOR_VERSION == 5
+	if (AnimSequence->GetDataModel()->GetNumberOfKeys() < 0)
+#else
 	if (AnimSequence->GetRawNumberOfFrames() < 0)
+#endif
 	{
 		// TODO: report warning
 		return FGLTFJsonAnimationIndex(INDEX_NONE);
@@ -20,7 +24,11 @@ FGLTFJsonAnimationIndex FGLTFAnimationConverter::Convert(FGLTFJsonNodeIndex Root
 		return FGLTFJsonAnimationIndex(INDEX_NONE);
 	}
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 	if (Skeleton != SkeletalMesh->Skeleton)
+#else
+	if (Skeleton != SkeletalMesh->GetSkeleton())
+#endif
 	{
 		// TODO: report error
 		return FGLTFJsonAnimationIndex(INDEX_NONE);

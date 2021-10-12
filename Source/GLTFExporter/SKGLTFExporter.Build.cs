@@ -9,8 +9,11 @@ namespace UnrealBuildTool.Rules
 
 			PublicIncludePaths.AddRange(
 				new string[] {
-					"Private/"
+					"Editor/",
+					"Runtime/",
+					EngineDirectory + "/Shaders/Shared/"
 				}
+				
 			);
 
 			PrivateDependencyModuleNames.AddRange(
@@ -49,9 +52,19 @@ namespace UnrealBuildTool.Rules
 			PublicDependencyModuleNames.AddRange(
 				new string[]
 				{
-					"SKGLTFExporterRuntime"
+					"SKGLTFExporterRuntime",
+					"zlib"
 				}
-				);
-		}
+			);
+
+			if (Target.Platform == UnrealTargetPlatform.Linux)
+			{
+				PublicAdditionalLibraries.Add("/usr/lib/x86_64-linux-gnu/libminizip.so");
+			}
+			else if (Target.Platform == UnrealTargetPlatform.Mac)
+			{
+				PublicAdditionalLibraries.Add("/usr/local/lib/libminizip.dylib");
+			}
+        }
 	}
 }

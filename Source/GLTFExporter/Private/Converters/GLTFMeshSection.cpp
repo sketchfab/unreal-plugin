@@ -7,7 +7,11 @@
 
 FGLTFMeshSection::FGLTFMeshSection(const FStaticMeshLODResources* MeshLOD, const FGLTFIndexArray& SectionIndices)
 {
+#if ENGINE_MAJOR_VERSION == 5
+	const FStaticMeshSectionArray& Sections = MeshLOD->Sections;
+#else
 	const FStaticMeshLODResources::FStaticMeshSectionArray& Sections = MeshLOD->Sections;
+#endif
 
 	uint32 TotalIndexCount = 0;
 	for (int32 SectionIndex : SectionIndices)

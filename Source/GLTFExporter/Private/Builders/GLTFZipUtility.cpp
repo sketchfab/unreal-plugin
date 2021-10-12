@@ -7,8 +7,13 @@
 
 THIRD_PARTY_INCLUDES_START
 #include "ThirdParty/zlib/zlib-1.2.5/Inc/zlib.h"
+#if _WIN32 // Minizip is part of Windows UE zlib distribution
 #include "ThirdParty/zlib/zlib-1.2.5/Src/contrib/minizip/unzip.h"
 #include "ThirdParty/zlib/zlib-1.2.5/Src/contrib/minizip/zip.h"
+#elif __APPLE__ || __linux__ // linux and mac, use minizip headers we packaged
+#include "minizip/unzip.h"
+#include "minizip/zip.h"
+#endif
 THIRD_PARTY_INCLUDES_END
 
 TArray<FString> FGLTFZipUtility::GetAllFiles(const FString& ArchiveFile)
@@ -176,12 +181,9 @@ bool FGLTFZipUtility::ExtractCurrentFile(void* ZipHandle, const FString& TargetF
 
 int FGLTFZipUtility::CompressDirectory(const FString& ArchiveFile, const FString& TargetDirectory)
 {
-
 	// From https://stackoverflow.com/questions/11370908/how-do-i-use-minizip-on-zlib
-
-	//std::cout << ArchiveFile << "/" << TargetDirectory << std::endl;
-	std::string archive = std::string(TCHAR_TO_UTF8(*ArchiveFile));       //"C:\\Users\\loic\\Desktop\\lol.zip";
-	std::string fileToZip = std::string(TCHAR_TO_UTF8(*TargetDirectory)); //"C:\\Users\\loic\\Desktop\\matcap.png";
+	std::string archive = std::string(TCHAR_TO_UTF8(*ArchiveFile));
+	std::string fileToZip = std::string(TCHAR_TO_UTF8(*TargetDirectory));
 
 	zipFile zf = zipOpen64(archive.c_str(), APPEND_STATUS_CREATE);
 	if (zf == NULL)
@@ -199,10 +201,10 @@ int FGLTFZipUtility::CompressDirectory(const FString& ArchiveFile, const FString
 		std::vector<char> buffer(size);
 		if (size == 0 || file.read(&buffer[0], size))
 		{
-			zip_fileinfo zfi = { 0 };
+			zip_fileinfo zfi = {{ 0 }};
 			std::string fileName = fileToZip.substr(fileToZip.rfind('\\') + 1);
 
-			if (S_OK == zipOpenNewFileInZip(zf, std::string(fileName.begin(), fileName.end()).c_str(), &zfi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION))
+			if (0 == zipOpenNewFileInZip(zf, std::string(fileName.begin(), fileName.end()).c_str(), &zfi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION))
 			{
 				if (zipWriteInFileInZip(zf, size == 0 ? "" : &buffer[0], size))
 					_return = false;

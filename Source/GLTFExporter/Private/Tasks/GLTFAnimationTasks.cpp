@@ -18,8 +18,11 @@ using namespace UE;
 void FGLTFAnimSequenceTask::Complete()
 {
 	// TODO: bone transforms should be absolute (not relative) according to gltf spec
-
+#if ENGINE_MAJOR_VERSION == 5
+	const int32 FrameCount = AnimSequence->GetDataModel()->GetNumberOfKeys();
+#else
 	const int32 FrameCount = AnimSequence->GetRawNumberOfFrames();
+#endif
 	const USkeleton* Skeleton = AnimSequence->GetSkeleton();
 
 	FGLTFJsonAnimation& JsonAnimation = Builder.GetAnimation(AnimationIndex);
@@ -55,16 +58,25 @@ void FGLTFAnimSequenceTask::Complete()
 		// TODO: report warning (about unknown interpolation exported as linear)
 	}
 
-	const TArray<FName>& TrackNames = AnimSequence->GetAnimationTrackNames();
-	const int32 TrackCount = TrackNames.Num();
+#if ENGINE_MAJOR_VERSION == 5
+	const int32 TrackCount = AnimSequence->GetDataModel()->GetNumBoneTracks();
+#else
+	const int32 TrackCount = AnimSequence->GetAnimationTrackNames().Num();
+#endif
 
 	for (int32 TrackIndex = 0; TrackIndex < TrackCount; ++TrackIndex)
 	{
+#if ENGINE_MAJOR_VERSION == 5
+		const FBoneAnimationTrack& Track = AnimSequence->GetDataModel()->GetBoneTrackByIndex(TrackIndex);
+		const TArray<FVector>& KeyPositions = Track.InternalTrackData.PosKeys;
+		const TArray<FQuat>& KeyRotations = Track.InternalTrackData.RotKeys;
+		const TArray<FVector>& KeyScales = Track.InternalTrackData.ScaleKeys;
+#else
 		const FRawAnimSequenceTrack& Track = AnimSequence->GetRawAnimationTrack(TrackIndex);
-		const TArray<FVector>& KeyPositions = Track.PosKeys;
-		const TArray<FQuat>& KeyRotations = Track.RotKeys;
-		const TArray<FVector>& KeyScales = Track.ScaleKeys;
-
+		const TArray<FVector>&KeyPositions = Track.PosKeys;
+		const TArray<FQuat>&KeyRotations = Track.RotKeys;
+		const TArray<FVector>&KeyScales = Track.ScaleKeys;
+#endif
 		const int32 MaxKeys = FMath::Max3(KeyPositions.Num(), KeyRotations.Num(), KeyScales.Num());
 		if (MaxKeys == 0)
 		{
@@ -82,7 +94,12 @@ void FGLTFAnimSequenceTask::Complete()
 			KeyTransforms[Key] = { KeyRotation, KeyPosition, KeyScale };
 		}
 
+#if ENGINE_MAJOR_VERSION == 5
+		const int32 SkeletonBoneIndex = AnimSequence->GetDataModel()->GetBoneTrackByIndex(TrackIndex).BoneTreeIndex;
+#else
 		const int32 SkeletonBoneIndex = AnimSequence->GetSkeletonIndexFromRawDataTrackIndex(TrackIndex);
+#endif
+
 		const int32 BoneIndex = const_cast<USkeleton*>(Skeleton)->GetMeshBoneIndexFromSkeletonBoneIndex(SkeletalMesh, SkeletonBoneIndex);
 		const FGLTFJsonNodeIndex NodeIndex = Builder.GetOrAddNode(RootNode, SkeletalMesh, BoneIndex);
 

@@ -89,7 +89,9 @@ struct FGLTFJsonCamera
 	FGLTFJsonCamera()
 		: Type(ESKGLTFJsonCameraType::None)
 		, Orthographic()
+#if (ENGINE_MAJOR_VERSION == 5 || ENGINE_MINOR_VERSION <=27) && PLATFORM_WINDOWS
 		, Perspective()
+#endif
 	{
 	}
 

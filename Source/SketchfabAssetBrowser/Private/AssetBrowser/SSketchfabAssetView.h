@@ -114,10 +114,10 @@ struct FAssetViewAsset : public FAssetViewItem
 };
 
 /** A base class for all asset view items */
-class SAssetViewItem : public SCompoundWidget
+class SSKAssetViewItem : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS(SAssetViewItem)
+	SLATE_BEGIN_ARGS(SSKAssetViewItem)
 	{}
 
 	/** Data for the asset this item represents */
@@ -245,12 +245,12 @@ protected:
 };
 
 /** An item in the asset tile view */
-class SAssetTileItem : public SAssetViewItem
+class SSKAssetTileItem : public SSKAssetViewItem
 {
 	friend struct FAssetViewItemHelper;
 
 public:
-	SLATE_BEGIN_ARGS(SAssetTileItem)
+	SLATE_BEGIN_ARGS(SSKAssetTileItem)
 	{
 	}
 		/** The handle to the thumbnail this item should render */
@@ -275,7 +275,7 @@ public:
 	SLATE_END_ARGS()
 
 	/** Destructor */
-	~SAssetTileItem();
+	~SSKAssetTileItem();
 
 	void Construct(const FArguments& InArgs);
 
@@ -283,7 +283,7 @@ public:
 	virtual void OnAssetDataChanged() override;
 
 private:
-	/** SAssetViewItem interface */
+	/** SSKAssetViewItem interface */
 	virtual float GetNameTextWrapWidth() const override { return LastGeometry.GetLocalSize().X - 2.f; }
 
 	/** Returns the size of the thumbnail box widget */
@@ -603,7 +603,7 @@ public:
 struct FAssetViewItemHelper
 {
 public:
-	static TSharedRef<SWidget> CreateTileItemContents(SAssetTileItem* const InTileItem, const TSharedRef<SWidget>& InThumbnail, FName& OutItemShadowBorder);
+	static TSharedRef<SWidget> CreateTileItemContents(SSKAssetTileItem* const InTileItem, const TSharedRef<SWidget>& InThumbnail, FName& OutItemShadowBorder);
 
 private:
 	template <typename T>

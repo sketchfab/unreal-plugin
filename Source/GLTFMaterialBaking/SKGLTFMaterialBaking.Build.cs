@@ -31,5 +31,9 @@ public class SKGLTFMaterialBaking : ModuleRules
 
 		// NOTE: avoid renaming all instaces of SKMATERIALBAKING_API by redirecting it to SKGLTFMATERIALBAKING_API
 		PublicDefinitions.Add("SKMATERIALBAKING_API=SKGLTFMATERIALBAKING_API");
+
+        PublicIncludePaths.Add(EngineDirectory + "/Shaders/Shared/");
+        PrivateIncludePaths.Add(EngineDirectory + "/Shaders/Shared/");
+
     }
 }

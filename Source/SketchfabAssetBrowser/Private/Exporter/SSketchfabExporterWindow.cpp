@@ -9,6 +9,7 @@
 
 #include "AssetExportTask.h"
 #include "EditorLevelLibrary.h"
+#include "Editor/EditorEngine.h"
 
 //#include "ZipFileFunctionLibrary.h"
 
@@ -357,7 +358,7 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 	ZipPath = CacheFolder + "sketchfabExport.glb.zip";
 
 	// Get the Editor world to run the level exporter on
-	UWorld* CurrentWorld = UEditorLevelLibrary::GetEditorWorld();
+	UWorld* CurrentWorld = 	GEditor->GetEditorWorldContext().World();
 
 	// Prepare the GLTFExporter object and the file to export to
 	UExporter* Exporter = UExporter::FindExporter(CurrentWorld, TEXT("gltf"));

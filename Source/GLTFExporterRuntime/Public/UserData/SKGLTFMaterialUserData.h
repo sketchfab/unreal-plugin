@@ -3,11 +3,10 @@
 #pragma once
 
 #include "Engine/AssetUserData.h"
+#include "Engine/Texture.h"
 #include "SKGLTFMaterialUserData.generated.h"
 
 class UMaterialInterface;
-enum TextureFilter;
-enum TextureAddress;
 
 UENUM(BlueprintType)
 enum class ESKGLTFMaterialBakeMode : uint8

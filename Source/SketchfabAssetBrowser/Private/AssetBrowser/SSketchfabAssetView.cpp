@@ -272,12 +272,11 @@ TSharedRef<ITableRow> SSketchfabAssetView::MakeTileViewWidget(TSharedPtr<FAssetV
 
 	TSharedPtr< STableRow<TSharedPtr<FAssetViewItem>> > TableRowWidget;
 	SAssignNew(TableRowWidget, STableRow<TSharedPtr<FAssetViewItem>>, OwnerTable)
-		.Style(FEditorStyle::Get(), "ContentBrowser.AssetListView.TableRow")
 		.Cursor(bAllowDragging ? EMouseCursor::GrabHand : EMouseCursor::Default)
 		.OnDragDetected(this, &SSketchfabAssetView::OnDraggingAssetItem);
 
-	TSharedRef<SAssetTileItem> Item =
-		SNew(SAssetTileItem)
+	TSharedRef<SSKAssetTileItem> Item =
+		SNew(SSKAssetTileItem)
 		.AssetThumbnail(AssetThumbnail)
 		.AssetItem(AssetItem)
 		.ThumbnailPadding(TileViewThumbnailPadding)
@@ -884,17 +883,17 @@ TSharedPtr<FSketchfabAssetThumbnail> SSketchfabAssetView::AddItemToNewThumbnailR
 
 
 ///////////////////////////////
-// SAssetTileItem
+// SSKAssetTileItem
 ///////////////////////////////
 
-SAssetTileItem::~SAssetTileItem()
+SSKAssetTileItem::~SSKAssetTileItem()
 {
 	//FCoreUObjectDelegates::OnAssetLoaded.RemoveAll(this);
 }
 
-void SAssetTileItem::Construct( const FArguments& InArgs )
+void SSKAssetTileItem::Construct( const FArguments& InArgs )
 {
-	SAssetViewItem::Construct(SAssetViewItem::FArguments()
+	SSKAssetViewItem::Construct(SSKAssetViewItem::FArguments()
 		.AssetItem(InArgs._AssetItem)
 		/*
 		.OnRenameBegin(InArgs._OnRenameBegin)
@@ -947,7 +946,7 @@ void SAssetTileItem::Construct( const FArguments& InArgs )
 	ChildSlot
 	[
 		SNew(SBorder)
-		.BorderImage(this, &SAssetViewItem::GetBorderImage)
+		.BorderImage(this, &SSKAssetViewItem::GetBorderImage)
 		.Padding(0)
 		.AddMetaData<FTagMetaData>(FTagMetaData(AssetItem->GetType() == EAssetItemType::Normal ? StaticCastSharedPtr<FAssetViewAsset>(AssetItem)->Data.ModelUID : NAME_None))
 		[
@@ -961,8 +960,8 @@ void SAssetTileItem::Construct( const FArguments& InArgs )
 				// The remainder of the space is reserved for the name.
 				SNew(SBox)
 				.Padding(ThumbnailPadding - 4.f)
-				.WidthOverride(this, &SAssetTileItem::GetThumbnailBoxSize)
-				.HeightOverride( this, &SAssetTileItem::GetThumbnailBoxSize )
+				.WidthOverride(this, &SSKAssetTileItem::GetThumbnailBoxSize)
+				.HeightOverride( this, &SSKAssetTileItem::GetThumbnailBoxSize )
 				[
 					// Drop shadow border
 					SNew(SBorder)
@@ -989,21 +988,21 @@ void SAssetTileItem::Construct( const FArguments& InArgs )
 	];
 }
 
-void SAssetTileItem::OnAssetDataChanged()
+void SSKAssetTileItem::OnAssetDataChanged()
 {
 }
 
-FOptionalSize SAssetTileItem::GetThumbnailBoxSize() const
+FOptionalSize SSKAssetTileItem::GetThumbnailBoxSize() const
 {
 	return FOptionalSize(ItemWidth.Get());
 }
 
-FOptionalSize SAssetTileItem::GetSCCImageSize() const
+FOptionalSize SSKAssetTileItem::GetSCCImageSize() const
 {
 	return GetThumbnailBoxSize().Get() * 0.2;
 }
 
-FSlateFontInfo SAssetTileItem::GetThumbnailFont() const
+FSlateFontInfo SSKAssetTileItem::GetThumbnailFont() const
 {
 	FOptionalSize ThumbSize = GetThumbnailBoxSize();
 	if (ThumbSize.IsSet())
@@ -1030,7 +1029,7 @@ FSlateFontInfo SAssetTileItem::GetThumbnailFont() const
 // FAssetViewModeUtils
 ///////////////////////////////
 
-TSharedRef<SWidget> FAssetViewItemHelper::CreateTileItemContents(SAssetTileItem* const InTileItem, const TSharedRef<SWidget>& InThumbnail, FName& OutItemShadowBorder)
+TSharedRef<SWidget> FAssetViewItemHelper::CreateTileItemContents(SSKAssetTileItem* const InTileItem, const TSharedRef<SWidget>& InThumbnail, FName& OutItemShadowBorder)
 {
 	return CreateListTileItemContents(InTileItem, InThumbnail, OutItemShadowBorder);
 }

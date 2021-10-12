@@ -6405,7 +6405,7 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
 {
    int dispose; 
    int first_frame; 
-   int pi; 
+   int pi2; 
    int pcount; 
    STBI_NOTUSED(req_comp);
 
@@ -6435,16 +6435,16 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
       }
 
       if (dispose == 3) { // use previous graphic
-         for (pi = 0; pi < pcount; ++pi) {
-            if (g->history[pi]) {
-               memcpy( &g->out[pi * 4], &two_back[pi * 4], 4 ); 
+         for (pi2 = 0; pi2 < pcount; ++pi2) {
+            if (g->history[pi2]) {
+               memcpy( &g->out[pi2 * 4], &two_back[pi2 * 4], 4 ); 
             }
          }
       } else if (dispose == 2) { 
          // restore what was changed last frame to background before that frame; 
-         for (pi = 0; pi < pcount; ++pi) {
-            if (g->history[pi]) {
-               memcpy( &g->out[pi * 4], &g->background[pi * 4], 4 ); 
+         for (pi2 = 0; pi2 < pcount; ++pi2) {
+            if (g->history[pi2]) {
+               memcpy( &g->out[pi2 * 4], &g->background[pi2 * 4], 4 ); 
             }
          }
       } else {
@@ -6509,10 +6509,10 @@ static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, i
             pcount = g->w * g->h; 
             if (first_frame && (g->bgindex > 0)) {
                // if first frame, any pixel not drawn to gets the background color
-               for (pi = 0; pi < pcount; ++pi) {
-                  if (g->history[pi] == 0) {
+               for (pi2 = 0; pi2 < pcount; ++pi2) {
+                  if (g->history[pi2] == 0) {
                      g->pal[g->bgindex][3] = 255; // just in case it was made transparent, undo that; It will be reset next frame if need be; 
-                     memcpy( &g->out[pi * 4], &g->pal[g->bgindex], 4 ); 
+                     memcpy( &g->out[pi2 * 4], &g->pal[g->bgindex], 4 ); 
                   }
                }
             }

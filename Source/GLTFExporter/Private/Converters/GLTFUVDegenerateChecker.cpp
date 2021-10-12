@@ -20,7 +20,11 @@ void FGLTFUVDegenerateChecker::Sanitize(const FMeshDescription*& Description, FG
 
 	if (Description != nullptr)
 	{
+#if ENGINE_MAJOR_VERSION == 5
+		const int32 TexCoordCount = Description->VertexInstanceAttributes().GetAttributesRef<FVector2D>(MeshAttribute::VertexInstance::TextureCoordinate).GetNumChannels();
+#else
 		const int32 TexCoordCount = Description->VertexInstanceAttributes().GetAttributesRef<FVector2D>(MeshAttribute::VertexInstance::TextureCoordinate).GetNumIndices();
+#endif
 		if (TexCoord < 0 || TexCoord >= TexCoordCount)
 		{
 			Description = nullptr;
@@ -46,11 +50,20 @@ float FGLTFUVDegenerateChecker::Convert(const FMeshDescription* Description, FGL
 
 	for (const int32 SectionIndex : SectionIndices)
 	{
+#if ENGINE_MAJOR_VERSION == 5
+		for (const FPolygonID PolygonID : Description->GetPolygonGroupPolygonIDs(FPolygonGroupID(SectionIndex)))
+		{
+			for (const FTriangleID TriangleID : Description->GetPolygonTriangles(PolygonID))
+			{
+				TArrayView<const FVertexID> TriangleVertexIDs = Description->GetTriangleVertices(TriangleID);
+
+#else
 		for (const FPolygonID PolygonID : Description->GetPolygonGroupPolygons(FPolygonGroupID(SectionIndex)))
 		{
 			for (const FTriangleID TriangleID : Description->GetPolygonTriangleIDs(PolygonID))
 			{
 				const TStaticArray<FVertexID, 3> TriangleVertexIDs = Description->GetTriangleVertices(TriangleID);
+#endif
 				TArrayView<const FVertexInstanceID> TriangleVertexInstanceIDs = Description->GetTriangleVertexInstances(TriangleID);
 
 				TStaticArray<FVector, 3> TrianglePositions;

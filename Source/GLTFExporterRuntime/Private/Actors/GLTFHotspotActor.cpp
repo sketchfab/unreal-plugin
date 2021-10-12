@@ -50,7 +50,7 @@ ASKGLTFHotspotActor::ASKGLTFHotspotActor(const FObjectInitializer& ObjectInitial
 	DefaultToggledHoveredImage(nullptr),
 	ActiveImage(nullptr),
 	ActiveImageSize(0.0f, 0.0f),
-	bToggled(bToggled),
+	bToggled(false),
 	bIsInteractable(true),
 	RealtimeSecondsWhenLastInSight(0.0f),
 	RealtimeSecondsWhenLastHidden(0.0f)
@@ -438,12 +438,21 @@ void ASKGLTFHotspotActor::ValidateAnimation()
 	{
 		if (USkeletalMesh* SkeletalMesh = SkeletalMeshActor->GetSkeletalMeshComponent()->SkeletalMesh)
 		{
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 			if (SkeletalMesh->Skeleton != AnimationSequence->GetSkeleton())
 			{
 				if (SkeletalMesh->Skeleton != nullptr)
 				{
 					UE_LOG(LogGLTFHotspot, Warning, TEXT("Animation %s is incompatible with skeleton %s, removing animation from actor."), *AnimationSequence->GetName(), *SkeletalMesh->Skeleton->GetName());
 				}
+#else
+			if (SkeletalMesh->GetSkeleton() != AnimationSequence->GetSkeleton())
+			{
+				if (SkeletalMesh->GetSkeleton() != nullptr)
+				{
+					UE_LOG(LogGLTFHotspot, Warning, TEXT("Animation %s is incompatible with skeleton %s, removing animation from actor."), *AnimationSequence->GetName(), *SkeletalMesh->GetSkeleton()->GetName());
+				}
+#endif
 				else
 				{
 					UE_LOG(LogGLTFHotspot, Warning, TEXT("Animation %s is incompatible because mesh %s has no skeleton, removing animation from actor."), *AnimationSequence->GetName(), *SkeletalMesh->GetName());

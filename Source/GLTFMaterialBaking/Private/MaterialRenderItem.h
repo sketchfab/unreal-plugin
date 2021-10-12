@@ -6,6 +6,10 @@
 #include "MaterialRenderItemData.h"
 #include "DynamicMeshBuilder.h"
 
+#if (ENGINE_MAJOR_VERSION == 5)
+#include "CanvasRender.h"
+#endif
+
 class FSceneViewFamily;
 class FMaterialRenderProxy;
 class FSceneView;
@@ -50,19 +54,29 @@ class FMeshMaterialRenderItem : public FCanvasBaseRenderItem
 {
 public:
 	FMeshMaterialRenderItem(const FIntPoint& InTextureSize, const FMeshData* InMeshSettings, FDynamicMeshBufferAllocator* InDynamicMeshBufferAllocator = nullptr);
-	virtual ~FMeshMaterialRenderItem();
 
 	/** Begin FCanvasBaseRenderItem overrides */
-	virtual bool Render_RenderThread(FRHICommandListImmediate& RHICmdList, FMeshPassProcessorRenderState& DrawRenderState, const FCanvas* Canvas) final;
-	virtual bool Render_GameThread(const FCanvas* Canvas, FRenderThreadScope& RenderScope) final;
+#if ENGINE_MAJOR_VERSION == 5
+	bool Render_RenderThread(FCanvasRenderContext& RenderContext, FMeshPassProcessorRenderState& DrawRenderState, const FCanvas* Canvas) override;
+	bool Render_GameThread(const FCanvas* Canvas, FCanvasRenderThreadScope& RenderScope) override;
+	~FMeshMaterialRenderItem();
+#else
+	virtual bool Render_RenderThread(FRHICommandListImmediate & RHICmdList, FMeshPassProcessorRenderState & DrawRenderState, const FCanvas * Canvas) final;
+	virtual bool Render_GameThread(const FCanvas * Canvas, FRenderThreadScope & RenderScope) final;
+	virtual ~FMeshMaterialRenderItem();
+#endif
 	/** End FCanvasBaseRenderItem overrides */
 
 	/** Populate vertices and indices according to available mesh data and otherwise uses simple quad */
 	void GenerateRenderData();
 protected:
 	/** Enqueues the current material to be rendered */
+#if ENGINE_MAJOR_VERSION == 5
+	void QueueMaterial(FCanvasRenderContext& RenderContext, FMeshPassProcessorRenderState& DrawRenderState, const FSceneView* View);
+#else
 	void QueueMaterial(FRHICommandListImmediate& RHICmdList, FMeshPassProcessorRenderState& DrawRenderState, const FSceneView* View);
-	
+#endif
+
 	/** Helper functions to populate render data using either mesh data or a simple quad */
 	void PopulateWithQuadData();
 	void PopulateWithMeshData();

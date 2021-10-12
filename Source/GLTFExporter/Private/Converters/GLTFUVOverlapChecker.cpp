@@ -13,7 +13,11 @@ void FGLTFUVOverlapChecker::Sanitize(const FMeshDescription*& Description, FGLTF
 	{
 		const TVertexInstanceAttributesConstRef<FVector2D> VertexInstanceUVs =
 			Description->VertexInstanceAttributes().GetAttributesRef<FVector2D>(MeshAttribute::VertexInstance::TextureCoordinate);
+#if ENGINE_MAJOR_VERSION == 5
+		const int32 TexCoordCount = VertexInstanceUVs.GetNumChannels();
+#else
 		const int32 TexCoordCount = VertexInstanceUVs.GetNumIndices();
+#endif
 
 		if (TexCoord < 0 || TexCoord >= TexCoordCount)
 		{

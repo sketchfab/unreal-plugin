@@ -24,7 +24,11 @@ FGLTFMeshData::FGLTFMeshData(const UStaticMesh* StaticMesh, const UStaticMeshCom
 	}
 
 	const int32 NumTexCoords = StaticMesh->GetLODForExport(LODIndex).VertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords();
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 	TexCoord = FMath::Min(StaticMesh->LightMapCoordinateIndex, NumTexCoords - 1);
+#else
+	TexCoord = FMath::Min(StaticMesh->GetLightMapCoordinateIndex(), NumTexCoords - 1);
+#endif
 
 	// TODO: add warning if texture coordinate has overlap
 }

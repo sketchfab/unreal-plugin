@@ -237,12 +237,20 @@ FGLTFJsonNodeIndex FGLTFSkeletalSocketConverter::Convert(FGLTFJsonNodeIndex Root
 		Node.Rotation = FGLTFConverterUtility::ConvertRotation(Socket->RelativeRotation.Quaternion());
 		Node.Scale = FGLTFConverterUtility::ConvertScale(Socket->RelativeScale);
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 		const int32 ParentBone = SkeletalMesh->RefSkeleton.FindBoneIndex(Socket->BoneName);
+#else
+		const int32 ParentBone = SkeletalMesh->GetRefSkeleton().FindBoneIndex(Socket->BoneName);
+#endif
 		const FGLTFJsonNodeIndex ParentNode = ParentBone != INDEX_NONE ? Builder.GetOrAddNode(RootNode, SkeletalMesh, ParentBone) : RootNode;
 		return Builder.AddChildNode(ParentNode, Node);
 	}
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 	const int32 BoneIndex = SkeletalMesh->RefSkeleton.FindBoneIndex(SocketName);
+#else
+	const int32 BoneIndex = SkeletalMesh->GetRefSkeleton().FindBoneIndex(SocketName);
+#endif
 	if (BoneIndex != INDEX_NONE)
 	{
 		return Builder.GetOrAddNode(RootNode, SkeletalMesh, BoneIndex);
@@ -256,7 +264,11 @@ FGLTFJsonNodeIndex FGLTFSkeletalBoneConverter::Convert(FGLTFJsonNodeIndex RootNo
 {
 	// TODO: add support for MasterPoseComponent?
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 	const TArray<FMeshBoneInfo>& BoneInfos = SkeletalMesh->RefSkeleton.GetRefBoneInfo();
+#else
+	const TArray<FMeshBoneInfo>& BoneInfos = SkeletalMesh->GetRefSkeleton().GetRefBoneInfo();
+#endif
 	if (!BoneInfos.IsValidIndex(BoneIndex))
 	{
 		// TODO: report error
@@ -268,7 +280,11 @@ FGLTFJsonNodeIndex FGLTFSkeletalBoneConverter::Convert(FGLTFJsonNodeIndex RootNo
 	FGLTFJsonNode Node;
 	Node.Name = BoneInfo.Name.ToString();
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
 	const TArray<FTransform>& BonePoses = SkeletalMesh->RefSkeleton.GetRefBonePose();
+#else
+	const TArray<FTransform>& BonePoses = SkeletalMesh->GetRefSkeleton().GetRefBonePose();
+#endif
 	if (BonePoses.IsValidIndex(BoneIndex))
 	{
 		// TODO: add warning check for non-uniform scaling

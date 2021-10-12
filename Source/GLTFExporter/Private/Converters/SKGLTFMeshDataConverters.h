@@ -17,7 +17,7 @@ class TGLTFMeshDataConverter final : public TGLTFConverter<const FGLTFMeshData*,
 
 		if (MeshComponent != nullptr)
 		{
-			Output->Parent = GetOrAdd(Mesh, nullptr, LODIndex);
+			Output->Parent = this->GetOrAdd(Mesh, nullptr, LODIndex);
 		}
 
 		return Outputs.Add_GetRef(MoveTemp(Output)).Get();

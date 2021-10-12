@@ -14,6 +14,18 @@ namespace UnrealBuildTool.Rules
 				}
                 );
 
+			PublicIncludePaths.AddRange(
+				new string[] {
+					"Editor/",
+					"Runtime/",
+					EngineDirectory + "/Shaders/Shared/"
+				}
+
+			);
+
+			PublicIncludePaths.Add(EngineDirectory + "/Shaders/Shared/");
+			PrivateIncludePaths.Add(EngineDirectory + "/Shaders/Shared/");
+
 			PrivateIncludePaths.AddRange(
 				new string[] {
                     "SketchfabGLTF/Private",

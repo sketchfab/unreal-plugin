@@ -250,7 +250,7 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 
 			MeshName = ObjectTools::SanitizeObjectName(MeshName);
 
-			NewPackageName = PackageTools::SanitizePackageName(FinalPackagePathName / MeshName);
+			NewPackageName = UPackageTools::SanitizePackageName(FinalPackagePathName / MeshName);
 
 			// Once we've already imported it we dont need to import it again
 			if (!ImportContext.PathToImportAssetMap.Contains(NewPackageName))
@@ -310,7 +310,7 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 
 		FString FinalPackagePathName = ContentDirectoryLocation;
 		FString MeshName = ObjectTools::SanitizeObjectName(ImportContext.ObjectName);
-		FString NewPackageName = PackageTools::SanitizePackageName(FinalPackagePathName / MeshName);
+		FString NewPackageName = UPackageTools::SanitizePackageName(FinalPackagePathName / MeshName);
 
 		FAssetRegistryModule::AssetCreated(singleStaticMesh);
 		singleStaticMesh->MarkPackageDirty();
@@ -428,7 +428,7 @@ UTexture* USKGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tiny
 
 	// set where to place the textures
 	FString BasePackageName = FPackageName::GetLongPackagePath(ImportContext.Parent->GetOutermost()->GetName()) / TextureName;
-	BasePackageName = PackageTools::SanitizePackageName(BasePackageName);
+	BasePackageName = UPackageTools::SanitizePackageName(BasePackageName);
 
 	UTexture* ExistingTexture = NULL;
 	UPackage* TexturePackage = NULL;
@@ -599,7 +599,7 @@ void USKGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, ti
 	}
 
 	FString MaterialFullName = ObjectTools::SanitizeObjectName(GLTFToUnreal::ConvertString(Mat->name));
-	FString BasePackageName = PackageTools::SanitizePackageName(FPackageName::GetLongPackagePath(ImportContext.Parent->GetOutermost()->GetName()) / MaterialFullName);
+	FString BasePackageName = UPackageTools::SanitizePackageName(FPackageName::GetLongPackagePath(ImportContext.Parent->GetOutermost()->GetName()) / MaterialFullName);
 
 	//This ensures that if the object name is the same as the material name, then the package for the material will be different.
 	BasePackageName = BasePackageName + TEXT(".") + MaterialFullName;
@@ -1279,7 +1279,7 @@ bool USKGLTFImporter::CreateAndLinkExpressionForMaterialProperty(
 	// Find the image and add it to the material
 	if (texture.Type() || textureInfo.index!=-1 || normalTextureInfo.index!=-1 || occlusionTextureInfo.index != -1)
 	{
-		float scaleValue, strengthValue;
+		float scaleValue=1.0, strengthValue=1.0;
 		int32 texCoordValue, textureIndex;
 		if (textureInfo.index != -1) {
 			scaleValue = 1.0;
