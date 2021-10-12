@@ -46,6 +46,8 @@
 #include "EditorFramework/AssetImportData.h"
 #include "RawMesh.h"
 
+#include "Modules/ModuleManager.h"
+#include "SketchfabAssetBrowser/Public/ISketchfabAssetBrowserModule.h"
 
 #define LOCTEXT_NAMESPACE "GLTFImportPlugin"
 
@@ -77,42 +79,55 @@ public:
 		Window = InArgs._WidgetWindow;
 		bShouldImport = false;
 
+		FString LicenseInfo = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser").LicenseInfo;
+		FText LicenseText = FText::FromString(LicenseInfo);
+
 		TSharedPtr<SBox> DetailsViewBox;
 		ChildSlot
-			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot()
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(2)
 			[
 				SAssignNew(DetailsViewBox, SBox)
 				.MaxDesiredHeight(450.0f)
-			.MinDesiredWidth(550.0f)
+				.MinDesiredWidth(550.0f)
 			]
-		+ SVerticalBox::Slot()
+
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(2)
+			[
+				SNew(STextBlock)
+				.Text(LicenseText)
+			]
+
+			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.HAlign(HAlign_Right)
 			.Padding(2)
 			[
 				SNew(SUniformGridPanel)
 				.SlotPadding(2)
-			+ SUniformGridPanel::Slot(0, 0)
-			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-			.Text(LOCTEXT("GLTFOptionWindow_Import", "Import"))
-			.OnClicked(this, &SGLTFOptionsWindow::OnImport)
+
+				+ SUniformGridPanel::Slot(0, 0)
+				[
+					SNew(SButton)
+					.HAlign(HAlign_Center)
+					.Text(LOCTEXT("GLTFOptionWindow_Import", "Import"))
+					.OnClicked(this, &SGLTFOptionsWindow::OnImport)
+				]
+				+ SUniformGridPanel::Slot(1, 0)
+				[
+					SNew(SButton)
+					.HAlign(HAlign_Center)
+					.Text(LOCTEXT("GLTFOptionWindow_Cancel", "Cancel"))
+					.ToolTipText(LOCTEXT("GLTFOptionWindow_Cancel_ToolTip", "Cancels importing this GLTF file"))
+					.OnClicked(this, &SGLTFOptionsWindow::OnCancel)
+				]
 			]
-		+ SUniformGridPanel::Slot(1, 0)
-			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-			.Text(LOCTEXT("GLTFOptionWindow_Cancel", "Cancel"))
-			.ToolTipText(LOCTEXT("GLTFOptionWindow_Cancel_ToolTip", "Cancels importing this GLTF file"))
-			.OnClicked(this, &SGLTFOptionsWindow::OnCancel)
-			]
-			]
-			];
+		];
 
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 		FDetailsViewArgs DetailsViewArgs;

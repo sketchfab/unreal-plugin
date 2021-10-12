@@ -43,17 +43,18 @@ class USKGLTFImportOptions_SKETCHFAB : public UObject
 	GENERATED_UCLASS_BODY()
 public:
 	/** Defines what should happen with existing actors */
-	UPROPERTY(config, EditAnywhere, Category=Mesh)
+	//UPROPERTY(config, EditAnywhere, Category=Mesh)
 	ESKGLTFMeshImportType MeshImportType;
 
 	/**
 	 * If checked, To enforce unique asset paths, all assets will be created in directories that match with their mesh path
 	 * e.g a GLTF node /scene/node/mymesh will generate the path in the game directory "/Game/myassets/" with a mesh asset called "mymesh" within that path.
+	 * Can be useful for debugging purposes or tweaking individual meshes
 	 */
 	UPROPERTY(config, EditAnywhere, Category=Mesh)
 	bool bGenerateUniquePathPerMesh;
 
-	//UPROPERTY(config, EditAnywhere, Category=Mesh)
+	UPROPERTY(config, EditAnywhere, Category=Mesh)
 	bool bApplyWorldTransformToGeometry;
 
 	UPROPERTY(config, EditAnywhere, Category = Mesh)

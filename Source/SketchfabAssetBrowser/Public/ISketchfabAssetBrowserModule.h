@@ -20,5 +20,6 @@ public:
 
 	virtual class USketchfabAssetBrowser *GetAssetBrowser() = 0;
 	virtual class USketchfabExporter     *GetExporter() = 0;
+	FString LicenseInfo;
 };
 

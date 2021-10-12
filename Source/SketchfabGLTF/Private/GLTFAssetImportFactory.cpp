@@ -42,10 +42,7 @@ UObject* USKGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* 
 
 	USKGLTFImporter* GLTFImporter = IGLTFImporterModule::Get().GetImporter();
 
-	// For now we won't show the import options and just import the full mesh each time
-	// When we require more options that are useful then show this dialog and also add new parameters to it.
-	//if (IsAutomatedImport() || GLTFImporter->ShowImportOptions(*ImportOptions))
-	if (1)
+	if (IsAutomatedImport() || GLTFImporter->ShowImportOptions(*ImportOptions))
 	{
 		bool deleteZippedData = false;
 		FString gltfFile = Filename;

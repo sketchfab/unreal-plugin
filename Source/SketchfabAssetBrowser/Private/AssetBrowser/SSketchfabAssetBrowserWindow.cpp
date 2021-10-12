@@ -1358,16 +1358,12 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 			return true;
 		}
 
-		TSharedPtr<SPopUpWindow> popup = CreatePopUp
-		(
-			"License Acceptance",
-			"You must accept the following license before using this model",
-			"License Information\n" + DragDropOp->DraggedAssets[0].LicenceType + "\n" + DragDropOp->DraggedAssets[0].LicenceInfo,
-			"Accept",
-			"Cancel"
-		);
-		if (popup->Confirmed() && PayLoad.PackagePaths.Num() > 0)
+		if (PayLoad.PackagePaths.Num() > 0)
 		{
+			ISketchfabAssetBrowserModule& gltfModule = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser");
+			gltfModule.LicenseInfo = "By importing this model, you agree to the terms of the following license:\n"
+				+ DragDropOp->DraggedAssets[0].LicenceType + "\n" + DragDropOp->DraggedAssets[0].LicenceInfo;
+
 			TArray<FString> Assets;
 			Assets.Add(DragDropOp->DraggedAssetPaths[0]);
 
