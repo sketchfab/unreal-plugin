@@ -312,77 +312,85 @@ void GetThumnailData(TSharedPtr<FJsonObject> JsonObject, int32 size, FString &th
 
 void FSketchfabTask::Check_Latest_Version_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	DebugHttpRequestCounter.Decrement();
-	if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+	if(Response)
 	{
-		if (this == nullptr)
+		DebugHttpRequestCounter.Decrement();
+		if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
 		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destoryed"));
-			SetState(SRS_FAILED);
-			return;
-		}
+			if (this == nullptr)
+			{
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("Object has already been destroyed"));
+				SetState(SRS_FAILED);
+				return;
+			}
 
-		FString data = Response->GetContentAsString();
-		if (data.IsEmpty())
-		{
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("CheckLatestVersion_Response content was empty"));
-			SetState(SRS_FAILED);
+			FString data = Response->GetContentAsString();
+			if (data.IsEmpty())
+			{
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("CheckLatestVersion_Response content was empty"));
+				SetState(SRS_FAILED);
+			}
+			else
+			{
+				//Create a pointer to hold the json serialized data
+				TArray<TSharedPtr<FJsonValue>> results;
+
+				//Create a reader pointer to read the json data
+				TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+
+				//Deserialize the json data given Reader and the actual object to deserialize
+				int separatorIndex = -1;
+				if (FJsonSerializer::Deserialize(Reader, results))
+				{
+					FEngineVersion currentEngineVersion = FEngineVersion::Current();
+					uint16 major = currentEngineVersion.GetMajor();
+					uint16 minor = currentEngineVersion.GetMinor();
+
+					FString ueVersion = FString::FromInt(major) + FString(".") + FString::FromInt(minor);
+
+					for (int r = 0; r < results.Num(); r++)
+					{
+						TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
+						FString release_tag = resultObj->GetStringField("tag_name");
+
+						// Filter version and check if good Unreal engine version (4.##)
+						// Plugin tag is in for {ue4Version}.{pluginVersion} like 4.19-1.1.
+						if (release_tag.FindChar('-', separatorIndex))
+						{
+							FString pluginUeVersion = release_tag.Left(separatorIndex);
+							FString pluginVersion = release_tag.Right(release_tag.Len() - separatorIndex - 1);
+							if (pluginUeVersion.Compare(ueVersion) == 0)
+							{
+								TaskData.LatestPluginVersion = pluginVersion;
+								break;
+							}
+						}
+						else
+						{
+							UE_LOG(LogSketchfabRESTClient, Display, TEXT("Failed to retrieve latest plugin version"));
+						}
+					}
+				}
+
+				if (!this->IsCompleted &&  OnCheckLatestVersion().IsBound())
+				{
+					OnCheckLatestVersion().Execute(*this);
+				}
+
+				SetState(SRS_CHECK_LATEST_VERSION_DONE);
+				return;
+			}
 		}
 		else
 		{
-			//Create a pointer to hold the json serialized data
-			TArray<TSharedPtr<FJsonValue>> results;
-
-			//Create a reader pointer to read the json data
-			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-
-			//Deserialize the json data given Reader and the actual object to deserialize
-			int separatorIndex = -1;
-			if (FJsonSerializer::Deserialize(Reader, results))
-			{
-				FEngineVersion currentEngineVersion = FEngineVersion::Current();
-				uint16 major = currentEngineVersion.GetMajor();
-				uint16 minor = currentEngineVersion.GetMinor();
-
-				FString ueVersion = FString::FromInt(major) + FString(".") + FString::FromInt(minor);
-
-				for (int r = 0; r < results.Num(); r++)
-				{
-					TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
-					FString release_tag = resultObj->GetStringField("tag_name");
-
-					// Filter version and check if good Unreal engine version (4.##)
-					// Plugin tag is in for {ue4Version}.{pluginVersion} like 4.19-1.1.
-					if (release_tag.FindChar('-', separatorIndex))
-					{
-						FString pluginUeVersion = release_tag.Left(separatorIndex);
-						FString pluginVersion = release_tag.Right(release_tag.Len() - separatorIndex - 1);
-						if (pluginUeVersion.Compare(ueVersion) == 0)
-						{
-							TaskData.LatestPluginVersion = pluginVersion;
-							break;
-						}
-					}
-					else
-					{
-						UE_LOG(LogSketchfabRESTClient, Display, TEXT("Failed to retrieve latest plugin version"));
-					}
-				}
-			}
-
-			if (!this->IsCompleted &&  OnCheckLatestVersion().IsBound())
-			{
-				OnCheckLatestVersion().Execute(*this);
-			}
-
-			SetState(SRS_CHECK_LATEST_VERSION_DONE);
-			return;
+			SetState(SRS_FAILED);
+			UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
 		}
 	}
 	else
 	{
-		SetState(SRS_FAILED);
-		UE_CLOG(bEnableDebugLogging, LogSketchfabRESTClient, VeryVerbose, TEXT("Response failed %s Code %d"), *Request->GetURL(), Response->GetResponseCode());
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Invalid responde while checking plugin version, check your internet connection"));
+		SetState(SRS_FAILED);	
 	}
 }
 
