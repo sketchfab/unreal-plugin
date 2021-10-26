@@ -75,7 +75,8 @@ UObject* USKGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* 
 		{
 			ImportContext.Init(InParent, InName.ToString(), FPaths::GetPath(gltfFile), Model);
 			ImportContext.ImportOptions = ImportOptions;
-			ImportContext.bApplyWorldTransformToGeometry = ImportOptions->bApplyWorldTransformToGeometry;
+			ImportContext.bApplyWorldTransform = ImportOptions->bApplyWorldTransform;
+			ImportContext.bImportInNewFolder = ImportOptions->bImportInNewFolder;
 
 			if (ImportOptions->bImportMaterials)
 			{

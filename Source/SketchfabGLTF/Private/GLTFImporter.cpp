@@ -206,15 +206,15 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 
 	ImportContext.PathToImportAssetMap.Reserve(PrimsToImport.Num());
 
-	const FString& ContentDirectoryLocation = ImportContext.ImportPathName;
-
-	bool singleMesh = !ImportContext.ImportOptions->bGenerateUniquePathPerMesh;
+	bool singleMesh = ImportContext.ImportOptions->bMergeMeshes || (PrimsToImport.Num() == 1);
 	UStaticMesh* singleStaticMesh = nullptr;
 
+	FString FinalPackagePathName = ImportContext.GetImportPath();
+
 	FRawMesh RawTriangles;
+	bool UseRootName = true;
 	for (const FGLTFPrimToImport& PrimToImport : PrimsToImport)
 	{
-		FString FinalPackagePathName = ContentDirectoryLocation;
 		SlowTask.EnterProgressFrame(1.0f / PrimsToImport.Num(), FText::Format(LOCTEXT("ImportingGLTFMesh", "Importing Mesh {0} of {1}"), MeshCount + 1, PrimsToImport.Num()));
 
 		FString NewPackageName;
@@ -222,7 +222,7 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 		bool bShouldImport = false;
 
 		// when importing only one mesh we just use the existing package and name created
-		if (PrimsToImport.Num() > 1 || ImportContext.ImportOptions->bGenerateUniquePathPerMesh)
+		if (PrimsToImport.Num() > 1 || !singleMesh)
 		{
 			FString RawPrimName = GLTFToUnreal::ConvertString(PrimToImport.Prim->name);
 			if (RawPrimName == "")
@@ -231,8 +231,13 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 			}
 
 			FString MeshName = RawPrimName;
+			if (UseRootName && singleMesh)
+			{
+				UseRootName = false;
+				MeshName = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser").CurrentModelName;
+			}
 
-			if (!ImportContext.ImportOptions->bGenerateUniquePathPerMesh)
+			if (singleMesh)
 			{
 				// Make unique names
 				int* ExistingCount = ExistingNamesToCount.Find(MeshName);
@@ -271,6 +276,19 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 			bShouldImport = true;
 		}
 
+		if (singleMesh || PrimsToImport.Num() == 1)
+		{
+			FString MeshName = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser").CurrentModelName;
+			NewPackageName = UPackageTools::SanitizePackageName(FinalPackagePathName / MeshName);
+			if (!ImportContext.PathToImportAssetMap.Contains(NewPackageName))
+			{
+				UPackage* Package = CreatePackage(*NewPackageName);
+				Package->FullyLoad();
+				ImportContext.Parent = Package;
+			}	
+			ImportContext.ObjectName = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser").CurrentModelName;
+		}
+
 		if (bShouldImport)
 		{
 			if (!singleMesh)
@@ -307,9 +325,7 @@ UObject* USKGLTFImporter::ImportMeshes(FGLTFImportContext& ImportContext, const 
 	if (singleStaticMesh && singleMesh)
 	{
 		FGLTFStaticMeshImporter::commitRawMesh(singleStaticMesh, RawTriangles);
-
-		FString FinalPackagePathName = ContentDirectoryLocation;
-		FString MeshName = ObjectTools::SanitizeObjectName(ImportContext.ObjectName);
+		FString MeshName = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser").CurrentModelName;
 		FString NewPackageName = UPackageTools::SanitizePackageName(FinalPackagePathName / MeshName);
 
 		FAssetRegistryModule::AssetCreated(singleStaticMesh);
@@ -427,7 +443,7 @@ UTexture* USKGLTFImporter::ImportTexture(FGLTFImportContext& ImportContext, tiny
 	TextureName = ObjectTools::SanitizeObjectName(TextureName);
 
 	// set where to place the textures
-	FString BasePackageName = FPackageName::GetLongPackagePath(ImportContext.Parent->GetOutermost()->GetName()) / TextureName;
+	FString BasePackageName = ImportContext.GetImportPath() / TextureName;
 	BasePackageName = UPackageTools::SanitizePackageName(BasePackageName);
 
 	UTexture* ExistingTexture = NULL;
@@ -599,7 +615,7 @@ void USKGLTFImporter::CreateUnrealMaterial(FGLTFImportContext& ImportContext, ti
 	}
 
 	FString MaterialFullName = ObjectTools::SanitizeObjectName(GLTFToUnreal::ConvertString(Mat->name));
-	FString BasePackageName = UPackageTools::SanitizePackageName(FPackageName::GetLongPackagePath(ImportContext.Parent->GetOutermost()->GetName()) / MaterialFullName);
+	FString BasePackageName = UPackageTools::SanitizePackageName(ImportContext.GetImportPath() / MaterialFullName);
 
 	//This ensures that if the object name is the same as the material name, then the package for the material will be different.
 	BasePackageName = BasePackageName + TEXT(".") + MaterialFullName;
@@ -1527,7 +1543,7 @@ void FGLTFImportContext::Init(UObject* InParent, const FString& InName, const FS
 		));
 
 	Model = InModel;
-	bApplyWorldTransformToGeometry = true;
+	bApplyWorldTransform = true;
 
 	// In some cases, we need to stop parsing tangents and normals
 	disableTangents = false;
@@ -1568,6 +1584,19 @@ void FGLTFImportContext::DisplayErrorMessages(bool bAutomated)
 void FGLTFImportContext::ClearErrorMessages()
 {
 	TokenizedErrorMessages.Empty();
+}
+
+FString FGLTFImportContext::GetImportPath(FString DirectoryName)
+{
+	FString ModelName = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser").CurrentModelName;
+	FString PackagePathName = ImportPathName;
+	if (bImportInNewFolder && !ModelName.IsEmpty())
+	{
+		PackagePathName += "/" + ModelName;
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		AssetRegistryModule.Get().AddPath(PackagePathName);
+	}
+	return PackagePathName;
 }
 
 #undef LOCTEXT_NAMESPACE

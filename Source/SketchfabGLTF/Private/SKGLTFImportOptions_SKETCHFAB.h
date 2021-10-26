@@ -25,18 +25,26 @@ public:
 	ESKGLTFMeshImportType MeshImportType;
 
 	/**
-	 * If checked, To enforce unique asset paths, all assets will be created in directories that match with their mesh path
+	 * If unchecked, to enforce unique asset paths, all assets will be created in directories that match with their mesh path
 	 * e.g a GLTF node /scene/node/mymesh will generate the path in the game directory "/Game/myassets/" with a mesh asset called "mymesh" within that path.
 	 * Can be useful for debugging purposes or tweaking individual meshes
 	 */
 	UPROPERTY(config, EditAnywhere, Category=Mesh)
-	bool bGenerateUniquePathPerMesh;
+	bool bMergeMeshes;
 
+	/*
+	* Uncheck to ignore mesh transformations (translation, rotation and scale) upon import
+	* Can be useful to use mesh primitives individually or import assets packs for isntance
+	*/
 	UPROPERTY(config, EditAnywhere, Category=Mesh)
-	bool bApplyWorldTransformToGeometry;
+	bool bApplyWorldTransform;
 
 	UPROPERTY(config, EditAnywhere, Category = Mesh)
 	bool bImportMaterials;
+
+	/** If checked, static meshes, materials and textures will be imported into a new folder */
+	UPROPERTY(config, EditAnywhere, Category = Mesh)
+	bool bImportInNewFolder;
 
 	//UPROPERTY(config, EditAnywhere, Category = Mesh)
 	//bool bImportTextures;

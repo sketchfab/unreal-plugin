@@ -7,8 +7,10 @@ USKGLTFImportOptions_SKETCHFAB::USKGLTFImportOptions_SKETCHFAB(const FObjectInit
 	: Super(ObjectInitializer)
 {
 	MeshImportType = ESKGLTFMeshImportType::StaticMesh;
-	bApplyWorldTransformToGeometry = true;
+	bApplyWorldTransform = true;
 	bImportMaterials = true;
+	bMergeMeshes = true;
+	bImportInNewFolder = false;
 }
 
 void USKGLTFImportOptions_SKETCHFAB::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
@@ -27,9 +29,10 @@ USKGLTFSceneImportOptions::USKGLTFSceneImportOptions(const FObjectInitializer& O
 	bFlattenHierarchy = true;
 	bImportMeshes = true;
 	PathForAssets.Path = TEXT("/Game");
-	bGenerateUniquePathPerMesh = true;
-	bApplyWorldTransformToGeometry = true;
+	bMergeMeshes = true;
+	bApplyWorldTransform = true;
 	bImportMaterials = true;
+	bImportInNewFolder = false;
 }
 
 void USKGLTFSceneImportOptions::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
@@ -44,9 +47,10 @@ bool USKGLTFSceneImportOptions::CanEditChange(const FProperty* InProperty) const
 	FName PropertyName = InProperty ? InProperty->GetFName() : NAME_None;
 
 	if (GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, MeshImportType) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bApplyWorldTransformToGeometry) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bGenerateUniquePathPerMesh) == PropertyName ||
-		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bImportMaterials) == PropertyName)
+		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bApplyWorldTransform) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bMergeMeshes) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bImportMaterials) == PropertyName ||
+		GET_MEMBER_NAME_CHECKED(USKGLTFImportOptions_SKETCHFAB, bImportInNewFolder) == PropertyName)
 	{
 		bCanEdit &= bImportMeshes;
 	}

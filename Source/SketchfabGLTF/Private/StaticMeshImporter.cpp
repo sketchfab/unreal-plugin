@@ -205,7 +205,7 @@ bool AddUVs(const tinygltf::Model* model, const tinygltf::Primitive& prim, FRawM
 UStaticMesh* FGLTFStaticMeshImporter::ImportStaticMesh(FGLTFImportContext& ImportContext, const FGLTFPrimToImport& PrimToImport, FRawMesh &RawTriangles, UStaticMesh *singleMesh)
 {
 	const FTransform& ConversionTransform = ImportContext.ConversionTransform;
-	const FMatrix PrimToWorld = ImportContext.bApplyWorldTransformToGeometry ? PrimToImport.WorldPrimTransform : FMatrix::Identity;
+	const FMatrix PrimToWorld = ImportContext.bApplyWorldTransform ? PrimToImport.WorldPrimTransform : FMatrix::Identity;
 
 	FTransform FinalTransform = FTransform(PrimToWorld)*ConversionTransform;
 	FMatrix FinalTransformIT = FinalTransform.ToInverseMatrixWithScale().GetTransposed();

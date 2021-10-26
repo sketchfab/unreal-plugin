@@ -1365,33 +1365,19 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 
 		if (PayLoad.PackagePaths.Num() > 0)
 		{
+			FString Name = FName(ObjectTools::SanitizeObjectName(DragDropOp->DraggedAssets[0].ModelName.ToString())).ToString();
+
 			ISketchfabAssetBrowserModule& gltfModule = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser");
 			gltfModule.LicenseInfo = LicenseText;
+			gltfModule.CurrentModelName = Name;
 
 			TArray<FString> Assets;
 			Assets.Add(DragDropOp->DraggedAssetPaths[0]);
 
 			FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
 			TArray<UObject*> AddedFiles = AssetToolsModule.Get().ImportAssets(Assets, PayLoad.PackagePaths[0].ToString(), nullptr, true);
-
-			//Now Rename the files
-			if (AddedFiles.Num() == 1)
-			{
-				FName Name = MakeUniqueObjectName(nullptr, UStaticMesh::StaticClass(), FName(ObjectTools::SanitizeObjectName(DragDropOp->DraggedAssets[0].ModelName.ToString())));
-				FString NameString = Name.ToString();
-
-				// Rename the object if it was imported as a single asset
-				AddedFiles[0]->Rename(*NameString, nullptr, REN_DontCreateRedirectors);
-			}
 		}
 
-		/*
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-		TArray<FAssetData> AssetData;
-		const UClass* Class = UObjectRedirector::StaticClass();
-		AssetRegistryModule.Get().GetAssetsByClass(Class->GetFName(), AssetData);
-		AssetToolsModule.Get().FixupReferencers(ArrayOfRedirectors, false);
-		*/
 		return true;
 	}
 

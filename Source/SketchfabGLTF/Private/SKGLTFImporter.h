@@ -58,10 +58,11 @@ struct FGLTFImportContext
 	EObjectFlags ImportObjectFlags;
 
 	/** Whether or not to apply world transformations to the actual geometry */
-	bool bApplyWorldTransformToGeometry;
+	bool bApplyWorldTransform;
 
 	/** Whether to automatically create Unreal materials for materials found in the glTF scene */
 	bool bImportMaterials;
+	bool bImportInNewFolder;
 
 	bool disableTangents;
 	bool disableNormals;
@@ -73,6 +74,8 @@ struct FGLTFImportContext
 	void AddErrorMessage(EMessageSeverity::Type MessageSeverity, FText ErrorMessage);
 	void DisplayErrorMessages(bool bAutomated);
 	void ClearErrorMessages();
+
+	FString GetImportPath(FString DirectoryName="");
 private:
 	/** Error messages **/
 	TArray<TSharedRef<FTokenizedMessage>> TokenizedErrorMessages;
