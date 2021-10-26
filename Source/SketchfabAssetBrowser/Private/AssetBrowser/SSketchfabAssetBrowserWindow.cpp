@@ -1,6 +1,8 @@
 // Copyright 2018 Sketchfab, Inc. All Rights Reserved.
 
 #include "SSketchfabAssetBrowserWindow.h"
+#include "EditorAssetLibrary.h"
+//#include <EditorScriptingUtilities/Public/EditorAssetLibrary.h>
 
 #define LOCTEXT_NAMESPACE "SketchfabAssetBrowser"
 
@@ -592,16 +594,17 @@ void SSketchfabAssetBrowserWindow::DownloadModel(const FString &ModelUID, const 
 		}
 	}
 
-	if (LoggedInUserDisplayName.IsEmpty() || Token.IsEmpty() || ModelUID.IsEmpty())
-	{
-		return;
-	}
-
+	// If the model was downloaded, then we don't ask for the user to log in
 	FString fileName = GetModelZipFileName(ModelUID);
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 	bool download = ShouldDownloadFile(fileName, ModelPublishedAt);
 	if (!download)
 		return;
+
+	if (LoggedInUserDisplayName.IsEmpty() || Token.IsEmpty() || ModelUID.IsEmpty())
+	{
+		return;
+	}
 
 	//TODO: Check to see if its already scheduled to be downloaded, or is already downloading.
 	if (ModelsDownloading.Find(ModelUID))
@@ -1352,17 +1355,18 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 
 		DragDropOp->SetDecoratorVisibility(false);
 
-		//Skip if we haven't yet got the licence information
-		if (DragDropOp->DraggedAssets[0].LicenceInfo.IsEmpty())
+		// If we don't have the license info, the license was already accepted, let the user proceed.
+		FString LicenseText;
+		if (!DragDropOp->DraggedAssets[0].LicenceInfo.IsEmpty())
 		{
-			return true;
+			LicenseText = "By importing this model, you agree to the terms of the following license:\n"
+				+ DragDropOp->DraggedAssets[0].LicenceType + "\n" + DragDropOp->DraggedAssets[0].LicenceInfo;
 		}
 
 		if (PayLoad.PackagePaths.Num() > 0)
 		{
 			ISketchfabAssetBrowserModule& gltfModule = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser");
-			gltfModule.LicenseInfo = "By importing this model, you agree to the terms of the following license:\n"
-				+ DragDropOp->DraggedAssets[0].LicenceType + "\n" + DragDropOp->DraggedAssets[0].LicenceInfo;
+			gltfModule.LicenseInfo = LicenseText;
 
 			TArray<FString> Assets;
 			Assets.Add(DragDropOp->DraggedAssetPaths[0]);

@@ -181,7 +181,7 @@ namespace FSKMaterialBakingModuleImpl
 
 			TRACE_CPUPROFILER_EVENT_SCOPE(RHICreateTexture2D)
 #if ENGINE_MAJOR_VERSION == 5
-			const TCHAR* DebugName = TEXT("TOTODEBUG");
+			const TCHAR* DebugName = TEXT("");
 			FRHIResourceCreateInfo CreateInfo(DebugName);
 #else
 			FRHIResourceCreateInfo CreateInfo;

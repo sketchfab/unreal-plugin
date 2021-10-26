@@ -60,29 +60,13 @@ UObject* USKGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* 
 				return nullptr;
 			}
 
-			//Unzip at current location
-
-			UE_LOG(LogGLTFImport, Error, TEXT("Filename: %s"), *Filename);
-			UE_LOG(LogGLTFImport, Error, TEXT("destDir: %s"), *destDir);
+			UE_LOG(LogGLTFImport, Error, TEXT("Filename: %s, Dir: %s"), *Filename, *destDir);
 
 			if (!FGLTFZipUtility::ExtractAllFiles(Filename, destDir))
 			{
 				return nullptr;
 			}
-			/*
-			if (!UZipFileFunctionLibrary::UnzipTo(Filename, destDir, this))
-			{
-				return nullptr;
-			}
-			*/
-
-			UE_LOG(LogGLTFImport, Error, TEXT("We should be passing here!!"));
-			ZipFileName = "scene.gltf";
-
-			gltfFile = destDir / ZipFileName;
-
-			UE_LOG(LogGLTFImport, Error, TEXT("gltfFile: %s"), *gltfFile);
-
+			gltfFile = destDir / "scene.gltf";
 			deleteZippedData = true;
 		}
 
