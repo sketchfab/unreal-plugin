@@ -1,8 +1,40 @@
+"""
+* Update images
+"""
+
 # Sketchfab plugin for Unreal Engine
 
-**Unreal plugin Windows to export and import models to and from Sketchfab**
+**Unreal Engine plugin to export and import models to and from Sketchfab**
 
-Latest releases:
+* [Installation](#installation)
+* [Authentification](#authentification)
+* [Importing models](#download-a-model-from-sketchfab)
+* [Downloading models](#download-a-model-from-sketchfab)
+* [Limitations](#known-issues-and-limitations)
+
+
+## Installation
+
+*Please note that Export is only available in the plugin starting from UE 4.25.*
+
+Download the **.zip** attached to the [release matching your OS and UE version](https://github.com/sketchfab/unreal-plugin/releases) and unzip it into the `Plugins/` folder of your current project directory, or of the Engine directory structure.
+
+You should end up with a structure such as below:
+
+* Project installation: `PROJECT_DIRECTORY/Plugins/Sketchfab/[Zip content]`
+* Engine installation: `UE_DIRECTORY/Engine/Plugins/Sketchfab/[Zip content]`
+
+Once loaded, the Sketchfab plugins will be available under the `Window` menu, in the submenus `Asset Browser` (import) and `Exporter`:
+
+![Screenshot-0](https://user-images.githubusercontent.com/52042414/118534086-20758380-b749-11eb-837c-d9c2b87cfbda.png)
+
+
+### Latest releases
+
+* [Release for 4.27 (Windows and MacOS)]()
+* [Release for 5.0ea (Windows, Linux and MacOS)]()
+
+The following releases are available for Windows only:
 
 * [Release for 4.26](https://github.com/sketchfab/unreal-plugin/releases/tag/4.26-2.0.0) 
 * [Release for 4.25](https://github.com/sketchfab/unreal-plugin/releases/tag/4.25-2.0.0)
@@ -10,42 +42,52 @@ Latest releases:
 * [Release for 4.20](https://github.com/sketchfab/unreal-plugin/releases/tag/4.20-1.1.1)
 * [Release for 4.19](https://github.com/sketchfab/unreal-plugin/releases/tag/4.19-1.1.1)
 
-Please note that the exporter is only available in the releases for Unreal Engine 4.25 and 4.26.
 
+### Linux
 
-## Installation
+The plugin is available for Linux, but only compatible as of today with UE5.0 early access.
 
-Download the **.zip** attached to the [release matching your UE version](https://github.com/sketchfab/unreal-plugin/releases) and unzip it into a new plugin folder in your project directory.
+Before using the plugin, you will need to manually install **minizip** (libminizip-dev) on your system. Adapt the following command to your package manager:
 
-If you already have plugins installed, you only need to add a new `Sketchfab` directory, otherwise you will need to create `Plugins` folder manually. You should end up with this structure:
+`sudo apt-get install libminizip-dev`
 
-`PROJECT_DIRECTORY/Plugins/Sketchfab/[Zip content]`
+The linux plugin expects shared libraries to be located in `/usr/lib/x86_64-linux-gnu/libminizip.so`. If your local installation path varies, you can modify the path in [Source/GLTFExporter/SKGLTFExporter.Build.cs] before relaunching the project.
 
-If Unreal Engine is running, you will need to close and reopen it in order to make it load the plugin.
+### MacOS
 
-Once loaded, the Sketchfab plugins will be available under the `Window` menu:
+The plugin is available for MacOS, but only compatible with UE4.27 and 5.0ea.
 
-![Screenshot-0](https://user-images.githubusercontent.com/52042414/118534086-20758380-b749-11eb-837c-d9c2b87cfbda.png)
+A working installation of XCode **might** be needed to launch UE5.
 
+You will also need to install minizip through a terminal. The prefered installation method is to use [Homebrew](https://brew.sh/) to install it.
+
+If it is not already installed, you can install Homebrew by executing the following command in a terminal window:
+`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+
+Once homebrew is installed, you can install minizip through the following command:
+`brew install minizip`
+
+The MacOS plugin looks for dynamic libraries located in `/usr/local/lib/libminizip.dylib`. If your local installation path varies, you can modify the path in [Source/GLTFExporter/SKGLTFExporter.Build.cs] before relaunching the project.
 
 ## Authentication
 
 *Please note that a Sketchfab account is required both to download and upload models.*
 
-To authenticate yourself, click the login button and enter your Sketchfab credentials before validating authentication.
+To authenticate yourself, click the "log in" button and enter your Sketchfab credentials. If you encounter errors at this step, please make sure to use the same method you use to connect to sketchfab.com (mail/password, Epic ID, Google, Facebook...).
 
-If you encounter errors at this step, please make sure to use the same method you use to connect to sketchfab.com (mail/password, Google, Facebook...).
-
-If you are using an email adress and password, the plugin will ask you to accept additional permissions necessary to download and upload models.
+*If you are using an email adress and password, the plugin will ask you to accept additional permissions necessary to download and upload models.*
 
 ![Authentication](https://user-images.githubusercontent.com/52042414/118534076-1eabc000-b749-11eb-97b8-d274f22f7200.png)
+
+If you are a member of an organization, you can choose to use the plugin as an organization member instead of through your personal profile. You will then be able to import and export models from and to projects within your organization.
 
 ## Download a model from Sketchfab
 
 The **Asset Browser** plugin allows you to seamlessly search and import:
 * models licensed under Creative Commons licenses from Sketchfab
-* your purchases from the [Sketchfab Store](https://sketchfab.com/store)
 * models you published to Sketchfab - included private ones - if you have a [PRO plan](https://sketchfab.com/plans)
+* models you purchased from the [Sketchfab Store](https://sketchfab.com/store)
+* models from an organization account and associated projects (more info about [Sketchfab for Teams](https://sketchfab.com/3d-asset-management))
 
 #### Browsing through available models
 
@@ -65,7 +107,7 @@ You can import models either by selecting **Import model** on a specific model i
 
 A progress bar under the model's thumbnail will show the progress of the download.
 
-Once a model has finished downloading, you can import it into your scene by drag-and-dropping the associated thumbnail into your project's **Content Browser**. 
+Once a model has finished downloading, you can import it into your scene by **drag-and-dropping** the associated thumbnail into your project's **Content Browser**. 
 
 A pop-up will then prompt you to accept the terms of the selected model's license (all freely downloadable models on Sketchfab are licensed under CC-attribution licenses, which are each associated with [various requirements](https://help.sketchfab.com/hc/en-us/articles/360038413232-Crediting-users-for-3D-model-downloads)).
 
