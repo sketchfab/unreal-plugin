@@ -1,0 +1,91 @@
+{
+	"FileVersion" : 3,
+	"Version" : 4,
+	"VersionName" : "2.0.0",
+	"FriendlyName" : "Sketchfab",
+	"Description" : "GLTF Importer and Sketchfab Asset Store Browser",
+	"Category" : "Importers",
+	"CreatedBy" : "Sketchfab, Inc.",
+	"CreatedByURL" : "https://sketchfab.com",
+	"DocsURL" : "",
+	"MarketplaceURL" : "",
+	"SupportURL" : "https://forum.sketchfab.com/",
+	"EnabledByDefault" : true,
+	"CanContainContent" : false,
+	"IsBetaVersion" : true,
+	"Installed" : false,
+	"Modules" :
+	[
+		{
+			"Name" : "SKGLTFMaterialBaking",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name" : "SKGLTFMaterialAnalyzer",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name" : "SKGLTFExporterRuntime",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name" : "SKGLTFExporter",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name" : "SketchfabGLTF",
+			"Type" : "Editor",
+			"LoadingPhase" : "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name": "SketchfabAssetBrowser",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+	],
+	"Plugins" :
+	[
+		{
+			"Name": "EditorScriptingUtilities",
+			"Enabled" : true
+		},
+		{
+			"Name": "GeometryCache",
+			"Enabled" : true
+		},
+	]
+}

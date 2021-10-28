@@ -1,0 +1,14 @@
+{
+	"BuildId": "14830424",
+	"Modules": 
+	{
+		"SketchfabAssetBrowser": "UE4Editor-SketchfabAssetBrowser.dll",
+		"SketchfabGLTF": "UE4Editor-SketchfabGLTF.dll",
+		"SKGLTFExporter": "UE4Editor-SKGLTFExporter.dll",
+		"SKGLTFExporterRuntime": "UE4Editor-SKGLTFExporterRuntime.dll",
+		"SKGLTFMaterialAnalyzer": "UE4Editor-SKGLTFMaterialAnalyzer.dll",
+		"SKGLTFMaterialBaking": "UE4Editor-SKGLTFMaterialBaking.dll",
+		"WindowsFileUtility": "UE4Editor-WindowsFileUtility.dll",
+		"ZipUtility": "UE4Editor-ZipUtility.dll"
+	}
+}

@@ -1,0 +1,13 @@
+
+Resources/Thumbs.db
+Intermediate/*
+Binaries/Win64/UE4Editor-UGLTFPlugin-Win64-DebugGame.dll
+Binaries/Win64/UE4Editor-UGLTFPlugin-Win64-DebugGame.pdb
+Binaries/Win64/UE4Editor-UGLTFPlugin.pdb
+Binaries/Win64/UE4Editor-Win64-DebugGame.modules
+*.pdb
+Binaries/Win64/UE4Editor-SketchfabAssetBrowser-Win64-DebugGame.dll
+Binaries/Win64/UE4Editor-SketchfabGLTF-Win64-DebugGame.dll
+Binaries/Win64/UE4Editor-WindowsFileUtility-Win64-DebugGame.dll
+Binaries/Win64/UE4Editor-ZipUtility-Win64-DebugGame.dll
+releases/*
