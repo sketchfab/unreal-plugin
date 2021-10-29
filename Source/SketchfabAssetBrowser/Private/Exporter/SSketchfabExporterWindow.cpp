@@ -584,8 +584,6 @@ void SSketchfabExporterWindow::CleanUploadArtifacts() {
 }
 float SSketchfabExporterWindow::PlanUploadLimit(FString UserPlan) {
 	if (UserPlan == "(BASIC)")
-		return 50.e6;
-	else if (UserPlan == "(PLUS)")
 		return 100.e6;
 	else if (UserPlan == "(PRO)")
 		return 200.e6;
