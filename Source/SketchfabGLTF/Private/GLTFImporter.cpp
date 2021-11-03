@@ -1588,11 +1588,12 @@ void FGLTFImportContext::ClearErrorMessages()
 
 FString FGLTFImportContext::GetImportPath(FString DirectoryName)
 {
-	FString ModelName = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser").CurrentModelName;
 	FString PackagePathName = ImportPathName;
-	if (bImportInNewFolder && !ModelName.IsEmpty())
+	if (bImportInNewFolder)
 	{
-		PackagePathName += "/" + ModelName;
+		FString FolderName = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser").CurrentModelName;
+		FolderName = FolderName.IsEmpty() ? "ImportedAsset" : FolderName;
+		PackagePathName += "/" + FolderName;
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		AssetRegistryModule.Get().AddPath(PackagePathName);
 	}

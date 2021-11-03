@@ -54,19 +54,36 @@ UObject* USKGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* 
 			FString fileString = FPaths::GetBaseFilename(Filename) + FString("__temp");
 			destDir /= fileString;
 
+			// Find first gltf and glb file inside the archive
+			FString ZippedGltfFile;
+			TArray<FString> ArchiveFiles = FGLTFZipUtility::GetAllFiles(Filename);
+			for (const FString& File : ArchiveFiles)
+			{
+				UE_LOG(LogGLTFImport, Warning, TEXT("File in archive: %s"), *File);
+				if (FPaths::GetExtension(File) == TEXT("gltf") || FPaths::GetExtension(File) == TEXT("glb"))
+				{
+					UE_LOG(LogGLTFImport, Warning, TEXT("Using: %s"), *File);
+					ZippedGltfFile = File;
+					break;
+				}
+			}
+			if (ZippedGltfFile.IsEmpty())
+			{
+				return nullptr;
+			}
+
+			gltfFile = destDir / ZippedGltfFile;
 			IPlatformFile& FS = IPlatformFile::GetPlatformPhysical();
 			if (!FS.CreateDirectory(*destDir))
 			{
 				return nullptr;
 			}
 
-			UE_LOG(LogGLTFImport, Error, TEXT("Filename: %s, Dir: %s"), *Filename, *destDir);
-
 			if (!FGLTFZipUtility::ExtractAllFiles(Filename, destDir))
 			{
 				return nullptr;
 			}
-			gltfFile = destDir / "scene.gltf";
+
 			deleteZippedData = true;
 		}
 

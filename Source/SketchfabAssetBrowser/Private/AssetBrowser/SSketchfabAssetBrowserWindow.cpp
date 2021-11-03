@@ -1363,13 +1363,11 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 				+ DragDropOp->DraggedAssets[0].LicenceType + "\n" + DragDropOp->DraggedAssets[0].LicenceInfo;
 		}
 
+		ISketchfabAssetBrowserModule& gltfModule = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser");
 		if (PayLoad.PackagePaths.Num() > 0)
 		{
-			FString Name = FName(ObjectTools::SanitizeObjectName(DragDropOp->DraggedAssets[0].ModelName.ToString())).ToString();
-
-			ISketchfabAssetBrowserModule& gltfModule = FModuleManager::Get().LoadModuleChecked<ISketchfabAssetBrowserModule>("SketchfabAssetBrowser");
+			gltfModule.CurrentModelName = FName(ObjectTools::SanitizeObjectName(DragDropOp->DraggedAssets[0].ModelName.ToString())).ToString();
 			gltfModule.LicenseInfo = LicenseText;
-			gltfModule.CurrentModelName = Name;
 
 			TArray<FString> Assets;
 			Assets.Add(DragDropOp->DraggedAssetPaths[0]);
@@ -1377,6 +1375,10 @@ bool SSketchfabAssetBrowserWindow::OnContentBrowserDrop(const FAssetViewDragAndD
 			FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
 			TArray<UObject*> AddedFiles = AssetToolsModule.Get().ImportAssets(Assets, PayLoad.PackagePaths[0].ToString(), nullptr, true);
 		}
+
+		// Reset those info to in case of following direct gltf import
+		gltfModule.LicenseInfo = "";
+		gltfModule.CurrentModelName = "";
 
 		return true;
 	}
