@@ -338,33 +338,12 @@ void FSketchfabTask::Check_Latest_Version_Response(FHttpRequestPtr Request, FHtt
 				int separatorIndex = -1;
 				if (FJsonSerializer::Deserialize(Reader, results))
 				{
-					FEngineVersion currentEngineVersion = FEngineVersion::Current();
-					uint16 major = currentEngineVersion.GetMajor();
-					uint16 minor = currentEngineVersion.GetMinor();
-
-					FString ueVersion = FString::FromInt(major) + FString(".") + FString::FromInt(minor);
-
 					for (int r = 0; r < results.Num(); r++)
 					{
 						TSharedPtr<FJsonObject> resultObj = results[r]->AsObject();
 						FString release_tag = resultObj->GetStringField("tag_name");
-
-						// Filter version and check if good Unreal engine version (4.##)
-						// Plugin tag is in for {ue4Version}.{pluginVersion} like 4.19-1.1.
-						if (release_tag.FindChar('-', separatorIndex))
-						{
-							FString pluginUeVersion = release_tag.Left(separatorIndex);
-							FString pluginVersion = release_tag.Right(release_tag.Len() - separatorIndex - 1);
-							if (pluginUeVersion.Compare(ueVersion) == 0)
-							{
-								TaskData.LatestPluginVersion = pluginVersion;
-								break;
-							}
-						}
-						else
-						{
-							UE_LOG(LogSketchfabRESTClient, Display, TEXT("Failed to retrieve latest plugin version"));
-						}
+						TaskData.LatestPluginVersion = release_tag;
+						break;
 					}
 				}
 
