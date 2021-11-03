@@ -901,8 +901,7 @@ void SSketchfabAssetBrowserWindow::OnSearchBoxCommitted(const FText& InSearchTex
 FReply SSketchfabAssetBrowserWindow::OnVisitStore()
 {
 	{
-		FString url = "https://sketchfab.com/store?utm_source=unreal-plugin&utm_medium=plugin&utm_campaign=store-cta";
-		FPlatformMisc::OsExecute(TEXT("open"), *url);
+		OpenUrlInBrowser("https://sketchfab.com/store?utm_source=unreal-plugin&utm_medium=plugin&utm_campaign=store-cta");
 		return FReply::Handled();
 	}
 }

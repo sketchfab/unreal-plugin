@@ -442,7 +442,7 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 		);
 		if (popup->Confirmed())
 		{
-			FPlatformMisc::OsExecute(TEXT("open"), *(FPaths::GetPath(ZipPath).Replace(TEXT("/"), TEXT("\\"))));
+			OpenUrlInBrowser(FPaths::GetPath(ZipPath).Replace(TEXT("/"), TEXT("\\")));
 		}
 		CleanUploadArtifacts();
 		return FReply::Handled();
@@ -469,7 +469,7 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 		);
 		if (popup->Confirmed())
 		{
-			FPlatformMisc::OsExecute(TEXT("open"), TEXT("https://sketchfab.com/plans"));
+			OpenUrlInBrowser("https://sketchfab.com/plans");
 		}
 		CleanUploadArtifacts();
 		return FReply::Handled();
@@ -529,7 +529,7 @@ void SSketchfabExporterWindow::OnUploadFailed(const FSketchfabTask& InTask)
 	);
 	if (popup->Confirmed())
 	{
-		FPlatformMisc::OsExecute(TEXT("open"), TEXT("https://help.sketchfab.com/hc/en-us/requests/new"));
+		OpenUrlInBrowser("https://help.sketchfab.com/hc/en-us/requests/new");
 	}
 	CleanUploadArtifacts();
 }
@@ -546,7 +546,7 @@ void SSketchfabExporterWindow::OnUploadSuccess(const FSketchfabTask& InTask)
 	);
 	if (popup->Confirmed()) 
 	{
-		FPlatformMisc::OsExecute(TEXT("open"), *modelUrl);
+		OpenUrlInBrowser(modelUrl);
 	}
 
 	CleanUploadArtifacts();

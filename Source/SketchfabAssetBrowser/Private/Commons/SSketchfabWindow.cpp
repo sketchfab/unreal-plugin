@@ -5,9 +5,45 @@
 
 #define LOCTEXT_NAMESPACE "SketchfabWindow"
 
+#ifndef _WIN32
+// Used for running platform specific commands
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
 
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    return result;
+}
+#endif
 
-
+void SSketchfabWindow::OpenUrlInBrowser(FString Url)
+{
+	// Linux and Apple don't have an override for OsExecute
+	#ifdef _WIN32
+	bool success = FPlatformMisc::OsExecute(TEXT("open"), *Url);
+	#else
+	#ifdef __APPLE__
+	std::string command = "open " + std::string(TCHAR_TO_UTF8(*Url));
+	exec(command.c_str());
+	#endif
+	#ifdef __linux__
+	std::string command = "xdg-open " + std::string(TCHAR_TO_UTF8(*Url));
+	exec(command.c_str());
+	#endif
+	#endif
+}
 
 FString SSketchfabWindow::GetSketchfabCacheDir()
 {
@@ -101,8 +137,7 @@ FReply SSketchfabWindow::OnLogin()
 FReply SSketchfabWindow::OnUpgradeToPro()
 {
 	{
-		FString url = "https://sketchfab.com/plans?utm_source=unreal-plugin&utm_medium=plugin&utm_campaign=download-api-pro-cta";
-		FPlatformMisc::OsExecute(TEXT("open"), *url);
+		OpenUrlInBrowser("https://sketchfab.com/plans?utm_source=unreal-plugin&utm_medium=plugin&utm_campaign=download-api-pro-cta");
 		return FReply::Handled();
 	}
 }
@@ -559,8 +594,7 @@ FReply SSketchfabWindow::CheckLatestPluginVersion()
 
 FReply SSketchfabWindow::GetLatestPluginVersion()
 {
-	FString Command = "https://github.com/sketchfab/Sketchfab-Unreal/releases/latest";
-	FPlatformMisc::OsExecute(TEXT("open"), *Command);
+	OpenUrlInBrowser("https://github.com/sketchfab/Sketchfab-Unreal/releases/latest");
 	return FReply::Handled();
 }
 

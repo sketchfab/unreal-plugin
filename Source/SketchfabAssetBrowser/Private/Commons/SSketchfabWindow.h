@@ -144,7 +144,7 @@ public:
 	virtual FReply OnClearCache() { return FReply::Handled(); };
 	virtual void OnOrgChanged() {};
 
-
+	static void OpenUrlInBrowser(FString Url);
 	TSharedPtr<SPopUpWindow> CreatePopUp(FString title, FString subtitle, FString content, FString ok, FString cancel);
 
 	TWeakPtr<SWindow> Window;

@@ -356,8 +356,7 @@ FReply SSketchfabAssetWindow::DownloadModel()
 
 FReply SSketchfabAssetWindow::ViewOnSketchfab()
 {
-	FString Command = "https://sketchfab.com/models/" + AssetData.ModelUID.ToString();
-	FPlatformMisc::OsExecute(TEXT("open"), *Command);
+	SSketchfabWindow::OpenUrlInBrowser("https://sketchfab.com/models/" + AssetData.ModelUID.ToString());
 	return FReply::Handled();
 }
 
