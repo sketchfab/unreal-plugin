@@ -133,13 +133,12 @@ void FSketchfabTask::AddAuthorization(ReqRef Request)
 {
 	if (!TaskData.Token.IsEmpty())
 	{
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Token is not empty"));
 		FString bearer = "Bearer ";
 		bearer += TaskData.Token;
 		Request->SetHeader("Authorization", bearer);
 	}
 	else {
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Token is empty"));
+		UE_LOG(LogSketchfabRESTClient, Display, TEXT("Authorization Token is empty"));
 	}
 }
 
@@ -166,8 +165,6 @@ bool FSketchfabTask::MakeRequest(
 	request->SetHeader("User-Agent", "X-UnrealEngine-Agent");
 	if (!contentType.IsEmpty())
 		request->SetHeader("Content-Type", contentType);
-	
-	UE_LOG(LogSketchfabTask, Error, TEXT("%s"), *contentType);
 	
 	// Callbacks
 	request->OnProcessRequestComplete().BindRaw(this, completeCallback);
@@ -198,7 +195,6 @@ bool FSketchfabTask::IsValid(FHttpRequestPtr Request, FHttpResponsePtr Response,
 	FString OutUrl = PendingRequests.FindRef(Request);
 	if (!OutUrl.IsEmpty())
 	{
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("OutUrl not empty: %s"), *OutUrl);
 		PendingRequests.Remove(Request);
 	}
 	if (!Response.IsValid())
@@ -646,8 +642,6 @@ void FSketchfabTask::GetUserOrgs_Response(FHttpRequestPtr Request, FHttpResponse
 		//Create a reader pointer to read the json data
 		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("ORG API response !!!"));
-
 		//Deserialize the json data given Reader and the actual object to deserialize
 		if (FJsonSerializer::Deserialize(Reader, JsonObject))
 		{
@@ -655,7 +649,7 @@ void FSketchfabTask::GetUserOrgs_Response(FHttpRequestPtr Request, FHttpResponse
 			TaskData.NextURL = JsonObject->GetStringField("next");
 
 			if(results.Num()==0)
-				UE_LOG(LogSketchfabRESTClient, Display, TEXT("NOT A MEMBER OF ANY ORG"));
+				UE_LOG(LogSketchfabRESTClient, Warning, TEXT("User is not a member of any org"));
 
 			for (int r = 0; r < results.Num(); r++)
 			{
@@ -666,7 +660,7 @@ void FSketchfabTask::GetUserOrgs_Response(FHttpRequestPtr Request, FHttpResponse
 				org.uid = resultObj->GetStringField("uid");
 				org.url = resultObj->GetStringField("publicProfileUrl");
 
-				UE_LOG(LogSketchfabRESTClient, Display, TEXT("We've got an org: %s %s %s"), *(org.name), *(org.uid), *(org.url));
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("User is member of an org %s (%s): %s"), *(org.name), *(org.uid), *(org.url));
 
 				TaskData.Orgs.Add(org);
 			}
@@ -683,10 +677,6 @@ void FSketchfabTask::GetUserOrgs_Response(FHttpRequestPtr Request, FHttpResponse
 
 void FSketchfabTask::GetOrgsProjects()
 {
-	//UE_LOG(LogSketchfabRESTClient, Display, TEXT("LOOKING for projects amongst %d orgs" ), TaskData.Orgs.Num());
-	//UE_LOG(LogSketchfabRESTClient, Display, TEXT("Alternatively, we could try %s"), *(TaskData.org.uid));
-	UE_LOG(LogSketchfabRESTClient, Display, TEXT("in the org %s"), *(TaskData.org->uid));
-
 	MakeRequest(
 		"https://sketchfab.com/v3/orgs/" + TaskData.org->uid + "/projects",
 		SRS_GETORGSPROJECTS_PROCESSING,
@@ -697,7 +687,6 @@ void FSketchfabTask::GetOrgsProjects()
 
 void FSketchfabTask::GetOrgsProjects_Response(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	UE_LOG(LogSketchfabRESTClient, Display, TEXT("DO WE GO IN GETORGSPROJECTS_RESPONSE"));
 	if (IsValid(Request, Response)) {
 
 		//Create a pointer to hold the json serialized data
@@ -705,9 +694,6 @@ void FSketchfabTask::GetOrgsProjects_Response(FHttpRequestPtr Request, FHttpResp
 
 		//Create a reader pointer to read the json data
 		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("PROJECTS"));
-
 		
 		//Deserialize the json data given Reader and the actual object to deserialize
 		if (FJsonSerializer::Deserialize(Reader, JsonObject))
@@ -716,7 +702,7 @@ void FSketchfabTask::GetOrgsProjects_Response(FHttpRequestPtr Request, FHttpResp
 			TaskData.NextURL = JsonObject->GetStringField("next");
 
 			if (results.Num() == 0)
-				UE_LOG(LogSketchfabRESTClient, Display, TEXT("NO PROJECTS PRESENT IN THE ORG"));
+				UE_LOG(LogSketchfabRESTClient, Display, TEXT("No projects available in the org"));
 
 			for (int r = 0; r < results.Num(); r++)
 			{
@@ -729,18 +715,14 @@ void FSketchfabTask::GetOrgsProjects_Response(FHttpRequestPtr Request, FHttpResp
 				project.modelCount  = resultObj->GetNumberField("modelCount");
 				project.memberCount = resultObj->GetNumberField("memberCount");
 
-				//UE_LOG(LogSketchfabRESTClient, Display, TEXT("We've got an org: %s %s %s"), *(org.name), *(org.uid), *(org.url));
-
 				TaskData.Projects.Add(project);
 			}
 		}
-
 
 		if (!this->IsCompleted && OnOrgsProjects().IsBound())
 		{
 			OnOrgsProjects().Execute(*this);
 		}
-
 		
 		SetState(SRS_GETORGSPROJECTS_DONE);
 	}
@@ -1091,11 +1073,10 @@ void FSketchfabTask::SetUploadRequestContent(ReqRef Request) {
 	AddField(TEXT("source"), TEXT("unreal"));
 
 	if (!TaskData.ProjectUID.IsEmpty()) {
-		UE_LOG(LogSketchfabTask, Error, TEXT("ProjectUID not empty: %s"), *(TaskData.ProjectUID ));
 		AddField(TEXT("orgProject"), TaskData.ProjectUID);
 	}
 	else {
-		UE_LOG(LogSketchfabTask, Error, TEXT("ProjectUID empty"));
+		UE_LOG(LogSketchfabTask, Error, TEXT("No project selected (uid empty)"));
 	}
 
 	// File

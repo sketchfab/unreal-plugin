@@ -59,10 +59,8 @@ UObject* USKGLTFAssetImportFactory::FactoryCreateFile(UClass* InClass, UObject* 
 			TArray<FString> ArchiveFiles = FGLTFZipUtility::GetAllFiles(Filename);
 			for (const FString& File : ArchiveFiles)
 			{
-				UE_LOG(LogGLTFImport, Warning, TEXT("File in archive: %s"), *File);
 				if (FPaths::GetExtension(File) == TEXT("gltf") || FPaths::GetExtension(File) == TEXT("glb"))
 				{
-					UE_LOG(LogGLTFImport, Warning, TEXT("Using: %s"), *File);
 					ZippedGltfFile = File;
 					break;
 				}

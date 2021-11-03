@@ -414,14 +414,11 @@ void SSketchfabWindow::HandleOrgComboChanged(TSharedPtr<FString> Item, ESelectIn
 		{
 			CurrentOrgString = *Item.Get();
 			OrgIndex = i;
-			UE_LOG(LogSketchfabRESTClient, Display, TEXT("Selected an org: %s %d %s"), *(Orgs[i].name), OrgIndex, *CurrentOrgString);
 			
 			if(Orgs[i].Projects.Num() > 0)
 				GetOrgsProjects(&(Orgs[i]));
 
 			UpdateAvailableProjects();
-			//EVisibility GetProjectDropdownVisibility() const;
-			//OnSearchPressed();
 		}
 	}
 
@@ -449,15 +446,8 @@ void SSketchfabWindow::HandleProjectComboChanged(TSharedPtr<FString> Item, ESele
 	{
 		if (Item == ProjectComboList[i])
 		{
-			if(i>0)
-				UE_LOG(LogSketchfabRESTClient, Display, TEXT("Selected a project: %s %d %s"), *(Orgs[OrgIndex].Projects[i].name), ProjectIndex, *CurrentProjectString);
-			
 			CurrentProjectString = *Item.Get();
 			ProjectIndex = i;
-			
-
-			//EVisibility GetProjectDropdownVisibility() const;
-			//OnSearchPressed();
 		}
 	}
 }
@@ -622,9 +612,6 @@ void SSketchfabWindow::GetOrgsProjects(FSketchfabOrg* org)
 	TaskData.StateLock = new FCriticalSection();
 	TaskData.org = org;
 
-	UE_LOG(LogSketchfabRESTClient, Display, TEXT("Created task with an org %s %s"), *(org->name), *(org->uid));
-	//UE_LOG(LogSketchfabRESTClient, Display, TEXT("%s"), *(org->uid));
-
 	TSharedPtr<FSketchfabTask> Task = MakeShareable(new FSketchfabTask(TaskData));
 	Task->SetState(SRS_GETORGSPROJECTS);
 	Task->OnOrgsProjects().BindRaw(this, &SSketchfabWindow::OnOrgsProjects);
@@ -679,7 +666,6 @@ void SSketchfabWindow::OnUserData(const FSketchfabTask& InTask)
 
 void SSketchfabWindow::OnUserOrgs(const FSketchfabTask& InTask)
 {
-	UE_LOG(LogSketchfabRESTClient, Display, TEXT("IN ONUSERORGS %d"), InTask.TaskData.Orgs.Num());
 	Orgs = InTask.TaskData.Orgs;
 
 	if (Orgs.Num() > 0) {
@@ -714,13 +700,7 @@ void SSketchfabWindow::UpdateAvailableProjects() {
 
 void SSketchfabWindow::OnOrgsProjects(const FSketchfabTask& InTask)
 {
-	UE_LOG(LogSketchfabRESTClient, Display, TEXT("IN ONORGSPROJECTS"));
 	(InTask.TaskData.org)->Projects = InTask.TaskData.Projects;
-
-	for (int i = 0; i < (InTask.TaskData.org)->Projects.Num(); i++) {
-		UE_LOG(LogSketchfabRESTClient, Display, TEXT("PROJECT %d, %s"), i, *((InTask.TaskData.org)->Projects[i].name));
-	}
-
 	GenerateProjectComboItems();
 }
 

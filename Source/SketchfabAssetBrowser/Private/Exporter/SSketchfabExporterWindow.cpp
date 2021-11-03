@@ -428,30 +428,6 @@ FReply SSketchfabExporterWindow::OnUploadButtonPressed()
 		}
 	}
 
-	// Create a zip archive of the file
-	/*
-	bool ZipSuccess = UZipFileFunctionLibrary::ZipWithLambda(GlbPath, zipSuccessPlaceHolder);
-	if (!ZipSuccess) {
-		UE_LOG(LogSketchfabExporterWindow, Error, TEXT("Failure encountered while zipping the file"));
-		TSharedPtr<SPopUpWindow> popup = CreatePopUp
-		(
-			"Archive error",
-			"Your model did not compress correctly",
-			"The plugin encountered an error during the compression of your scene.\n"
-				"Please check that UE has writing permissions in \n"
-				+ FPaths::GetPath(ZipPath),
-			"Open directory",
-			"Back to Unreal Engine"
-		);
-		if (popup->Confirmed())
-		{
-			FPlatformMisc::OsExecute(TEXT("open"), *(FPaths::GetPath(ZipPath).Replace(TEXT("/"), TEXT("\\"))));
-		}
-		CleanUploadArtifacts();
-		return FReply::Handled();
-	}
-	*/
-
 	if (FGLTFZipUtility::CompressDirectory(ZipPath, GlbPath)) {
 		UE_LOG(LogSketchfabExporterWindow, Error, TEXT("Failure encountered while zipping the file"));
 		TSharedPtr<SPopUpWindow> popup = CreatePopUp

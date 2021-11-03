@@ -578,7 +578,6 @@ void SSketchfabAssetBrowserWindow::OnUseOrgProfileCheckStateChanged(ECheckBoxSta
 */
 
 void SSketchfabAssetBrowserWindow::OnOrgChanged() {
-	UE_LOG(LogSketchfabAssetBrowserWindow, Display, TEXT("In SketchfabAssetBrowser OnOrgChanged"));
 	GenerateSearchDomainList();
 	OnSearchPressed();
 }

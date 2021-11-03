@@ -394,8 +394,6 @@ tinygltf::Model* USKGLTFImporter::ReadGLTFFile(FGLTFImportContext& ImportContext
 		success = gltf.LoadBinaryFromFile(Model, &err, &warn, filename);
 	}
 
-	UE_LOG(LogGLTFImport, Error, TEXT("Issue with file %s"), *Filename);
-
 	if (!success)
 	{
 		delete Model;

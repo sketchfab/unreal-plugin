@@ -87,8 +87,6 @@ private:
 	}
 
 	void MenuCallbackOpenBrowser() {
-		UE_LOG(LogSketchfabAssetBrowser, Log, TEXT("MenuCallbackOpenBrowser"));
-
 		if (AssetBrowser)
 		{
 			AssetBrowser->ShowWindow();
@@ -96,8 +94,6 @@ private:
 	}
 
 	void MenuCallbackOpenExporter() {
-		UE_LOG(LogSketchfabExporter, Log, TEXT("MenuCallbackOpenExporter"));
-
 		if (Exporter)
 		{
 			Exporter->ShowWindow();
