@@ -25,7 +25,7 @@ Once loaded, the Sketchfab plugins will be available under the `Window` menu, in
 
 ### Latest release
 
-* [Release 2.1.0 for UE 4.27 and UE 5.0ea](https://github.com/sketchfab/unreal-plugin/releases/tag/2.1.0) *(also available for 4.25 and 4.26, on Windows only)*.
+* [Release 2.1.1 for UE 4.27 and UE 5.0ea](https://github.com/sketchfab/unreal-plugin/releases/tag/2.1.1) *(also available for 4.25 and 4.26, on Windows only)*.
 
 ### Older releases *(Windows only)*:
 
