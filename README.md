@@ -1,5 +1,7 @@
 # Sketchfab plugin for Unreal Engine
 
+:warning: We are currently working on a version for the release of Unreal Engine 5.0 (the latest version of the Sketchfab plugin is only compatible with Unreal Engine 5.0 **Early Access**).
+
 **Unreal Engine plugin to export and import models to and from Sketchfab**
 
 * [Installation](#installation)
